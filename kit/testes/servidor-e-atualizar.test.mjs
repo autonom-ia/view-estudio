@@ -261,16 +261,18 @@ test('servidor: lê pelo caminho real já conferido (aberto como arquivo), nunca
 test('servidor: redirecionamento de pasta codifica cada pedaço ("a#b" e "a?b" chegam inteiros)', async () => {
   const raiz = temporaria('estudio-srv-redir-');
   escrever(path.join(raiz, 'a#b', 'index.html'), '<p>cerquilha</p>');
-  escrever(path.join(raiz, 'a?b', 'index.html'), '<p>interrogacao</p>');
+  // "?" não vale em nome de pasta no Windows: lá o caso a?b fica de fora
+  const comInterrogacao = process.platform !== 'win32';
+  if (comInterrogacao) escrever(path.join(raiz, 'a?b', 'index.html'), '<p>interrogacao</p>');
   escrever(path.join(raiz, 'c d', 'e#f', 'index.html'), '<p>fundo</p>');
   const srv = await servir(raiz);
   try {
     const get = (p) => fetch(`${srv.origem}${p}`, { redirect: 'manual' });
     const casos = [
       ['/a%23b', '/a%23b/', '<p>cerquilha</p>'],
-      ['/a%3Fb', '/a%3Fb/', '<p>interrogacao</p>'],
       ['/c%20d/e%23f', '/c%20d/e%23f/', '<p>fundo</p>'],
     ];
+    if (comInterrogacao) casos.push(['/a%3Fb', '/a%3Fb/', '<p>interrogacao</p>']);
     for (const [pedido, destino, texto] of casos) {
       const r = await get(pedido);
       assert.equal(r.status, 301, pedido);

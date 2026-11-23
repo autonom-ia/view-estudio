@@ -23,6 +23,9 @@ export async function abrirSessao(raizServida, { largura = LARGURA, altura = ALT
     await tab.send('Network.enable');
     await tab.send('Network.setCacheDisabled', { cacheDisabled: true });
     await tab.send('Emulation.setDeviceMetricsOverride', { width: largura, height: altura, deviceScaleFactor: 1, mobile: false });
+    // Medidas e fotos iguais em qualquer máquina: o "reduzir movimento" do sistema (Windows com
+    // animações desligadas, Mac com acessibilidade) não muda o que o checar e o prints veem.
+    await tab.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] });
   } catch (e) {
     // nada fica para trás: aba, navegador e servidor fecham antes do erro subir
     try {

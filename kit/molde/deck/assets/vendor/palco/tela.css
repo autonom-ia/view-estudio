@@ -1,0 +1,11 @@
+/* tela.css — andaime mecânico de toda tela do View Estúdio (palco 1920x1080).
+   O desenho de cada tela fica no <style> dela; aqui só o que não muda. */
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--palco-fundo,#000)}
+body{font-family:var(--fonte-texto);color:var(--cor-tinta);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-kerning:normal}
+.palco-tela{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;background:var(--cor-fundo)}
+/* dica de teclado: some dentro do deck (o palco cuida) e no papel */
+.dica{position:absolute;left:50%;bottom:36px;transform:translateX(-50%);font-size:16px;letter-spacing:.16em;text-transform:uppercase;opacity:.5}
+html.no-deck .dica{display:none}
+@media print{.dica{display:none}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}

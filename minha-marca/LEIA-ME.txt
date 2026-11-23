@@ -1,0 +1,13 @@
+MINHA MARCA
+
+Esta pasta e sua. Aqui fica a marca que vale para todas as apresentacoes:
+
+  tokens.css   as cores e as letras (o assistente escreve com voce)
+  fontes/      os arquivos das letras, com a licenca de cada uma
+  logo.svg     ou logo.png, se voce tiver
+  marca.md     o jeito de falar da marca, o que usar e o que evitar
+
+Para criar ou mudar, peca ao assistente: "quero ajustar a minha marca".
+Enquanto esta pasta nao tiver tokens.css, o estudio usa a marca de exemplo.
+
+A atualizacao do estudio nunca mexe nesta pasta.

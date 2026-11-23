@@ -1,0 +1,384 @@
+{
+  "versao": 1,
+  "como_usar": [
+    "Estes são os textos que o assistente mostra durante a instalação. Use o texto como está, trocando só o que está entre {{ }}.",
+    "{{agente}} vale \"Claude\" ou \"Codex\". {{nome}}, {{frase}}, {{tamanho}} e {{consequencia}} vêm de \"itens\". Quando um texto tem variante por agente (\"..._claude\" / \"..._codex\"), use a do agente certo.",
+    "Mostre o \"texto\" e, embaixo, as \"opcoes\" numeradas (1., 2., ...). A opção com ★ é a recomendada e vem primeiro. A pessoa pode responder com o número ou com palavras.",
+    "Como rodar o instalador (sempre de dentro da pasta do estúdio, com barra normal no caminho):",
+    "- Mac: cd ~/view-estudio && bash instalar/instalar.sh <acao> [id] --agente <claude|codex> [--modo tudo|um_por_um]. Comandos: ./estudio <comando>.",
+    "- Windows, PowerShell: cd <pasta do estúdio>; powershell.exe -NoProfile -ExecutionPolicy Bypass -File instalar/instalar.ps1 <acao> [id] --agente <claude|codex> [--modo tudo|um_por_um]. Comandos: .\\estudio.cmd <comando>.",
+    "- Windows, Git Bash: o mesmo instalador do Windows, com barra normal. Comandos: ./estudio <comando>. Nunca rode instalar.sh no Windows: ele recusa com USE_O_INSTALADOR_DO_WINDOWS.",
+    "A pasta do estúdio é ~/view-estudio no Mac e %USERPROFILE%\\view-estudio no Windows (ou C:\\ViewEstudio\\view-estudio, depois de \"mudar-pasta\"). Os programas ficam dentro dela, em .ferramentas.",
+    "Sempre passe --agente. Depois da resposta ao I-03, passe também --modo tudo ou --modo um_por_um.",
+    "Leia só a última linha da saída: é um JSON. Se ok=false, procure o \"codigo\" em \"erros\" deste arquivo. Se o item tiver \"origem\":\"kit\", procure o código em kit/mensagens.json.",
+    "Quando o erro tiver \"acao_automatica\":\"tentar_de_novo\", rode o mesmo comando mais uma vez sem falar nada. Só mostre o texto se falhar de novo.",
+    "Nunca mostre o caminho do log nem o nome técnico do código, a não ser que a pessoa peça.",
+    "Ordem dos passos: pasta, node, pacotes, navegador, ffmpeg.",
+    "Numeração \"{{i}} de {{n}}\": {{i}} é o campo \"numero\" do passo no \"plano\" e {{n}} é \"total_programas\". A pasta tem numero 0: mostre o \"pronto\" do item, sem contador.",
+    "Depois de \"checar\": se aparecer PASTA_NA_NUVEM ou NOME_COM_ACENTO, pergunte com o texto do erro e rode a ação \"mudar-pasta\". A partir daí use a pasta do campo \"para\" em todos os comandos.",
+    "No Codex, rode o \"checar\" e todos os passos já pedindo internet (texto CODEX-INTERNET).",
+    "Depois de \"verificar\": cada item com ok=false traz \"passo\". Para tentar de novo, rode \"passo <passo>\" desse item.",
+    "Desinstalar: rode \"desinstalar\" sem --confirmar, mostre DESINSTALAR-PERGUNTA e, se a pessoa confirmar, rode \"desinstalar --confirmar\" e mostre DESINSTALAR-PRONTO."
+  ],
+  "textos": {
+    "I-01": {
+      "quando": "logo depois de ler o AGENTS.md, antes de qualquer comando",
+      "texto": "Oi! Vou montar o seu View Estúdio, o lugar onde a gente cria apresentações juntos. Vai ser assim:\n1. Eu olho se o seu computador tem espaço.\n2. Instalo 4 programas grátis. Você aprova.\n3. Pergunto sobre a sua marca (cores, letras, logo).\n\nLeva uns 10 minutos. Você não precisa digitar nada difícil.\n\nUm aviso: toda vez que eu for mexer no computador, o {{agente}} mostra uma caixinha pedindo licença. É normal. É para a sua segurança. Eu aviso antes, e você pode aprovar.\n{{linha_caixinha}}\n\nSe a janela fechar sem querer, abra o {{agente}} do mesmo jeito e cole o mesmo texto de novo: eu continuo de onde parou.\n\nPrimeiro vou só olhar o computador, sem instalar nada. Posso olhar?",
+      "linha_caixinha_claude": "No app do Claude, a caixinha tem um botão para aprovar: clique nele. Se você abriu pelo Terminal, ela vem em inglês: aperte Enter na opção **1. Yes**. Quando eu for gravar um arquivo, escolha uma vez a opção que libera as edições durante a sessão (no Terminal: **Yes, allow all edits during this session**).",
+      "linha_caixinha_codex": "No app do Codex, a caixinha vem em português: clique no botão de aprovar. Se você abriu pelo Terminal, ela vem em inglês: aperte Enter na primeira opção, a que começa com **Yes**.",
+      "opcoes": [
+        "Pode olhar ★",
+        "Agora não"
+      ]
+    },
+    "I-02": {
+      "quando": "depois de \"checar\" sem problema que bloqueia",
+      "texto": "Olhei. Está tudo certo:\n- Computador: {{nome_sistema}}\n- Espaço livre: {{espaco_gb}} GB (preciso de uns 3)\n- Memória: {{memoria_gb}} GB\n- Internet: funcionando",
+      "variaveis": "nome_sistema, espaco_gb e memoria_gb vêm do JSON do checar."
+    },
+    "I-03": {
+      "quando": "depois do I-02",
+      "texto": "Vou instalar {{n}} programas. Todos são grátis e ficam numa pasta só do estúdio. Nenhum pede a sua senha.\n1. **Node**: o motor dos comandos do estúdio. (uns 190 MB)\n2. **Peças do estúdio**: o motor que transforma uma cena animada em vídeo. (uns 250 MB)\n3. **Navegador escondido**: tira as fotos de cada tela e faz o PDF. Não mexe no seu Chrome. (uns 250 MB)\n4. **FFmpeg**: só para cena em vídeo. (uns 150 MB)\n\nTotal: menos de 1 GB. Com internet boa, uns 5 minutos.\n\nComo você prefere?",
+      "variaveis": "n vem de \"total_programas\" do plano.",
+      "opcoes": [
+        "Pode instalar tudo. Me avise antes de cada um. ★",
+        "Quero aprovar um por um."
+      ],
+      "modo_por_opcao": [
+        "tudo",
+        "um_por_um"
+      ]
+    },
+    "I-04": {
+      "quando": "modo tudo: antes de cada passo",
+      "texto": "Agora: **{{nome}}**. {{frase}}. O {{agente}} vai pedir licença para mexer no computador. Pode aprovar."
+    },
+    "I-05": {
+      "quando": "modo um por um: antes de cada passo",
+      "texto": "Posso instalar o **{{nome}}**? {{frase}}. Ocupa uns {{tamanho}}. É grátis.",
+      "opcoes": [
+        "Sim, instalar ★",
+        "Agora não"
+      ]
+    },
+    "I-06": {
+      "quando": "a pessoa recusou um passo",
+      "texto": "Tudo bem. Sem o {{nome}}, {{consequencia}}. Quer instalar mesmo assim?",
+      "opcoes": [
+        "Sim, pode instalar ★",
+        "Não, seguir sem"
+      ],
+      "opcoes_obrigatorio": [
+        "Sim, pode instalar ★",
+        "Parar a instalação por agora"
+      ]
+    },
+    "I-07": {
+      "quando": "um passo terminou com ok=true",
+      "texto": "Pronto: {{nome}} instalado. ({{i}} de {{n}})",
+      "variaveis": "{{i}} é o \"numero\" do passo no plano e {{n}} é \"total_programas\". Para a pasta (numero 0), use o \"pronto\" do item, sem contador."
+    },
+    "I-14": {
+      "quando": "\"verificar\" com ok=true",
+      "texto": "Tudo pronto: {{ok}} de {{total}}.\n\nFalta um passo, só desta vez: abrir o {{agente}} direto na pasta do estúdio. É nela que eu sei fazer as suas apresentações.\n{{linha_voltar}}\n\nDepois, é só escrever: **quero fazer uma apresentação**. Eu pergunto o que você precisa, mostro 3 telas para você aprovar e faço o resto.",
+      "linha_voltar_codex": "No app do Codex: clique em **Escolher projeto** e depois em **Novo projeto**. Escolha a pasta **view-estudio**, que fica dentro da casinha com o seu nome, e clique em **Confiar na pasta**.",
+      "linha_voltar_claude": "No app do Claude, na aba Code: comece uma sessão nova e escolha a pasta **view-estudio**, que fica dentro da casinha com o seu nome. Se ele perguntar se você confia na pasta, aprove."
+    },
+    "I-15": {
+      "quando": "\"verificar\" com ok=false",
+      "texto": "Ficou quase tudo pronto: {{ok}} de {{total}}. Faltou: {{lista em palavras simples}}. {{texto do código}}. Quer que eu tente de novo?",
+      "opcoes": [
+        "Tentar de novo ★",
+        "Seguir assim"
+      ]
+    },
+    "I-15-so-ffmpeg": {
+      "quando": "\"verificar\" com ok=false e o único item que falhou é o ffmpeg",
+      "texto": "Está tudo pronto para fazer apresentações. Só o FFmpeg não instalou: sem ele eu não transformo cena animada em vídeo, mas o resto funciona. Quer que eu tente de novo?",
+      "opcoes": [
+        "Tentar de novo ★",
+        "Seguir assim"
+      ]
+    },
+    "MUDAR-PASTA-PRONTO": {
+      "quando": "\"mudar-pasta\" com ok=true e copiado=false",
+      "texto": "Pronto. Mudei o estúdio para {{para}}. Daqui para a frente ele fica lá."
+    },
+    "MUDAR-PASTA-COPIADO": {
+      "quando": "\"mudar-pasta\" com ok=true e copiado=true",
+      "texto": "Pronto. O estúdio agora fica em {{para}}. Ficou uma cópia antiga em {{antiga}}: pode apagar depois, quando quiser."
+    },
+    "CODEX-INTERNET": {
+      "quando": "no Codex, antes de qualquer comando do instalador",
+      "texto": "O Codex vai pedir para usar a internet. Pode aprovar: é para baixar o {{nome}}."
+    },
+    "CODEX-FORA-DA-AREA": {
+      "quando": "no Codex, antes de comandos que abrem o navegador escondido (prints, pdf, checar, cena, abrir)",
+      "texto": "O Codex vai pedir para eu rodar fora da área protegida. É para abrir o navegador escondido que fotografa as telas. Pode aprovar."
+    },
+    "CODEX-FORA-DA-AREA-MUDAR-PASTA": {
+      "quando": "no Codex, antes de mudar-pasta",
+      "texto": "O Codex vai pedir para eu rodar fora da área protegida. É para pôr a pasta do estúdio na sua pasta pessoal, que é o lugar dela. Nada é apagado. Pode aprovar."
+    },
+    "CAIXINHA": {
+      "quando": "antes de qualquer comando que vai gerar a caixinha de aprovação, quando não houver texto mais específico",
+      "texto": "O {{agente}} vai pedir licença para mexer no computador. É para {{motivo em 1 linha}}. Pode aprovar."
+    },
+    "DESINSTALAR-PERGUNTA": {
+      "quando": "depois de \"desinstalar\" sem --confirmar",
+      "texto": "Posso apagar os programas do estúdio (uns {{tamanho_mb}} MB)? As suas apresentações, a sua marca e as referências ficam onde estão.",
+      "opcoes": [
+        "Pode apagar",
+        "Deixar como está ★"
+      ]
+    },
+    "DESINSTALAR-PRONTO": {
+      "quando": "\"desinstalar --confirmar\" com ok=true",
+      "texto": "Pronto. Apaguei os programas do estúdio. As suas apresentações continuam na pasta {{pasta_do_estudio}}. Para instalar de novo, é só escrever: instalar o estúdio."
+    }
+  },
+  "itens": {
+    "pasta": {
+      "nome": "Pasta do estúdio",
+      "artigo": "a",
+      "frase": "Guarda todos os programas do estúdio num lugar só",
+      "tamanho": "quase nada",
+      "tamanho_mb": 0,
+      "consequencia": "o estúdio não tem onde guardar os programas. Esse é obrigatório",
+      "obrigatorio": true,
+      "pronto": "Pronto: pasta do estúdio criada."
+    },
+    "node": {
+      "nome": "Node",
+      "artigo": "o",
+      "frase": "É o motor dos comandos do estúdio",
+      "tamanho": "190 MB",
+      "tamanho_mb": 190,
+      "consequencia": "o estúdio não funciona. Esse é obrigatório",
+      "obrigatorio": true,
+      "pronto": "Pronto: Node instalado. ({{i}} de {{n}})"
+    },
+    "pacotes": {
+      "nome": "Peças do estúdio",
+      "artigo": "as",
+      "frase": "É o motor que transforma uma cena animada em vídeo",
+      "tamanho": "250 MB",
+      "tamanho_mb": 250,
+      "consequencia": "o estúdio não confere as apresentações. Esse é obrigatório",
+      "obrigatorio": true,
+      "pronto": "Pronto: peças do estúdio instaladas. ({{i}} de {{n}})"
+    },
+    "navegador": {
+      "nome": "Navegador escondido",
+      "artigo": "o",
+      "frase": "Tira as fotos de cada tela e faz o PDF. Não mexe no seu Chrome",
+      "tamanho": "250 MB",
+      "tamanho_mb": 250,
+      "consequencia": "não consigo conferir as telas nem fazer o PDF. Esse é obrigatório",
+      "obrigatorio": true,
+      "pronto": "Pronto: navegador escondido instalado. ({{i}} de {{n}})"
+    },
+    "ffmpeg": {
+      "nome": "FFmpeg",
+      "artigo": "o",
+      "frase": "Só serve para transformar uma cena animada em vídeo",
+      "tamanho": "150 MB",
+      "tamanho_mb": 150,
+      "consequencia": "não consigo transformar cena animada em vídeo. O resto funciona",
+      "obrigatorio": false,
+      "pronto": "Pronto: FFmpeg instalado. ({{i}} de {{n}})"
+    }
+  },
+  "sucesso": {
+    "INSTALADO": "O passo terminou agora. Mostre o \"pronto\" do item.",
+    "JA_PRONTO": "Já estava instalado. Mostre o \"pronto\" do item, sem dizer que instalou de novo."
+  },
+  "erros": {
+    "POUCO_ESPACO": {
+      "texto": "Seu computador está com pouco espaço: {{livre_gb}} GB livres. Preciso de {{precisa_gb}} GB. Dá para liberar apagando arquivos antigos ou esvaziando a Lixeira.",
+      "opcoes": [
+        "Já liberei ★",
+        "Me ajude a achar o que apagar"
+      ],
+      "acao_automatica": "nenhuma",
+      "depois": "\"Já liberei\": rode \"checar\" de novo. \"Me ajude\": mostre onde costuma ter coisa grande (Downloads, vídeos antigos, Lixeira). Nunca apague nada sozinho."
+    },
+    "SEM_INTERNET": {
+      "texto": "Não consegui falar com a internet. Confira se o Wi-Fi está ligado.",
+      "opcoes": [
+        "Já liguei, tente de novo ★"
+      ],
+      "acao_automatica": "nenhuma",
+      "depois": "No Codex, antes de mostrar este texto, rode o mesmo comando mais uma vez pedindo internet (texto CODEX-INTERNET)."
+    },
+    "INTERNET_BLOQUEADA_PELA_CAIXA": {
+      "texto": "O {{agente}} está protegendo o computador e não me deixou usar a internet. Vou pedir licença para usar a internet. Quando a caixinha aparecer, pode aprovar.",
+      "opcoes": [],
+      "acao_automatica": "pedir_internet",
+      "depois": "Rode o mesmo comando de novo pedindo internet (no Codex: com acesso à rede, fora da área protegida). Não fale do Wi-Fi."
+    },
+    "DOWNLOAD_FALHOU": {
+      "texto": "Não consegui baixar o {{nome}}. Às vezes a internet oscila.",
+      "opcoes": [
+        "Tentar de novo ★",
+        "Tentar mais tarde"
+      ],
+      "acao_automatica": "tentar_de_novo"
+    },
+    "ARQUIVO_DIFERENTE": {
+      "texto": "O {{nome}} chegou diferente do esperado. Por segurança, não instalei. Vou baixar de novo.",
+      "opcoes": [],
+      "acao_automatica": "tentar_de_novo"
+    },
+    "ANTIVIRUS_BLOQUEOU": {
+      "texto": "O antivírus do computador segurou o {{nome}}. Isso acontece com programas novos. Abra a Segurança do Windows, vá em \"Proteção contra vírus\", depois \"Histórico de proteção\", e permita o arquivo {{arquivo}}.",
+      "opcoes": [
+        "Já permiti ★",
+        "Seguir sem"
+      ],
+      "acao_automatica": "nenhuma"
+    },
+    "MAC_BLOQUEOU": {
+      "texto": "O Mac não deixou abrir o {{nome}}. Vou tirar a trava de \"baixado da internet\" e tentar de novo.",
+      "opcoes": [],
+      "acao_automatica": "tentar_de_novo"
+    },
+    "AREA_PROTEGIDA": {
+      "texto": "O {{nome}} não abre dentro da área protegida do Codex. Vou pedir para rodar esse passo fora dela. Pode aprovar.",
+      "opcoes": [],
+      "acao_automatica": "tentar_de_novo",
+      "depois": "Rode o passo de novo com sandbox_permissions \"require_escalated\" no próprio comando."
+    },
+    "PACOTES_FALHOU": {
+      "texto": "As peças do estúdio não terminaram de instalar. Às vezes a internet oscila. Vou tentar de novo.",
+      "opcoes": [],
+      "acao_automatica": "tentar_de_novo",
+      "depois": "Se falhar de novo, rode a skill consertar."
+    },
+    "NAVEGADOR_FALHOU": {
+      "texto": "O navegador escondido que fotografa as telas não ficou pronto. Vou tentar de novo.",
+      "opcoes": [],
+      "acao_automatica": "tentar_de_novo"
+    },
+    "FFMPEG_INCOMPLETO": {
+      "texto": "O FFmpeg veio sem uma peça de que eu preciso. As apresentações funcionam; só a cena em vídeo fica de fora.",
+      "opcoes": [
+        "Tentar de novo ★",
+        "Seguir sem"
+      ],
+      "acao_automatica": "nenhuma"
+    },
+    "SISTEMA_ANTIGO": {
+      "texto": "Este computador tem um sistema muito antigo ({{versao}}). O estúdio precisa de {{minimo}} ou mais novo.",
+      "opcoes": [
+        "Entendi"
+      ],
+      "acao_automatica": "nenhuma",
+      "depois": "Pare a instalação. No Windows ARM, o mínimo é o Windows 11; o campo \"minimo\" já vem certo."
+    },
+    "SISTEMA_NAO_SUPORTADO": {
+      "texto": "Este estúdio funciona no Mac e no Windows. Se o seu computador é Windows, abra o programa pelo PowerShell, não pelo Ubuntu.",
+      "opcoes": [],
+      "depois": "Pare a instalação aqui."
+    },
+    "PASTA_NA_NUVEM": {
+      "texto": "A pasta do estúdio ficou dentro do {{nuvem}}. Isso deixa tudo lento e pode quebrar. Posso mudar para {{caminho}}?",
+      "opcoes": [
+        "Pode mudar ★"
+      ],
+      "acao_automatica": "nenhuma",
+      "depois": "Rode a ação \"mudar-pasta\". Depois use o caminho do campo \"para\" e rode \"checar\" de novo."
+    },
+    "NOME_COM_ACENTO": {
+      "texto": "O nome do seu usuário no Windows tem acento ou espaço. Alguns programas se perdem com isso. Vou guardar o estúdio em C:\\ViewEstudio.",
+      "opcoes": [
+        "Pode ★"
+      ],
+      "acao_automatica": "nenhuma",
+      "depois": "Rode a ação \"mudar-pasta\". Depois use o caminho do campo \"para\" e rode \"checar\" de novo."
+    },
+    "POUCA_MEMORIA": {
+      "texto": "Seu computador tem {{memoria_gb}} GB de memória. Funciona, mas a cena em vídeo pode demorar mais.",
+      "opcoes": [],
+      "acao_automatica": "so_avisar"
+    },
+    "ARQUIVO_EM_USO": {
+      "texto": "Um arquivo está aberto em outro programa. Feche os programas abertos e me diga \"pronto\".",
+      "opcoes": [
+        "Pronto ★"
+      ],
+      "acao_automatica": "nenhuma"
+    },
+    "PERMISSAO_NEGADA": {
+      "texto": "O computador não deixou eu gravar em {{pasta}}. Feche os programas que possam estar usando essa pasta e me diga \"pronto\".",
+      "opcoes": [
+        "Pronto ★"
+      ],
+      "acao_automatica": "nenhuma",
+      "depois": "Depois de \"pronto\", rode o mesmo passo de novo. Se falhar de novo, rode a skill consertar."
+    },
+    "COMANDO_RECUSADO": {
+      "texto": "Você não aprovou a caixinha. Sem problema: sem esse passo, {{consequencia}}. Quer tentar de novo?",
+      "opcoes": [
+        "Tentar de novo ★",
+        "Pular"
+      ],
+      "acao_automatica": "nenhuma",
+      "depois": "Use quando a pessoa negar a caixinha do Claude Code ou do Codex. O instalador não gera este código."
+    },
+    "DESCONHECIDO": {
+      "texto": "Algo deu errado no passo {{nome}} e eu não entendi o motivo. Vou tentar de novo uma vez. Se não der, eu te digo como seguir.",
+      "opcoes": [],
+      "acao_automatica": "tentar_de_novo",
+      "depois": "Se falhar de novo, rode a skill consertar."
+    },
+    "FALTA_PASSO_ANTERIOR": {
+      "texto": "Antes disso eu preciso instalar o {{falta}}. Vou fazer agora.",
+      "opcoes": [],
+      "acao_automatica": "rodar_passo_que_falta",
+      "depois": "Rode \"passo <dados.falta>\" com o aviso do item e depois repita o passo que tinha parado."
+    },
+    "FALTA_INSTALAR": {
+      "texto": "Ainda falta instalar: {{nome}}. Vou instalar agora.",
+      "opcoes": [
+        "Instalar ★",
+        "Agora não"
+      ],
+      "acao_automatica": "nenhuma",
+      "depois": "Rode \"passo <passo do item>\" com o aviso ou a pergunta do item."
+    },
+    "PASTA_DESTINO_EXISTE": {
+      "texto": "Já existe uma pasta do estúdio em {{pasta}}. Para não misturar nada, não mexi em nenhuma das duas. Quer que eu use a que já está lá?",
+      "opcoes": [
+        "Usar a que já está lá ★",
+        "Deixar como está"
+      ],
+      "acao_automatica": "nenhuma",
+      "depois": "Se a pessoa escolher a primeira, passe a usar a pasta de \"para\" e rode \"checar\" de novo. Nunca apague nenhuma das duas."
+    },
+    "ESTUDIO_NAO_INSTALADO": {
+      "texto": "O estúdio ainda não terminou de instalar. Vou terminar agora.",
+      "opcoes": [],
+      "acao_automatica": "rodar_instalar_estudio",
+      "depois": "Rode a skill instalar-estudio a partir do plano."
+    },
+    "USE_O_INSTALADOR_DO_WINDOWS": {
+      "texto": "Este computador é Windows. Vou usar o instalador do Windows.",
+      "opcoes": [],
+      "acao_automatica": "tentar_de_novo",
+      "depois": "Rode o mesmo pedido com: powershell.exe -NoProfile -ExecutionPolicy Bypass -File instalar/instalar.ps1 ... (barra normal). Não mostre este texto se der certo."
+    },
+    "PASSO_DESCONHECIDO": {
+      "texto": "Algo deu errado do meu lado. Vou conferir e tentar de novo.",
+      "opcoes": [],
+      "acao_automatica": "nenhuma",
+      "depois": "O id do passo estava errado. A lista é: pasta, node, pacotes, navegador, ffmpeg."
+    },
+    "ACAO_DESCONHECIDA": {
+      "texto": "Algo deu errado do meu lado. Vou conferir e tentar de novo.",
+      "opcoes": [],
+      "acao_automatica": "nenhuma",
+      "depois": "A ação estava errada. Confira a lista em dados.acoes."
+    }
+  }
+}

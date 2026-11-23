@@ -1,0 +1,33 @@
+<!doctype html>
+<!-- Tela 02 · um número que sustenta a tese. Exemplo do molde (dados fictícios).
+     Todo número na tela precisa de fonte no brief.md; a legenda da fonte fica na própria tela. -->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>O número</title>
+<style>:root{--cor-fundo:#E4E6EE;--cor-tinta:#1C1733;--cor-apoio:#5D5975;--cor-destaque:#B8691C;--cor-noite:#151027;--cor-luz:#FFB86E;--cor-luz-alta:#FFE2B8;--fonte-titulo:Georgia,serif;--fonte-texto:system-ui,sans-serif;--palco-fundo:#07050F}</style>
+<link rel="stylesheet" href="../assets/marca/tokens.css">
+<link rel="stylesheet" href="../assets/vendor/palco/tela.css">
+<style>
+.palco-tela{background:linear-gradient(100deg,var(--cor-fundo) 0%,var(--cor-fundo) 55%,color-mix(in srgb,var(--cor-fundo) 82%,var(--cor-luz)) 100%)}
+.numero{position:absolute;left:110px;top:120px;font-family:var(--fonte-titulo);font-weight:600;font-size:520px;line-height:.86;
+  letter-spacing:-.045em;color:var(--cor-tinta);font-variant-numeric:lining-nums;font-variation-settings:"opsz" 144,"SOFT" 30}
+.leitura{position:absolute;left:130px;top:610px;width:820px;font-size:44px;line-height:1.25;color:var(--cor-tinta)}
+.virada{position:absolute;left:1120px;top:300px;width:660px;font-family:var(--fonte-titulo);font-size:68px;line-height:1.08;
+  font-weight:380;color:var(--cor-tinta);font-variation-settings:"opsz" 96,"SOFT" 100}
+.virada b{font-weight:380;color:var(--cor-destaque)}
+.fonte{position:absolute;left:130px;bottom:80px;font-size:20px;color:var(--cor-apoio)}
+</style>
+</head>
+<body>
+<div class="palco-tela">
+  <div class="numero" data-beat="0" data-entra="conta" data-valor="38" data-depois="%" data-recua="2">38%</div>
+  <p class="leitura" data-beat="1">das vendas do dia acontecem antes das 8 horas, quando só nós estamos abertos no bairro.</p>
+  <p class="virada" data-beat="2" data-entra="palavras">A manhã já é nossa. O próximo passo é levar essa manhã para outros dois bairros.</p>
+  <p class="fonte" data-beat="1" data-entra="surge" data-atraso="0.5">Fonte: caixa da loja, janeiro a junho de 2026 (dados de exemplo)</p>
+</div>
+<script src="../assets/vendor/gsap/gsap.min.js"></script>
+<script src="../assets/vendor/palco/cena.js"></script>
+</body>
+</html>

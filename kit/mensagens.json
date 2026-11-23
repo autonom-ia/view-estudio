@@ -1,0 +1,230 @@
+{
+  "_leia": {
+    "texto": "Cada código que um comando devolve tem aqui o texto para a pessoa e a ação para o assistente.",
+    "acao": "Diga o texto com as suas palavras. Siga a ação. Nunca mostre o JSON cru para a pessoa."
+  },
+  "_tipos_do_checar": {
+    "texto": "Tipos de achado em dados.vermelhos (RED, reprova) e dados.amarelos (WARN, avisa) do checar.",
+    "acao": "RED: select-nativo, endereco-externo (CDN ou link de fora carregado pela tela), arquivo-quebrado, fonte-quebrada, fonte-nao-declarada, vendor-ausente, palco-ausente, palco-preso, sem-telas, tela-sem-arquivo, colisao, texto-pequeno (menor que 18 px na tela de 1920), fora-da-tela. WARN: sem-contrato, titulo-colado, texto-cortado, roteiro-ausente, roteiro-descasado, roteiro-invalido, tela-sem-numero. Corrija pela causa (layout, tamanho, arquivo) e rode checar de novo."
+  },
+  "OK": {
+    "texto": "Pronto.",
+    "acao": "Siga para o próximo passo."
+  },
+  "DESCONHECIDO": {
+    "texto": "Algo deu errado aqui dentro. Vou olhar o detalhe.",
+    "acao": "Leia dados.detalhe. Se for defeito do kit, diga à pessoa que achou um erro do estúdio e mostre o comando que falhou. Não tente contornar editando o kit."
+  },
+  "COMANDO_DESCONHECIDO": {
+    "texto": "Esse comando não existe no estúdio.",
+    "acao": "Veja dados.disponiveis e use um deles."
+  },
+  "NODE_ANTIGO": {
+    "texto": "O Node deste computador é antigo demais para o estúdio.",
+    "acao": "Rode a skill instalar-estudio: o instalador põe o Node certo dentro de .ferramentas/."
+  },
+  "ESTUDIO_NAO_INSTALADO": {
+    "texto": "O estúdio ainda não terminou de instalar.",
+    "acao": "Rode a skill instalar-estudio."
+  },
+  "ARGUMENTO_FALTANDO": {
+    "texto": "Faltou uma informação no comando. Vou completar.",
+    "acao": "Veja dados.argumento e rode o comando de novo com ele."
+  },
+  "ARGUMENTO_INVALIDO": {
+    "texto": "Passei uma informação errada no comando. Vou corrigir.",
+    "acao": "Veja dados.argumento, dados.valor e dados.opcoes e rode de novo."
+  },
+  "NOME_INVALIDO": {
+    "texto": "O nome precisa ser só letras minúsculas, números e hífen.",
+    "acao": "Use dados.sugestao (ou outro nome no mesmo formato) e rode de novo. Não pergunte à pessoa só por isso."
+  },
+  "ARQUIVO_NAO_ACHADO": {
+    "texto": "Falta um arquivo para seguir.",
+    "acao": "Veja dados.arquivo. Se é um arquivo de trabalho (brief, roteiro, tela), escreva-o; se é do kit, rode o passo anterior."
+  },
+  "ARQUIVO_INVALIDO": {
+    "texto": "Um arquivo de trabalho ficou com defeito. Vou consertar.",
+    "acao": "Veja dados.arquivo e dados.detalhe e reescreva o arquivo no formato certo."
+  },
+  "CHROME_NAO_ACHADO": {
+    "texto": "Não achei um navegador para medir e fotografar as telas.",
+    "acao": "Peça para a pessoa instalar o Google Chrome ou o Microsoft Edge, ou rode a skill instalar-estudio (ela baixa um navegador só para o estúdio). Para forçar um caminho, use a variável ESTUDIO_CHROME."
+  },
+  "CHROME_NAO_ABRIU": {
+    "texto": "O navegador não abriu aqui dentro.",
+    "acao": "Rode o mesmo comando fora da área protegida do assistente (no Claude Code, sem sandbox só neste comando; no Codex, com aprovação de acesso completo). Se continuar, rode ./estudio verificar."
+  },
+  "APRESENTACAO_NAO_ACHADA": {
+    "texto": "Não achei essa apresentação.",
+    "acao": "Veja dados.pasta. Liste apresentacoes/ e use o nome certo, ou crie com ./estudio nova <nome>."
+  },
+  "APRESENTACAO_JA_EXISTE": {
+    "texto": "Já existe uma apresentação com esse nome.",
+    "acao": "Pergunte se a pessoa quer continuar a existente ou começar outra com um nome novo. Nunca apague a existente."
+  },
+  "APRESENTACAO_CRIADA": {
+    "texto": "Criei a pasta da apresentação com o molde de três telas.",
+    "acao": "Escreva o brief.md com a pessoa e peça aprovação antes de desenhar. As três telas do molde são exemplo: troque o conteúdo."
+  },
+  "MARCA_DE_EXEMPLO": {
+    "texto": "Usei a marca de exemplo, porque a sua ainda não está em minha-marca/.",
+    "acao": "Ofereça a skill minha-marca. Depois de criar minha-marca/tokens.css, copie a pasta minha-marca/ para deck/assets/marca/."
+  },
+  "DECK_SEM_INDEX": {
+    "texto": "A apresentação está sem o arquivo principal do deck.",
+    "acao": "Veja dados.arquivo. Recrie deck/index.html a partir de kit/molde/deck/index.html."
+  },
+  "DECK_SEM_TELAS": {
+    "texto": "O deck não lista nenhuma tela.",
+    "acao": "Em deck/index.html, ponha uma <section class=\"slide\"> com <iframe data-src=\"slides/sNN-nome.html\"> por tela."
+  },
+  "CHECAGEM_OK": {
+    "texto": "Conferi todas as telas, beat por beat: nada fora do lugar.",
+    "acao": "Siga para os prints e leia cada um."
+  },
+  "CHECAGEM_COM_AVISOS": {
+    "texto": "Conferi as telas: nada reprova, mas há avisos.",
+    "acao": "Leia dados.amarelos. Corrija o que for de verdade (roteiro descasado, título colado) antes de seguir."
+  },
+  "CHECAGEM_REPROVADA": {
+    "texto": "A conferência achou problemas nas telas. Vou corrigir antes de mostrar.",
+    "acao": "Leia dados.vermelhos (tela, beat, tipo, detalhe). Corrija pela causa e rode checar de novo. Não mostre à pessoa um deck reprovado."
+  },
+  "PRINTS_PRONTOS": {
+    "texto": "Fotografei todas as telas, em cada beat.",
+    "acao": "Abra e olhe cada arquivo de dados.fotos, um por um, antes de dizer que está bom."
+  },
+  "TELA_LISA": {
+    "texto": "Um quadro saiu quase todo de uma cor só.",
+    "acao": "Abra dados.arquivo. Se não foi de propósito, algo não carregou (fundo, foto, fonte): conserte e fotografe de novo."
+  },
+  "PDF_PRONTO": {
+    "texto": "O PDF está pronto, uma página por tela.",
+    "acao": "Abra o PDF e confira a primeira e a última página."
+  },
+  "PDF_REPROVADO": {
+    "texto": "Não consegui montar o PDF porque alguma tela não ficou pronta.",
+    "acao": "Leia dados.erros (tela e motivo), corrija e rode pdf de novo."
+  },
+  "TELEPROMPTER_PRONTO": {
+    "texto": "O teleprompter está pronto e acompanha o deck sozinho.",
+    "acao": "Para usar, rode ./estudio abrir <nome>: o deck e o teleprompter abrem pelo mesmo endereço."
+  },
+  "ROTEIRO_INVALIDO": {
+    "texto": "O roteiro tem um problema.",
+    "acao": "Leia dados.problemas e corrija os arquivos roteiro/SNN.json ({tela, titulo, beats:[{rotulo, fala, nota}]})."
+  },
+  "ROTEIRO_VAZIO": {
+    "texto": "Ainda não há roteiro para esta apresentação.",
+    "acao": "Escreva roteiro/SNN.json, um por tela, com um item em beats para cada beat da tela (skill roteiro-e-teleprompter)."
+  },
+  "PASTA_ABERTA": {
+    "texto": "Abri a pasta da apresentação no seu computador.",
+    "acao": "Diga onde ela fica (arquivos.pasta) e o que tem dentro que importa para a pessoa: o PDF, os prints e o deck."
+  },
+  "DECK_ABERTO": {
+    "texto": "Abri o deck no seu navegador.",
+    "acao": "Diga dados.endereco e, se houver, dados.teleprompter. Explique: setas para os lados trocam de tela, espaço ou seta para baixo avança."
+  },
+  "SERVIDOR_NAO_SUBIU": {
+    "texto": "Não consegui abrir o deck no navegador.",
+    "acao": "Rode de novo fora da área protegida do assistente. Se continuar, rode ./estudio verificar."
+  },
+  "CENA_CRIADA": {
+    "texto": "Criei a composição da cena em vídeo.",
+    "acao": "Edite o index.html da composição (dados.composicao) e depois rode ./estudio cena <nome> <composicao> para gerar o vídeo."
+  },
+  "CENA_JA_EXISTE": {
+    "texto": "Essa cena já existe.",
+    "acao": "Edite a composição existente ou crie com outro nome."
+  },
+  "CENA_NAO_ACHADA": {
+    "texto": "Não achei a composição dessa cena.",
+    "acao": "Veja dados.pasta. Crie com ./estudio cena <nome> <composicao> --criar."
+  },
+  "CENA_PRONTA": {
+    "texto": "O vídeo da cena está pronto dentro do deck.",
+    "acao": "Use o arquivo de arquivos.video numa tela com <video> (caminho relativo ../assets/<composicao>.mp4). Rode checar e prints depois."
+  },
+  "HYPERFRAMES_FALTANDO": {
+    "texto": "Falta o programa que transforma a cena em vídeo.",
+    "acao": "Rode o passo pacotes do instalador (skill instalar-estudio)."
+  },
+  "HYPERFRAMES_SO_PELA_INTERNET": {
+    "texto": "O programa de cena em vídeo não está instalado; ele será baixado na primeira cena.",
+    "acao": "Só importa para cena em vídeo. Para deixar pronto, rode o passo pacotes do instalador (skill instalar-estudio)."
+  },
+  "FFMPEG_FALTANDO": {
+    "texto": "Falta o ffmpeg, usado só para cena em vídeo.",
+    "acao": "Só importa para cena em vídeo. A skill instalar-estudio põe o ffmpeg em .ferramentas/bin."
+  },
+  "RENDER_FALHOU": {
+    "texto": "O vídeo da cena não saiu. Se já havia um vídeo dessa cena, ele ficou como estava (dados.video_anterior_mantido).",
+    "acao": "Leia dados.detalhe. Erro de composição (CDN, timeline não registrada, arquivo ausente): corrija o index.html da cena. Erro de navegador: rode fora da área protegida."
+  },
+  "ESPELHO_OK": {
+    "texto": "As instruções do Claude Code e do Codex estão iguais.",
+    "acao": "Nada a fazer."
+  },
+  "ESPELHO_GERADO": {
+    "texto": "Atualizei as cópias das instruções para o Codex e o Claude Code.",
+    "acao": "Nada a fazer."
+  },
+  "ESPELHO_DIFERENTE": {
+    "texto": "As instruções do Claude Code e do Codex estão diferentes.",
+    "acao": "Edite só as fontes (AGENTS.md e .claude/skills/) e rode ./estudio espelhar."
+  },
+  "VERSAO": {
+    "texto": "Esta é a versão do estúdio.",
+    "acao": "Diga dados.versao."
+  },
+  "ESTUDIO_PRONTO": {
+    "texto": "O estúdio está pronto para usar.",
+    "acao": "Se houver avisos, explique que só afetam a cena em vídeo."
+  },
+  "VERIFICACAO_FALHOU": {
+    "texto": "Falta uma peça para o estúdio funcionar.",
+    "acao": "Veja dados.faltando. Rode a skill instalar-estudio."
+  },
+  "JA_ATUALIZADO": {
+    "texto": "O estúdio já está na versão mais nova.",
+    "acao": "Diga dados.de."
+  },
+  "ESTUDIO_ATUALIZADO": {
+    "texto": "Atualizei o estúdio. O seu trabalho e a sua marca ficaram como estavam.",
+    "acao": "Diga de dados.de para dados.para. A versão anterior fica em dados.copia_anterior."
+  },
+  "DEPENDENCIAS_MUDARAM": {
+    "texto": "A versão nova trocou peças do estúdio (pacotes, ou a versão do Node, do navegador ou do FFmpeg). Em dados.quais: pacotes, versoes.",
+    "acao": "Rode o instalador de novo (skill instalar-estudio), passo a passo como na primeira vez, antes de continuar. Ele só refaz o que mudou."
+  },
+  "ATUALIZACAO_DOWNLOAD_FALHOU": {
+    "texto": "Não consegui baixar a versão nova.",
+    "acao": "Confira a internet e tente de novo mais tarde."
+  },
+  "ATUALIZACAO_ARQUIVO_DIFERENTE": {
+    "texto": "O arquivo da versão nova não confere com o publicado. Por segurança, não instalei.",
+    "acao": "Não contorne. Tente de novo mais tarde; se repetir, avise quem mantém o estúdio."
+  },
+  "ATUALIZACAO_ENDERECO_ESTRANHO": {
+    "texto": "Esse endereço não é o do estúdio oficial. Não vou baixar dele.",
+    "acao": "Use o endereço padrão (sem --de) ou um zip local com o .sha256 ao lado."
+  },
+  "ATUALIZACAO_ZIP_NAO_ABRIU": {
+    "texto": "Não consegui abrir o arquivo da versão nova.",
+    "acao": "Tente de novo. Se repetir, avise quem mantém o estúdio."
+  },
+  "ATUALIZACAO_FALHOU": {
+    "texto": "Não consegui trocar os arquivos do estúdio. Voltei tudo como estava.",
+    "acao": "Feche programas que estejam usando arquivos do estúdio e tente de novo."
+  },
+  "ATUALIZACAO_INCOMPLETA": {
+    "texto": "A troca parou no meio e alguns arquivos não voltaram sozinhos.",
+    "acao": "Diga à pessoa que a versão anterior está guardada em dados.copia_anterior e não apague nada. Peça ajuda a quem mantém o estúdio."
+  },
+  "ATUALIZACAO_EM_ANDAMENTO": {
+    "texto": "Já tem uma atualização do estúdio rodando agora. Não comecei outra por cima.",
+    "acao": "Espere a outra terminar (dados.pid é o processo dela) e rode atualizar de novo só se ela não tiver atualizado. Não apague a trava em .ferramentas/atualizando.trava."
+  }
+}

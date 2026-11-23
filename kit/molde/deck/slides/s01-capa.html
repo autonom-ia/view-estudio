@@ -1,0 +1,55 @@
+<!doctype html>
+<!-- Tela 01 · capa. Exemplo do molde (Café Aurora é fictício): troque o conteúdo, mantenha o andaime.
+     Andaime: tokens (com reserva inline) → tela.css → <style> da tela → markup → gsap.min.js → cena.js.
+     Beats: data-beat no elemento (ver o cabeçalho de assets/vendor/palco/cena.js). -->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Capa</title>
+<style>:root{--cor-fundo:#E4E6EE;--cor-tinta:#1C1733;--cor-apoio:#5D5975;--cor-destaque:#B8691C;--cor-noite:#151027;--cor-luz:#FFB86E;--cor-luz-alta:#FFE2B8;--fonte-titulo:Georgia,serif;--fonte-texto:system-ui,sans-serif;--palco-fundo:#07050F}</style>
+<link rel="stylesheet" href="../assets/marca/tokens.css">
+<link rel="stylesheet" href="../assets/vendor/palco/tela.css">
+<style>
+.palco-tela{background:var(--cor-noite);color:var(--cor-luz-alta)}
+/* a luz: um sol que ainda não nasceu, abaixo da borda da tela */
+.horizonte{position:absolute;left:50%;top:260px;width:2600px;height:2600px;margin-left:-1300px;border-radius:50%;
+  background:radial-gradient(closest-side,var(--cor-luz) 0%,color-mix(in srgb,var(--cor-luz) 55%,transparent) 22%,
+  color-mix(in srgb,var(--cor-luz) 12%,transparent) 48%,transparent 70%);opacity:.9}
+.ceu{position:absolute;inset:0;background:linear-gradient(180deg,var(--cor-noite) 0%,var(--cor-noite) 38%,
+  color-mix(in srgb,var(--cor-noite) 70%,var(--cor-luz)) 100%)}
+.titulo{position:absolute;left:140px;top:250px;width:1500px;font-family:var(--fonte-titulo);font-weight:340;
+  font-size:150px;line-height:.98;letter-spacing:-.02em;font-variation-settings:"opsz" 144,"SOFT" 100;color:var(--cor-sobre-noite,var(--cor-luz-alta))}
+.linha{position:absolute;left:144px;top:648px;width:300px;height:3px;background:var(--cor-luz)}
+.quem{position:absolute;left:144px;top:690px;width:900px;font-size:30px;line-height:1.4;color:color-mix(in srgb,var(--cor-sobre-noite,var(--cor-luz-alta)) 78%,var(--cor-noite))}
+.quando{position:absolute;right:140px;bottom:96px;font-size:26px;color:color-mix(in srgb,var(--cor-sobre-noite,var(--cor-luz-alta)) 60%,var(--cor-noite));
+  font-variant-numeric:oldstyle-nums}
+.dica{color:var(--cor-sobre-noite,var(--cor-luz-alta))}
+</style>
+</head>
+<body>
+<div class="palco-tela">
+  <div class="ceu"></div>
+  <div class="horizonte" id="horizonte"></div>
+
+  <h1 class="titulo" data-beat="0" data-entra="palavras">Um café que abre antes da cidade acordar</h1>
+  <div class="linha" data-beat="1" data-entra="risca"></div>
+  <p class="quem" data-beat="1" data-atraso="0.25">Plano de expansão do Café Aurora para 2027, apresentado por Marina Duarte</p>
+  <p class="quando" data-beat="1" data-entra="surge" data-atraso="0.6">março de 2027</p>
+
+  <div class="dica" data-controle>espaço avança</div>
+</div>
+<script>
+/* movimento autoral desta tela: o sol sobe um pouco a cada beat (e o assentar repete sem animar) */
+window.CENA = {
+  beats: {
+    0: (tl) => tl.fromTo('#horizonte', { y: 140 }, { y: 0, duration: 2.4, ease: 'power2.out' }, 0),
+    1: (tl) => tl.to('#horizonte', { y: -90, duration: 1.6, ease: 'power2.inOut' }, 0),
+  },
+  assentar: (n, gsap) => gsap.set('#horizonte', { y: n < 0 ? 140 : n === 0 ? 0 : -90 }),
+};
+</script>
+<script src="../assets/vendor/gsap/gsap.min.js"></script>
+<script src="../assets/vendor/palco/cena.js"></script>
+</body>
+</html>

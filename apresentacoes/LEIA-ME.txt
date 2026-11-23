@@ -1,0 +1,15 @@
+APRESENTACOES
+
+Esta pasta e sua. Cada apresentacao ganha uma pasta aqui dentro:
+
+  brief.md         a promessa, para quem e a sequencia de telas
+  andamento.md     em que etapa a apresentacao esta
+  roteiro/         o que falar em cada passo de cada tela
+  deck/            a apresentacao (abra o index.html) e o teleprompter
+  prints/          a foto de cada tela, usada na conferencia
+  revisao/         as notas dos revisores
+  <nome>.pdf       o PDF para enviar
+
+Para comecar, peca ao assistente: "quero fazer uma apresentacao".
+
+A atualizacao do estudio nunca mexe nesta pasta.

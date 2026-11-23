@@ -1,0 +1,52 @@
+# Testes do kit (node --test) no Linux, no Mac e no Windows, com a conferencia das copias das
+# instrucoes (espelhar --conferir) e da sintaxe dos instaladores. Os testes que precisam de
+# navegador usam o Chrome que ja vem nas maquinas do GitHub; sem Chrome, eles sao pulados.
+name: testes
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: testes-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  testes:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          # igual a NODE_VERSAO de instalar/versoes.env (o teste codigos-e-regras confere)
+          node-version: '24.22.3'
+      - name: Testes do kit
+        run: npm test
+      - name: Instrucoes iguais nas duas copias
+        run: node kit/scripts/estudio.mjs espelhar --conferir
+      - name: Sintaxe do instalador do Mac
+        if: runner.os != 'Windows'
+        run: |
+          bash -n instalar/instalar.sh
+          bash -n instalar/ambiente.sh
+          bash -n instalar/verificar.sh
+          bash -n estudio
+      - name: Sintaxe do instalador do Windows
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          $falhas = 0
+          foreach ($f in @('instalar/instalar.ps1', 'instalar/ambiente.ps1', 'instalar/verificar.ps1')) {
+            $erros = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $f).Path, [ref]$null, [ref]$erros)
+            if ($erros.Count -gt 0) { Write-Output "$f => $($erros[0].Message)"; $falhas++ }
+          }
+          if ($falhas -gt 0) { exit 1 }
+          Write-Output 'sintaxe ok'

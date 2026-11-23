@@ -1,0 +1,10 @@
+{
+  "tela": 3,
+  "titulo": "Os três movimentos",
+  "beats": [
+    { "rotulo": "a pergunta", "fala": "Como a manhã chega a mais dois bairros sem a gente perder o que faz a primeira casa dar certo?" },
+    { "rotulo": "março", "fala": "Primeiro, em março, a torra passa a ser nossa. O café sai igual nas três casas e a gente para de depender do fornecedor." },
+    { "rotulo": "junho", "fala": "Em junho abre a segunda casa, perto da estação. Quem pega o trem das seis e cinquenta já é nosso cliente." },
+    { "rotulo": "outubro", "fala": "E em outubro, a terceira, no polo de escritórios. Ela só abre depois que a segunda pagar o próprio aluguel.", "nota": "Fechar olhando para a sala, sem pressa." }
+  ]
+}

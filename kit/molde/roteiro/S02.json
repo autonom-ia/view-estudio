@@ -1,0 +1,9 @@
+{
+  "tela": 2,
+  "titulo": "O número",
+  "beats": [
+    { "rotulo": "o número", "fala": "Trinta e oito por cento.", "nota": "Pausa enquanto o número sobe." },
+    { "rotulo": "o que ele quer dizer", "fala": "Trinta e oito por cento de tudo o que a gente vende no dia acontece antes das oito. Nessa hora não tem concorrente aberto no bairro.", "nota": "Dados de exemplo: no deck de verdade, todo número vem do brief com fonte." },
+    { "rotulo": "a virada", "fala": "Então a manhã já é nossa. A pergunta deixa de ser se a manhã funciona e passa a ser onde mais ela funciona.", "nota": "Pergunta para a sala: em que bairro vocês tomariam o primeiro café do dia?" }
+  ]
+}

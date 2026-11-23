@@ -1,0 +1,52 @@
+<!doctype html>
+<!-- Tela 03 · uma sequência no tempo. Exemplo do molde (Café Aurora é fictício).
+     Os meses são a estrutura porque o conteúdo é uma linha do tempo de verdade; o que já foi dito recua. -->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Os três movimentos</title>
+<style>:root{--cor-fundo:#E4E6EE;--cor-tinta:#1C1733;--cor-apoio:#5D5975;--cor-destaque:#B8691C;--cor-noite:#151027;--cor-luz:#FFB86E;--cor-luz-alta:#FFE2B8;--fonte-titulo:Georgia,serif;--fonte-texto:system-ui,sans-serif;--palco-fundo:#07050F}</style>
+<link rel="stylesheet" href="../assets/marca/tokens.css">
+<link rel="stylesheet" href="../assets/vendor/palco/tela.css">
+<style>
+.palco-tela{background:var(--cor-noite);color:var(--cor-sobre-noite,var(--cor-luz-alta))}
+.luz{position:absolute;right:-420px;top:-380px;width:1300px;height:1300px;border-radius:50%;
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--cor-luz) 42%,transparent),transparent 72%)}
+.pergunta{position:absolute;left:140px;top:120px;width:1300px;font-family:var(--fonte-titulo);font-weight:340;font-size:84px;
+  line-height:1.02;letter-spacing:-.015em;font-variation-settings:"opsz" 144,"SOFT" 100}
+.trilho{position:absolute;left:140px;top:470px;width:1640px;height:2px;background:color-mix(in srgb,var(--cor-sobre-noite,var(--cor-luz-alta)) 30%,transparent)}
+.passo{position:absolute;top:510px;width:470px}
+.passo .mes{display:block;font-family:var(--fonte-titulo);font-size:64px;font-weight:500;color:var(--cor-luz);
+  font-variation-settings:"opsz" 96,"SOFT" 50;line-height:1}
+.passo .acao{display:block;margin-top:28px;font-size:36px;line-height:1.22;font-weight:500}
+.passo .detalhe{display:block;margin-top:18px;font-size:25px;line-height:1.45;color:color-mix(in srgb,var(--cor-sobre-noite,var(--cor-luz-alta)) 70%,var(--cor-noite))}
+.p1{left:140px}.p2{left:725px}.p3{left:1310px}
+</style>
+</head>
+<body>
+<div class="palco-tela">
+  <div class="luz"></div>
+  <h2 class="pergunta" data-beat="0" data-entra="palavras">Como a manhã chega a mais dois bairros em 2027</h2>
+  <div class="trilho" data-beat="0" data-entra="risca" data-atraso="0.5"></div>
+
+  <div class="passo p1" data-beat="1" data-recua="2">
+    <span class="mes">março</span>
+    <span class="acao">Torra própria na loja atual</span>
+    <span class="detalhe">O café sai igual nas três casas, sem depender do fornecedor.</span>
+  </div>
+  <div class="passo p2" data-beat="2" data-recua="3">
+    <span class="mes">junho</span>
+    <span class="acao">Segunda casa, perto da estação</span>
+    <span class="detalhe">Quem pega o trem das 6h50 já é cliente da primeira.</span>
+  </div>
+  <div class="passo p3" data-beat="3">
+    <span class="mes">outubro</span>
+    <span class="acao">Terceira casa, no polo de escritórios</span>
+    <span class="detalhe">Abre só depois que a segunda pagar o próprio aluguel.</span>
+  </div>
+</div>
+<script src="../assets/vendor/gsap/gsap.min.js"></script>
+<script src="../assets/vendor/palco/cena.js"></script>
+</body>
+</html>

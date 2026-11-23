@@ -1,0 +1,290 @@
+# Instala o estudio do zero numa maquina limpa (Mac e Windows) seguindo a jornada de quem usa:
+# o zip cai em Downloads (como faria o assistente ao baixar o link), o instalador poe a pasta no
+# lugar de sempre, instala tudo, confere, faz uma apresentacao de exemplo de ponta a ponta (com
+# uma cena em video de rascunho), simula a pessoa colando o link de novo com o estudio ja
+# instalado e atualiza: primeiro com uma falha forcada no meio da troca (tudo tem que voltar),
+# depois de verdade (no Windows, com um estudio.cmd diferente, que troca o arquivo que esta rodando).
+# Adaptado do teste de maquina limpa do Estudio de Reels (MIT, Autonom.ia).
+# Roda quando alguem empurra para uma branch ci/** ou release/**, ou pelo botao "Run workflow".
+name: maquina-limpa
+
+on:
+  push:
+    branches: ['ci/**', 'release/**']
+  workflow_dispatch:
+
+concurrency:
+  group: maquina-limpa-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  LINK_DO_ESTUDIO: https://github.com/autonom-ia/view-estudio/releases/latest/download/view-estudio.zip
+
+jobs:
+  windows:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, windows-11-arm]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Jornada de quem usa (Windows PowerShell 5.1)
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Continue'
+          $falhas = @()
+          # FFmpeg e opcional (so o "cena" usa). No Windows ARM, se a principal e a reserva falharem,
+          # a maquina nao fica vermelha: so a cena em video sai do teste.
+          $ehArm = '${{ matrix.os }}' -eq 'windows-11-arm'
+          $semFfmpeg = $false
+          $Z = Join-Path $env:RUNNER_TEMP 'view-estudio.zip'
+          # O zip do release tem uma pasta so, chamada view-estudio; este e igual, feito deste commit.
+          git archive --format=zip --prefix=view-estudio/ -o $Z HEAD
+          $codigo = curl.exe -sIL -o NUL -w "%{http_code}" $env:LINK_DO_ESTUDIO
+          Write-Output "link publico responde => $codigo (informativo: so existe depois do primeiro release)"
+
+          # 1. O assistente baixa e descompacta em Downloads, fora do lugar de sempre.
+          $dl = Join-Path $env:USERPROFILE 'Downloads'
+          New-Item -ItemType Directory -Force $dl | Out-Null
+          tar.exe -xf $Z -C $dl
+          Set-Location (Join-Path $dl 'view-estudio')
+          $r = powershell.exe -NoProfile -ExecutionPolicy Bypass -File instalar/instalar.ps1 mudar-pasta --agente codex | Select-Object -Last 1
+          Write-Output "mudar-pasta (de Downloads) => $r"
+          if ($r -notlike '*"codigo":"INSTALADO"*') { $falhas += 'mudar-pasta' }
+          $casa = Join-Path $env:USERPROFILE 'view-estudio'
+          if (-not (Test-Path (Join-Path $casa 'AGENTS.md'))) { $falhas += 'pasta-no-lugar' }
+
+          # 2. Instala tudo a partir do lugar de sempre.
+          Set-Location $casa
+          $inst = 'instalar/instalar.ps1'
+          $r = powershell.exe -NoProfile -ExecutionPolicy Bypass -File $inst checar --agente codex | Select-Object -Last 1
+          Write-Output "checar => $r"
+          foreach ($p in @('pasta', 'node', 'pacotes', 'navegador', 'ffmpeg')) {
+            $ultima = powershell.exe -NoProfile -ExecutionPolicy Bypass -File $inst passo $p --agente codex --modo tudo | Select-Object -Last 1
+            Write-Output "passo $p => $ultima"
+            if ($ultima -notlike '*"ok":true*') {
+              if ($p -eq 'ffmpeg' -and $ehArm) { $semFfmpeg = $true; Write-Output 'AVISO: FFmpeg (opcional) nao instalou no ARM, nem pela reserva. A cena em video fica fora deste teste.' }
+              else { $falhas += $p }
+            }
+          }
+          $v = powershell.exe -NoProfile -ExecutionPolicy Bypass -File instalar/verificar.ps1 | Select-Object -Last 1
+          Write-Output "verificar => $v"
+          if ($v -notlike '*"ok":true*') { $falhas += 'verificar' }
+          $r = powershell.exe -NoProfile -ExecutionPolicy Bypass -File $inst passo node --agente codex | Select-Object -Last 1
+          Write-Output "passo node de novo => $r"
+          if ($r -notlike '*JA_PRONTO*') { $falhas += 'ja-pronto' }
+
+          # 3. Uma apresentacao de exemplo de ponta a ponta, pelo estudio.
+          foreach ($c in @('versao', 'verificar', 'espelhar --conferir', 'nova exemplo','checar exemplo', 'prints exemplo', 'pdf exemplo', 'teleprompter exemplo')) {
+            $r = cmd.exe /d /c ".\estudio.cmd $c" | Select-Object -Last 1
+            Write-Output "estudio $c => $r"
+            if ($r -notlike '*"ok":true*') { $falhas += ('estudio ' + $c) }
+          }
+
+          # 3b. Cena em video (rascunho): o MP4 precisa existir e ter duracao maior que zero.
+          if (-not $semFfmpeg) {
+            $r = cmd.exe /d /c ".\estudio.cmd cena exemplo abertura --criar" | Select-Object -Last 1
+            Write-Output "estudio cena --criar => $r"
+            if ($r -notlike '*CENA_CRIADA*') { $falhas += 'cena-criar' }
+            $r = cmd.exe /d /c ".\estudio.cmd cena exemplo abertura --qualidade draft" | Select-Object -Last 1
+            Write-Output "estudio cena (rascunho) => $r"
+            if ($r -notlike '*CENA_PRONTA*') { $falhas += 'cena' }
+            $mp4 = Join-Path $casa 'apresentacoes\exemplo\deck\assets\abertura.mp4'
+            $probe = Join-Path $casa '.ferramentas\bin\ffprobe.exe'
+            $dur = 0.0
+            if ((Test-Path $mp4) -and (Test-Path $probe)) {
+              $texto = [string](& $probe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 $mp4)
+              [void][double]::TryParse($texto.Trim(), [System.Globalization.NumberStyles]::Float, [System.Globalization.CultureInfo]::InvariantCulture, [ref]$dur)
+            } elseif ((Test-Path $mp4) -and ((Get-Item $mp4).Length -gt 0)) { $dur = 1.0 }
+            Write-Output "duracao do MP4 => $dur"
+            if ($dur -le 0) { $falhas += 'cena-mp4' }
+          }
+
+          # 4. A pessoa fecha e cola o link de novo: baixa outra copia, e o estudio instalado continua.
+          $denovo = Join-Path $dl 'de-novo'
+          New-Item -ItemType Directory -Force $denovo | Out-Null
+          tar.exe -xf $Z -C $denovo
+          Set-Location (Join-Path $denovo 'view-estudio')
+          $r = powershell.exe -NoProfile -ExecutionPolicy Bypass -File instalar/instalar.ps1 mudar-pasta --agente codex | Select-Object -Last 1
+          Write-Output "mudar-pasta (colou de novo) => $r"
+          if ($r -notlike '*"codigo":"PASTA_DESTINO_EXISTE"*') { $falhas += 'colar-de-novo' }
+          Set-Location $casa
+          $r = powershell.exe -NoProfile -ExecutionPolicy Bypass -File $inst plano --agente codex | Select-Object -Last 1
+          Write-Output "plano (depois de colar de novo) => $r"
+
+          # 5. Atualizar: finge que o instalado e mais antigo e atualiza a partir do zip deste commit.
+          (Get-FileHash -Algorithm SHA256 $Z).Hash.ToLower() + '  view-estudio.zip' | Set-Content -Encoding ascii ($Z + '.sha256')
+          Set-Content -NoNewline -Encoding ascii (Join-Path $casa 'VERSAO') '0.0.1'
+          # 5a. Falha no meio da troca (README aberto com trava): tudo volta e nenhuma copia fica.
+          $trava = [System.IO.File]::Open((Join-Path $casa 'README.md'), 'Open', 'Read', 'None')
+          $r = cmd.exe /d /c ".\estudio.cmd atualizar --de ""$Z""" | Select-Object -Last 1
+          $trava.Close()
+          Write-Output "atualizar (com README travado) => $r"
+          if ($r -notlike '*ATUALIZACAO_FALHOU*') { $falhas += 'atualizar-falha' }
+          if ((Get-Content -Raw (Join-Path $casa 'VERSAO')).Trim() -ne '0.0.1') { $falhas += 'atualizar-falha-versao' }
+          if (@(Get-ChildItem (Join-Path $casa '.ferramentas') -Filter 'versao-anterior-*' -Directory -ErrorAction SilentlyContinue).Count -ne 0) { $falhas += 'atualizar-falha-copia' }
+          # 5b. O zip novo traz um estudio.cmd diferente (uma linha a mais no topo): o "atualizar"
+          # troca o proprio .cmd que esta rodando, e o cmd.exe nao pode reler o arquivo novo pelo meio.
+          $mod = Join-Path $env:RUNNER_TEMP 'zip-mudado'
+          New-Item -ItemType Directory -Force $mod | Out-Null
+          tar.exe -xf $Z -C $mod
+          $cmdNovo = Join-Path $mod 'view-estudio\estudio.cmd'
+          $linhaNova = '@rem estudio.cmd de teste: diferente do instalado, para o atualizar trocar o arquivo que esta rodando'
+          [System.IO.File]::WriteAllText($cmdNovo, $linhaNova + "`r`n" + [System.IO.File]::ReadAllText($cmdNovo), (New-Object System.Text.ASCIIEncoding))
+          $Z2 = Join-Path $env:RUNNER_TEMP 'view-estudio-mudado.zip'
+          tar.exe -a -c -f $Z2 -C $mod view-estudio
+          (Get-FileHash -Algorithm SHA256 $Z2).Hash.ToLower() + '  view-estudio-mudado.zip' | Set-Content -Encoding ascii ($Z2 + '.sha256')
+          $saida = @(cmd.exe /d /c ".\estudio.cmd atualizar --de ""$Z2""")
+          $codigoSaida = $LASTEXITCODE
+          $r = $saida | Select-Object -Last 1
+          Write-Output "atualizar (de uma versao antiga, trocando o estudio.cmd) => $r (saida $codigoSaida)"
+          if ($r -notlike '*ESTUDIO_ATUALIZADO*') { $falhas += 'atualizar' }
+          if ($codigoSaida -ne 0) { $falhas += 'atualizar-codigo-de-saida' }
+          if (@($saida | Where-Object { $_ -like '{"ok":*' }).Count -ne 1) { $falhas += 'atualizar-rodou-duas-vezes' }
+          if (-not ([System.IO.File]::ReadAllText((Join-Path $casa 'estudio.cmd'))).StartsWith($linhaNova)) { $falhas += 'atualizar-nao-trocou-cmd' }
+          $r = cmd.exe /d /c ".\estudio.cmd atualizar --de ""$Z2""" | Select-Object -Last 1
+          Write-Output "atualizar (de novo) => $r"
+          if ($r -notlike '*JA_ATUALIZADO*') { $falhas += 'ja-atualizado' }
+          if (-not (Test-Path (Join-Path $casa 'apresentacoes\exemplo\deck\index.html'))) { $falhas += 'atualizar-preservou' }
+
+          # 6. Desinstalar sem confirmar so diz o que apagaria.
+          $r = powershell.exe -NoProfile -ExecutionPolicy Bypass -File $inst desinstalar | Select-Object -Last 1
+          Write-Output "desinstalar (sem confirmar) => $r"
+          if ($r -notlike '*"confirmado":false*') { $falhas += 'desinstalar' }
+
+          if ($falhas.Count -gt 0) { Write-Output "FALHARAM: $($falhas -join ', ')"; exit 1 }
+          Write-Output "TUDO OK"
+      - name: Juntar logs
+        if: always()
+        shell: powershell
+        run: |
+          $l = Join-Path $env:USERPROFILE 'view-estudio\.ferramentas\logs'
+          if (Test-Path $l) { Copy-Item -Recurse $l (Join-Path $env:GITHUB_WORKSPACE 'logs-estudio') }
+      - name: Guardar logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: logs-${{ matrix.os }}
+          path: logs-estudio
+          if-no-files-found: ignore
+
+  mac:
+    strategy:
+      fail-fast: false
+      matrix:
+        # macos-15-intel: Mac Intel.
+        os: [macos-latest, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Jornada de quem usa (Terminal)
+        # Sem -e: um passo que falha e anotado e o teste segue, para mostrar tudo de uma vez.
+        shell: bash --noprofile --norc {0}
+        run: |
+          falhas=""
+          Z="$RUNNER_TEMP/view-estudio.zip"
+          # O zip do release tem uma pasta so, chamada view-estudio; este e igual, feito deste commit.
+          git archive --format=zip --prefix=view-estudio/ -o "$Z" HEAD
+          codigo="$(curl -sIL -o /dev/null -w '%{http_code}' "$LINK_DO_ESTUDIO")"
+          echo "link publico responde => $codigo (informativo: so existe depois do primeiro release)"
+
+          # 1. O assistente baixa e descompacta em Downloads, fora do lugar de sempre.
+          mkdir -p "$HOME/Downloads"
+          cd "$HOME/Downloads" && unzip -q "$Z"
+          cd "$HOME/Downloads/view-estudio"
+          r="$(bash instalar/instalar.sh mudar-pasta --agente codex | tail -1)"
+          echo "mudar-pasta (de Downloads) => $r"
+          case "$r" in *'"codigo":"INSTALADO"'*) ;; *) falhas="$falhas mudar-pasta" ;; esac
+          [ -f "$HOME/view-estudio/AGENTS.md" ] || falhas="$falhas pasta-no-lugar"
+          [ -e "$HOME/Downloads/view-estudio" ] && falhas="$falhas sobrou-em-downloads"
+
+          # 2. Instala tudo a partir do lugar de sempre.
+          cd "$HOME/view-estudio"
+          echo "checar => $(bash instalar/instalar.sh checar --agente codex | tail -1)"
+          for p in pasta node pacotes navegador ffmpeg; do
+            ultima="$(bash instalar/instalar.sh passo "$p" --agente codex --modo tudo | tail -1)"
+            echo "passo $p => $ultima"
+            case "$ultima" in *'"ok":true'*) ;; *) falhas="$falhas $p" ;; esac
+          done
+          v="$(bash instalar/verificar.sh | tail -1)"
+          echo "verificar => $v"
+          case "$v" in *'"ok":true'*) ;; *) falhas="$falhas verificar" ;; esac
+          r="$(bash instalar/instalar.sh passo node --agente codex | tail -1)"
+          echo "passo node de novo => $r"
+          case "$r" in *JA_PRONTO*) ;; *) falhas="$falhas ja-pronto" ;; esac
+
+          # 3. Uma apresentacao de exemplo de ponta a ponta, pelo estudio.
+          for c in versao verificar "espelhar --conferir" "nova exemplo" "checar exemplo" "prints exemplo" "pdf exemplo" "teleprompter exemplo"; do
+            # shellcheck disable=SC2086 # o comando tem mais de uma palavra de proposito
+            r="$(./estudio $c | tail -1)"
+            echo "estudio $c => $r"
+            case "$r" in *'"ok":true'*) ;; *) falhas="$falhas estudio-$c" ;; esac
+          done
+
+          # 3b. Cena em video (rascunho): o MP4 precisa existir e ter duracao maior que zero.
+          r="$(./estudio cena exemplo abertura --criar | tail -1)"
+          echo "estudio cena --criar => $r"
+          case "$r" in *CENA_CRIADA*) ;; *) falhas="$falhas cena-criar" ;; esac
+          r="$(./estudio cena exemplo abertura --qualidade draft | tail -1)"
+          echo "estudio cena (rascunho) => $r"
+          case "$r" in *CENA_PRONTA*) ;; *) falhas="$falhas cena" ;; esac
+          mp4="apresentacoes/exemplo/deck/assets/abertura.mp4"
+          dur=0
+          if [ -f "$mp4" ] && [ -x .ferramentas/bin/ffprobe ]; then
+            dur="$(.ferramentas/bin/ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$mp4")"
+          elif [ -s "$mp4" ]; then
+            dur=1
+          fi
+          echo "duracao do MP4 => $dur"
+          awk -v d="$dur" 'BEGIN { exit !(d + 0 > 0) }' || falhas="$falhas cena-mp4"
+
+          # 4. A pessoa fecha e cola o link de novo: baixa outra copia, e o estudio instalado continua.
+          mkdir -p "$HOME/Downloads/de-novo" && cd "$HOME/Downloads/de-novo" && unzip -q "$Z"
+          cd "$HOME/Downloads/de-novo/view-estudio"
+          r="$(bash instalar/instalar.sh mudar-pasta --agente codex | tail -1)"
+          echo "mudar-pasta (colou de novo) => $r"
+          case "$r" in *'"codigo":"PASTA_DESTINO_EXISTE"'*) ;; *) falhas="$falhas colar-de-novo" ;; esac
+          cd "$HOME/view-estudio"
+          echo "plano (depois de colar de novo) => $(bash instalar/instalar.sh plano --agente codex | tail -1)"
+
+          # 5. Atualizar: finge que o instalado e mais antigo e atualiza a partir do zip deste commit.
+          (cd "$(dirname "$Z")" && shasum -a 256 "$(basename "$Z")" > "$Z.sha256")
+          printf '0.0.1\n' > VERSAO
+          # 5a. Falha no meio da troca (README travado): tudo volta e nenhuma copia fica.
+          chflags uchg README.md
+          r="$(./estudio atualizar --de "$Z" | tail -1)"
+          chflags nouchg README.md
+          echo "atualizar (com README travado) => $r"
+          case "$r" in *ATUALIZACAO_FALHOU*) ;; *) falhas="$falhas atualizar-falha" ;; esac
+          [ "$(cat VERSAO)" = "0.0.1" ] || falhas="$falhas atualizar-falha-versao"
+          ls -d .ferramentas/versao-anterior-* >/dev/null 2>&1 && falhas="$falhas atualizar-falha-copia"
+          # 5b. Agora sem trava: atualiza.
+          r="$(./estudio atualizar --de "$Z" | tail -1)"
+          echo "atualizar (de uma versao antiga) => $r"
+          case "$r" in *ESTUDIO_ATUALIZADO*) ;; *) falhas="$falhas atualizar" ;; esac
+          r="$(./estudio atualizar --de "$Z" | tail -1)"
+          echo "atualizar (de novo) => $r"
+          case "$r" in *JA_ATUALIZADO*) ;; *) falhas="$falhas ja-atualizado" ;; esac
+          [ -f apresentacoes/exemplo/deck/index.html ] || falhas="$falhas atualizar-preservou"
+
+          # 6. Desinstalar sem confirmar so diz o que apagaria.
+          r="$(bash instalar/instalar.sh desinstalar | tail -1)"
+          echo "desinstalar (sem confirmar) => $r"
+          case "$r" in *'"confirmado":false'*) ;; *) falhas="$falhas desinstalar" ;; esac
+
+          if [ -n "$falhas" ]; then echo "FALHARAM:$falhas"; exit 1; fi
+          echo "TUDO OK"
+      - name: Juntar logs
+        if: always()
+        run: |
+          [ -d "$HOME/view-estudio/.ferramentas/logs" ] && cp -R "$HOME/view-estudio/.ferramentas/logs" "$GITHUB_WORKSPACE/logs-estudio" || true
+      - name: Guardar logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: logs-${{ matrix.os }}
+          path: logs-estudio
+          if-no-files-found: ignore

@@ -1,0 +1,30 @@
+# Programas e pecas instalados (o instalador recria)
+node_modules/
+.ferramentas/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Segredos e configuracao local (o estudio nao usa nenhum)
+.env*
+.claude/settings.local.json
+
+# Skills do motor de cena que o proprio motor instala
+.claude/skills/hyperframes*/
+.agents/skills/hyperframes*/
+
+# Pastas da pessoa: o conteudo e dela, so o LEIA-ME vem no estudio
+minha-marca/*
+!minha-marca/LEIA-ME.txt
+apresentacoes/*
+!apresentacoes/LEIA-ME.txt
+referencias/*
+!referencias/LEIA-ME.txt
+
+# Saidas geradas
+prints/
+*.pdf
+*.mp4
+*.mov
+*.webm

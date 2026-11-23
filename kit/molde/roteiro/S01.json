@@ -1,0 +1,8 @@
+{
+  "tela": 1,
+  "titulo": "Capa",
+  "beats": [
+    { "rotulo": "abertura", "fala": "Bom dia. Às seis e quarenta da manhã, quando a rua ainda está escura, a nossa porta já está aberta. É dessa hora que eu quero falar hoje.", "nota": "Esperar o título terminar de entrar antes de falar." },
+    { "rotulo": "quem fala", "fala": "Eu sou a Marina, cuido do Café Aurora há seis anos. Em vinte minutos eu mostro por que a manhã é o nosso negócio, e o plano para levá-la a mais dois bairros." }
+  ]
+}

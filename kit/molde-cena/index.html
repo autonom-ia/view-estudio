@@ -1,0 +1,38 @@
+<!doctype html>
+<!-- Composição de cena em vídeo (HyperFrames 0.8.181). O comando "cena <nome> <composicao> --criar"
+     copia este molde para apresentacoes/<nome>/cenas/<composicao>/, com o GSAP e a marca ao lado.
+     Render: ./estudio cena <nome> <composicao> → deck/assets/<composicao>.mp4
+     Regras do motor: tudo local (sem CDN), timeline pausada registrada em window.__timelines,
+     sem relógio nem sorteio (o vídeo sai igual em toda execução). -->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920, height=1080">
+<link rel="stylesheet" href="marca/tokens.css">
+<script src="gsap.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1920px;height:1080px;overflow:hidden;background:var(--cor-noite,#151027)}
+#raiz{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--cor-noite,#151027)}
+#sol{position:absolute;left:50%;top:300px;width:2400px;height:2400px;margin-left:-1200px;border-radius:50%;
+  background:radial-gradient(closest-side,var(--cor-luz,#FFB86E),transparent 70%)}
+#horizonte{position:absolute;left:0;top:760px;width:1920px;height:2px;transform-origin:50% 50%;transform:scaleX(0);
+  background:linear-gradient(90deg,transparent,var(--cor-luz-alta,#FFE2B8) 30%,var(--cor-luz-alta,#FFE2B8) 70%,transparent)}
+</style>
+</head>
+<body>
+<div id="raiz" data-composition-id="main" data-start="0" data-duration="6" data-width="1920" data-height="1080">
+  <div id="sol" class="clip" data-start="0" data-duration="6" data-track-index="0"></div>
+  <!-- Sem texto no vídeo: título e frase ficam no HTML da tela, por cima, entrando a cada clique. -->
+  <div id="horizonte" class="clip" data-start="0" data-duration="6" data-track-index="1"></div>
+</div>
+<script>
+window.__timelines = window.__timelines || {};
+const tl = gsap.timeline({ paused: true });
+tl.to('#sol', { y: -320, duration: 6, ease: 'power1.inOut' }, 0);
+tl.to('#horizonte', { scaleX: 1, duration: 2.4, ease: 'power2.inOut' }, 0.6);
+window.__timelines.main = tl;
+tl.seek(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+#!/bin/bash
+# View Estúdio: ponto de entrada do kit (Mac, Linux e Git Bash no Windows).
+# Uso: ./estudio <comando> [argumentos]
+# Usa o Node da pasta .ferramentas (posto pelo instalador); sem ele, o Node do sistema.
+# A última linha da saída é sempre um JSON numa linha só.
+
+ESTUDIO_REPO="$(cd "$(dirname "$0")" && pwd)"
+export ESTUDIO_REPO
+
+if [ -f "$ESTUDIO_REPO/instalar/ambiente.sh" ]; then
+  # shellcheck source=instalar/ambiente.sh
+  . "$ESTUDIO_REPO/instalar/ambiente.sh"
+fi
+
+if ! command -v _estudio_posix >/dev/null 2>&1; then
+  _estudio_posix() { printf '%s' "$1"; }
+fi
+
+_node=""
+if [ -n "${ESTUDIO_NODE:-}" ] && [ -f "$(_estudio_posix "$ESTUDIO_NODE")" ]; then
+  _node="$(_estudio_posix "$ESTUDIO_NODE")"
+elif command -v node >/dev/null 2>&1; then
+  _node="$(command -v node)"
+fi
+
+if [ -z "$_node" ]; then
+  printf '{"ok":false,"comando":"%s","codigo":"ESTUDIO_NAO_INSTALADO","resumo":"O estudio ainda nao terminou de instalar: falta o Node.","arquivos":{},"avisos":[],"dados":{}}\n' "${1:-}"
+  exit 1
+fi
+
+exec "$_node" "$ESTUDIO_REPO/kit/scripts/estudio.mjs" "$@"

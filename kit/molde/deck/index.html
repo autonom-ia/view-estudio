@@ -1,0 +1,45 @@
+<!doctype html>
+<!-- Index do deck (View Estúdio). Uma <section> por tela, na ordem da apresentação.
+     data-src aponta para a tela em slides/. data-transicao é opcional e pertence à tela que ENTRA:
+     corte · dissolve [ms] · empurra <esquerda|direita|cima|baixo> [ms] · match <nome> [ms] · continua.
+     Sem data-transicao = dissolve. O palco (assets/vendor/palco/palco.js) cuida do resto:
+     escala, contador, barra, botões, teclas e o aviso ao teleprompter. -->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITULO}}</title>
+<link rel="stylesheet" href="assets/marca/tokens.css">
+<style>
+*{box-sizing:border-box}
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--palco-fundo,#000)}
+.deck-viewport{position:fixed;inset:0;overflow:hidden;background:var(--palco-fundo,#000)}
+.deck-stage{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;background:var(--cor-noite,#111)}
+.slide{position:absolute;inset:0;width:1920px;height:1080px;overflow:hidden}
+.contador{position:fixed;right:24px;top:18px;z-index:1000;font:500 15px/1 var(--fonte-texto,system-ui);
+  font-variant-numeric:tabular-nums;color:rgba(255,255,255,.62);letter-spacing:.06em;mix-blend-mode:difference}
+.progresso{position:fixed;left:0;top:0;height:3px;width:0;background:var(--cor-luz,#fff);z-index:1001;transition:width .4s ease}
+.controles{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:1000;display:flex;gap:8px;
+  opacity:0;transition:opacity .3s}
+body:hover .controles,.controles:focus-within{opacity:1}
+.controles button{width:44px;height:44px;border:0;border-radius:50%;cursor:pointer;font-size:20px;line-height:1;
+  color:#fff;background:rgba(0,0,0,.45)}
+.controles button:hover{background:rgba(0,0,0,.7)}
+.controles button:focus-visible{outline:2px solid var(--cor-luz,#fff);outline-offset:3px}
+@media (prefers-reduced-motion:reduce){.progresso,.controles{transition:none}}
+</style>
+</head>
+<body>
+<div class="progresso" id="progress"></div>
+<div class="deck-viewport">
+  <div class="deck-stage" id="stage">
+    <section class="slide" id="t01"><iframe data-src="slides/s01-capa.html"></iframe></section>
+    <section class="slide" id="t02"><iframe data-src="slides/s02-numero.html"></iframe></section>
+    <section class="slide" id="t03" data-transicao="empurra esquerda 700"><iframe data-src="slides/s03-movimentos.html"></iframe></section>
+  </div>
+</div>
+<div class="contador" id="counter" aria-live="polite">01 / 03</div>
+<div class="controles"><button id="prev" type="button" aria-label="Tela anterior">‹</button><button id="next" type="button" aria-label="Próxima tela">›</button></div>
+<script src="assets/vendor/palco/palco.js"></script>
+</body>
+</html>

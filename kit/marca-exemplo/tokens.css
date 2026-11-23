@@ -1,0 +1,25 @@
+/* Marca de exemplo do View Estúdio: "Café Aurora", um negócio fictício.
+   A sua marca mora em minha-marca/tokens.css (mesmas variáveis). O comando "nova" copia
+   minha-marca/ para deck/assets/marca/; sem ela, copia este exemplo.
+   Fontes: Fraunces e DM Sans, licença SIL OFL 1.1 (textos em fontes/). */
+@font-face{font-family:"Fraunces";src:url("fontes/Fraunces-Variable.ttf") format("truetype");font-weight:100 900;font-style:normal;font-display:block}
+@font-face{font-family:"DM Sans";src:url("fontes/DMSans-Variable.woff2") format("woff2");font-weight:100 1000;font-style:normal;font-display:block}
+
+:root{
+  /* cores: o céu antes do sol e a crema do primeiro café */
+  --cor-fundo:#E4E6EE;      /* névoa da manhã: fundo das telas claras */
+  --cor-tinta:#1C1733;      /* anil da madrugada: texto principal */
+  --cor-apoio:#5D5975;      /* texto de apoio, legenda, fonte */
+  --cor-destaque:#B8691C;   /* crema: um número, um traço */
+  --cor-noite:#151027;      /* fundo das telas escuras */
+  --cor-luz:#FFB86E;        /* a primeira luz no horizonte */
+  --cor-luz-alta:#FFE2B8;
+  --cor-sobre-noite:#FFF6EA; /* texto sobre o fundo escuro (contraste mínimo 7:1 com --cor-noite) */
+
+  /* tipografia */
+  --fonte-titulo:"Fraunces", Georgia, serif;
+  --fonte-texto:"DM Sans", system-ui, sans-serif;
+
+  /* palco: cor que aparece em volta da tela 16:9 */
+  --palco-fundo:#07050F;
+}

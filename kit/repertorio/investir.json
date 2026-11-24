@@ -1,0 +1,70 @@
+{
+  "acao": "investir",
+  "plateiaQuer": "Investir ou aprovar o orçamento: ver que o problema é grande, que a resposta cabe no dinheiro pedido e que quem pede sabe executar.",
+  "fichas": [
+    {
+      "id": "linkedin-serie-b",
+      "nome": "LinkedIn, rodada B para a Greylock (2004)",
+      "link": "https://www.reidhoffman.org/linkedin-pitch-to-greylock/",
+      "ondeVer": "Desça a página: cada lâmina do deck vem seguida do comentário de Reid Hoffman sobre por que ela estava ali.",
+      "formato": "Deck de captação com comentário do fundador.",
+      "plateia": "Sócios de um fundo de capital de risco.",
+      "duvida": "Uma rede sem receita vale um investimento agora?",
+      "estrutura": "Começa pela tese de investimento e vai direto à dúvida mais forte da sala (a falta de receita), antes de produto, comparações, concorrência e time.",
+      "abertura": "A primeira lâmina diz o que a empresa é, por que vale e no que é diferente, numa tela só.",
+      "ancora": "Os números de uso contra os rivais da época, com perto de 1 milhão de pessoas e nenhuma receita, ditos sem esconder.",
+      "revelacao": "Cada lâmina responde uma objeção na ordem em que o investidor a faria; o anexo guarda o detalhe para as perguntas.",
+      "fecho": "A mesma tela da tese volta no fim e fica no ar durante as perguntas.",
+      "naoCopiar": "O enquadramento de 2004 (comparação com redes da época, internet 2.0) e o excesso de adjetivos que o próprio autor critica.",
+      "conferidaEm": "2026-11-24"
+    },
+    {
+      "id": "airbnb-semente",
+      "nome": "Airbnb, deck da rodada semente",
+      "link": "https://www.alexanderjarvis.com/airbnb-seed-pitch-deck/",
+      "ondeVer": "As lâminas estão em sequência na página, cada uma com uma nota curta do autor do site sobre o que ela faz.",
+      "formato": "Deck de captação republicado com comentário.",
+      "plateia": "Investidores anjo e fundos em rodada semente.",
+      "duvida": "Isso é um mercado de verdade, e como esse time ganha dinheiro com ele?",
+      "estrutura": "Problema, solução em três ganhos, validação, tamanho de mercado, produto em três passos, modelo de negócio, como crescer, concorrência, time, imprensa, depoimentos e o pedido.",
+      "abertura": "Uma frase só diz o que é: reservar quarto com gente do lugar em vez de hotel.",
+      "ancora": "O modelo de negócio mostra a conta até a receita possível, e o mercado traz a fonte de cada número na tela. A frase dos 10% está na lâmina; o título com ela é sugestão do autor da página.",
+      "revelacao": "Uma ideia por lâmina, na ordem das perguntas de quem investe, deixando imprensa e depoimentos para depois do time.",
+      "fecho": "A última lâmina diz quanto pede, o que o dinheiro compra (transações e receita) e por quantos meses dura.",
+      "naoCopiar": "O visual simples da época e os números deles: só entra número do brief com fonte.",
+      "conferidaEm": "2026-11-24"
+    },
+    {
+      "id": "buffer-semente",
+      "nome": "Buffer, o deck que levantou meio milhão",
+      "link": "https://buffer.com/resources/the-slide-deck-we-used-to-raise-half-a-million-dollars/",
+      "ondeVer": "O deck aparece embutido no meio do texto; logo abaixo, os fundadores contam o que funcionou e o que mudariam.",
+      "formato": "Deck de captação publicado pela própria empresa, com relato.",
+      "plateia": "Investidores anjo de uma rodada semente.",
+      "duvida": "Já tem gente pagando, ou é só uma boa ideia?",
+      "estrutura": "Deck curto, com a tração no centro: os fundadores contam que tração foi o caminho deles como estreantes.",
+      "abertura": "O relato não detalha a abertura do deck; ele começa admitindo que o deck era mediano e mesmo assim fechou a rodada.",
+      "ancora": "A conta do esforço: cerca de 200 investidores procurados, 50 reuniões e 18 que entraram.",
+      "revelacao": "Os fundadores dizem que a tela de concorrência precisa ser simples, porque essa pergunta travava as reuniões.",
+      "fecho": "O relato termina convidando perguntas nos comentários; o pedido do deck não é descrito no texto.",
+      "naoCopiar": "O modelo de assinatura e os números deles; o que vale é a ordem: prova de uso antes da promessa.",
+      "conferidaEm": "2026-11-24"
+    },
+    {
+      "id": "gates-proxima-epidemia",
+      "nome": "Bill Gates, A próxima epidemia: não estamos prontos",
+      "link": "https://www.ted.com/talks/bill_gates_the_next_outbreak_we_re_not_ready",
+      "ondeVer": "Abra a transcrição: o pedido de investimento aparece depois da simulação da gripe de 1918.",
+      "formato": "Palestra TED com objetos e simulação.",
+      "plateia": "Público geral e quem decide orçamento público.",
+      "duvida": "Por que investir agora num risco que ainda não aconteceu?",
+      "estrutura": "Ameaça antiga, ameaça nova, o caso real que falhou, a simulação do pior cenário, o sistema que resolve e o custo pequeno perto do prejuízo.",
+      "abertura": "Um barril de comida do porão da infância dele, contra a guerra nuclear, abre a comparação com o risco de hoje.",
+      "ancora": "A estimativa do Banco Mundial: uma gripe mundial derrubaria a riqueza global em mais de 3 trilhões de dólares.",
+      "revelacao": "O mapa da gripe de 1918 se espalha na tela antes de ele mostrar a resposta, peça por peça.",
+      "fecho": "Termina com a urgência: se começarmos agora, estaremos prontos para a próxima epidemia.",
+      "naoCopiar": "O barril e o tom de alarme sobre doença; o que vale é comparar o custo pedido com o prejuízo evitado.",
+      "conferidaEm": "2026-11-24"
+    }
+  ]
+}

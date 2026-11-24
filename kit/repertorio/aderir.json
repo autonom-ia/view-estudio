@@ -1,0 +1,70 @@
+{
+  "acao": "aderir",
+  "plateiaQuer": "Mudar um comportamento ou aderir: sair decidido a fazer diferente, começando por um passo pequeno.",
+  "fichas": [
+    {
+      "id": "oliver-comida",
+      "nome": "Jamie Oliver, Ensinar toda criança sobre comida",
+      "link": "https://www.ted.com/talks/jamie_oliver_teach_every_child_about_food",
+      "ondeVer": "Abra a palestra: o pedido final vem depois da parte sobre o leite da escola.",
+      "formato": "Palestra TED Prize com demonstração.",
+      "plateia": "Público geral, pais e quem decide política pública.",
+      "duvida": "O que a comida tem a ver comigo e o que eu posso fazer?",
+      "estrutura": "Um número que dá medo, quem fala e de onde vem, os lugares onde o problema mora (a rua comercial, a casa e a escola) e o desejo em forma de pedido.",
+      "abertura": "Diz que, nos 18 minutos da conversa, quatro americanos vão morrer pela comida que comem.",
+      "ancora": "A obesidade custa 10% da conta de saúde dos americanos, 150 bilhões de dólares por ano.",
+      "revelacao": "Leva o problema para pessoas reais de uma cidade antes de mostrar a estatística geral.",
+      "fecho": "Fecha com o desejo: ajudar um movimento a educar toda criança sobre comida e a fazer as famílias cozinharem de novo.",
+      "naoCopiar": "A raiva aberta e o palco de celebridade; o que vale é um número com relógio e um pedido que a plateia pode abraçar.",
+      "conferidaEm": "2026-11-24"
+    },
+    {
+      "id": "cutts-30-dias",
+      "nome": "Matt Cutts, Tente algo novo por 30 dias",
+      "link": "https://www.ted.com/talks/matt_cutts_try_something_new_for_30_days",
+      "ondeVer": "A palestra inteira tem cerca de 3 minutos; o pedido está na última frase.",
+      "formato": "Palestra TED curta com fotos pessoais.",
+      "plateia": "Público geral.",
+      "duvida": "Dá para mudar um hábito sem virar outra pessoa?",
+      "estrutura": "O problema dele, a regra simples, o que aconteceu em vários desafios, a lição de começar pequeno e o pedido.",
+      "abertura": "Conta que estava preso na rotina e decidiu tentar algo novo por 30 dias.",
+      "ancora": "Escrever um romance de 50 mil palavras em 30 dias, que dá 1.667 palavras por dia.",
+      "revelacao": "Um desafio por vez, cada um em poucas frases, do romance à montanha.",
+      "fecho": "Pergunta o que a plateia está esperando: os próximos 30 dias vão passar de qualquer jeito.",
+      "naoCopiar": "As fotos de viagem dele; o que vale é o pedido do tamanho de um mês, fácil de começar amanhã.",
+      "conferidaEm": "2026-11-24"
+    },
+    {
+      "id": "sivers-movimento",
+      "nome": "Derek Sivers, Como começar um movimento",
+      "link": "https://www.ted.com/talks/derek_sivers_how_to_start_a_movement",
+      "ondeVer": "A palestra tem menos de 3 minutos e acompanha um vídeo de um homem dançando sozinho até outros entrarem.",
+      "formato": "Palestra TED narrando um vídeo.",
+      "plateia": "Público geral e quem lidera equipes.",
+      "duvida": "Quem faz um movimento acontecer de verdade?",
+      "estrutura": "Um vídeo do começo ao fim, comentado em tempo real, e uma lição só tirada dele.",
+      "abertura": "Convida a sala a ver um movimento acontecer, do começo ao fim, em menos de três minutos.",
+      "ancora": "O primeiro seguidor, que transforma um maluco sozinho em líder.",
+      "revelacao": "Comenta o vídeo enquanto ele passa, nomeando cada virada no momento em que ela acontece.",
+      "fecho": "Pede coragem para seguir: quando achar alguém fazendo algo bom, seja o primeiro a se levantar e entrar.",
+      "naoCopiar": "O vídeo dele; o que vale é narrar uma cena real enquanto a lição se revela nela.",
+      "conferidaEm": "2026-11-24"
+    },
+    {
+      "id": "mcgonigal-estresse",
+      "nome": "Kelly McGonigal, Como fazer do estresse seu amigo",
+      "link": "https://www.ted.com/talks/kelly_mcgonigal_how_to_make_stress_your_friend",
+      "ondeVer": "Abra a palestra e veja o estudo dos 30 mil adultos, logo depois da confissão inicial.",
+      "formato": "Palestra TED com pesquisa.",
+      "plateia": "Público geral.",
+      "duvida": "O estresse está me fazendo mal, e eu posso mudar isso?",
+      "estrutura": "A plateia levanta a mão, uma confissão, o estudo que vira a crença do avesso, o mecanismo no corpo e o que fazer na próxima vez.",
+      "abertura": "Pede que a sala levante a mão conforme o estresse do último ano, e então confessa que ensinava o contrário.",
+      "ancora": "Quem passou muito estresse teve 43% mais risco de morrer, mas só se acreditava que o estresse faz mal.",
+      "revelacao": "Dá a notícia ruim primeiro e segura a virada (a crença) para a frase seguinte.",
+      "fecho": "Recomenda buscar o que dá sentido à vida e confiar que dá para lidar com o estresse que vem junto.",
+      "naoCopiar": "A autoridade de pesquisadora, que não se empresta; o que vale é virar uma crença com um estudo e dizer o que fazer.",
+      "conferidaEm": "2026-11-24"
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "acao": "confiar",
+  "plateiaQuer": "Conhecer e confiar numa instituição: entender como ela funciona por dentro e querer trabalhar, comprar ou se juntar a ela.",
+  "fichas": [
+    {
+      "id": "netflix-cultura",
+      "nome": "Netflix, a cultura da empresa",
+      "link": "https://jobs.netflix.com/culture",
+      "ondeVer": "A página inteira é o texto; os princípios aparecem como títulos, cada um com exemplos de decisão.",
+      "formato": "Memorando público de cultura, nascido de um deck.",
+      "plateia": "Candidatos, funcionários e o mercado.",
+      "duvida": "Como é trabalhar lá de verdade, e eu quero isso?",
+      "estrutura": "O propósito, quatro princípios e, em cada um, o comportamento esperado e o que a empresa não faz.",
+      "abertura": "Abre pelo objetivo de entreter o mundo e diz que a cultura existe para servir a ele.",
+      "ancora": "O teste de manter, uma pergunta só: você brigaria para manter esta pessoa na equipe.",
+      "revelacao": "Cada princípio vem com uma regra concreta, como contexto em vez de controle, e não com adjetivos.",
+      "fecho": "Fecha com uma citação de Saint-Exupéry: inspirar a vontade do mar em vez de dar ordens.",
+      "naoCopiar": "As regras deles de demissão e salário; o que vale é dizer o que a casa não faz, além do que faz.",
+      "conferidaEm": "2026-11-24"
+    },
+    {
+      "id": "hubspot-codigo",
+      "nome": "HubSpot, o Código de Cultura",
+      "link": "https://blog.hubspot.com/marketing/company-culture",
+      "ondeVer": "O deck de 58 lâminas está embutido no começo da página, com um resumo dos pontos logo abaixo.",
+      "formato": "Deck público de cultura, revisado muitas vezes.",
+      "plateia": "Candidatos, funcionários e clientes.",
+      "duvida": "Que tipo de gente trabalha ali e como eles decidem?",
+      "estrutura": "O que a empresa acredita, quem ela contrata (uma sigla de cinco qualidades) e como decide, com exemplos.",
+      "abertura": "Trata a cultura como produto: a cultura está para a contratação como o produto está para o marketing.",
+      "ancora": "A sigla HEART: humilde, empático, adaptável, notável e transparente.",
+      "revelacao": "Um deck longo, de 58 lâminas, publicado aberto e revisado em público mais de 25 vezes.",
+      "fecho": "Diz que é um trabalho em andamento e convida quem leu a mandar sugestões.",
+      "naoCopiar": "As cinco qualidades deles; o que vale é a sigla própria que a plateia lembra no corredor.",
+      "conferidaEm": "2026-11-24"
+    },
+    {
+      "id": "dalio-meritocracia",
+      "nome": "Ray Dalio, Como construir uma empresa em que as melhores ideias vencem",
+      "link": "https://www.ted.com/talks/ray_dalio_how_to_build_a_company_where_the_best_ideas_win",
+      "ondeVer": "Abra a palestra e vá ao trecho da reunião com a ferramenta de notas ao vivo, depois da história do erro de 1982.",
+      "formato": "Palestra TED com caso pessoal e ferramenta mostrada.",
+      "plateia": "Gestores e público de negócios.",
+      "duvida": "Como essa casa toma decisões, e dá para confiar nelas?",
+      "estrutura": "O maior erro dele, a lição tirada, o jeito de decidir que nasceu dela e uma reunião real mostrada por dentro.",
+      "abertura": "Avisa que a transparência radical e a decisão por algoritmo estão chegando e vão mudar a vida de quem ouve.",
+      "ancora": "A previsão errada sobre a crise da dívida de 1982: perdeu tanto que demitiu quase todos e pediu 4 mil dólares emprestados ao pai.",
+      "revelacao": "Abre uma reunião de verdade e mostra as notas que cada pessoa dá às outras, ao vivo.",
+      "fecho": "Volta à frase do começo: essa transparência vai chegar, e para ele vai ser maravilhosa.",
+      "naoCopiar": "O tom de certeza absoluta; o que vale é mostrar a instituição errando e o que mudou por causa disso.",
+      "conferidaEm": "2026-11-24",
+      "trechoConferido": {
+        "transcricao": "https://www.ted.com/talks/ray_dalio_how_to_build_a_company_where_the_best_ideas_win/transcript",
+        "trecho": "I had to let almost everybody go. And these were like extended family, I was heartbroken. And I had lost so much money that I had to borrow 4,000 dollars from my dad to help to pay my family bills."
+      }
+    },
+    {
+      "id": "semler-sem-regras",
+      "nome": "Ricardo Semler, Como administrar uma empresa com (quase) nenhuma regra",
+      "link": "https://www.ted.com/talks/ricardo_semler_how_to_run_a_company_with_almost_no_rules",
+      "ondeVer": "Abra a palestra: depois dos dias terminais, ele conta as regras que a empresa tirou, uma por uma.",
+      "formato": "Palestra TED com histórias e conversa no fim.",
+      "plateia": "Gestores e público geral.",
+      "duvida": "Uma empresa grande consegue funcionar sem as regras de sempre?",
+      "estrutura": "Uma pergunta pessoal sobre a vida, as regras que a empresa tirou, os resultados, e a mesma ideia aplicada a uma escola.",
+      "abertura": "Diz que às segundas e quintas aprende a morrer, nos dias que chama de terminais.",
+      "ancora": "Os funcionários podiam comprar de volta as quartas-feiras por 10% do salário, para viver agora o que deixariam para a aposentadoria.",
+      "revelacao": "Uma regra comum por vez, e o que aconteceu quando a empresa deixou de seguir.",
+      "fecho": "Pede que cada um pare e pergunte para que está fazendo o que faz.",
+      "naoCopiar": "As práticas da empresa dele; o que vale é começar pela pergunta humana e só depois mostrar a instituição.",
+      "conferidaEm": "2026-11-24",
+      "trechoConferido": {
+        "transcricao": "https://www.ted.com/talks/ricardo_semler_how_to_run_a_company_with_almost_no_rules/transcript",
+        "trecho": "And we'll do it like this, we'll sell you back your Wednesdays for 10 percent of your salary."
+      }
+    }
+  ]
+}

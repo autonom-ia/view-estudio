@@ -382,5 +382,61 @@
   "APRESENTACAO_POSTA_DE_VOLTA": {
     "texto": "Uma troca anterior tinha parado no meio. Pus a apresentação de volta inteira antes de continuar.",
     "acao": "dados.itens estavam fora do lugar (uma volta do antes e depois parou entre os dois passos) e voltaram como estavam antes dela. Se o antes e depois ainda está em aberto, rode o mesmo ./estudio escolher <nome> de novo para terminar a volta; nada se perdeu."
+  },
+  "LER_OK": {
+    "texto": "Li o perfil do Google e o site atual do negócio. Cada informação ficou anotada com de onde veio e quando.",
+    "acao": "Leia arquivos.coleta (google/lugar.json, site/texto.md) e a parte \"Lido pelo estúdio\" da tabela de fatos do brief.md. Não pergunte nada agora: o que for para a apresentação (endereço, horário, telefone, nota) a pessoa confirma no portão 1 da skill nova-apresentacao (o brief), na mesma pergunta. O texto das avaliações fica só em coleta/google/lugar.json e não é fato do brief: citação de avaliação só vai para a tela com o sim da pessoa e sem o nome de ninguém (nem de quem escreveu, nem de funcionário ou cliente citado). Foto lida (coleta/site/fotos/) só vai para deck/assets/ com o sim dela ali."
+  },
+  "LER_COM_AVISOS": {
+    "texto": "Li o que deu. Uma parte faltou, e eu explico qual.",
+    "acao": "Traduza cada aviso pelo código dele. O que foi lido está em arquivos.coleta e na parte \"Lido pelo estúdio\" da tabela de fatos do brief.md."
+  },
+  "LER_NADA": {
+    "texto": "Não consegui ler nenhuma página do negócio agora.",
+    "acao": "Traduza os avisos. Confira com a pessoa o nome do negócio com a cidade (ou o endereço do site) e rode de novo. Sem leitura, siga com o que a pessoa contar e anote a fonte \"a própria pessoa disse em <data>\"."
+  },
+  "LER_SEM_ENDERECO": {
+    "texto": "Preciso do nome do negócio com a cidade, ou do endereço do site, para começar a ler.",
+    "acao": "Pergunte o nome como aparece no Google e a cidade, e rode ./estudio ler <nome> --negocio \"Nome, cidade\" (some --site <endereço> se a pessoa passou)."
+  },
+  "LER_GOOGLE_NAO_ACHOU": {
+    "texto": "Não achei o negócio no Google pelo nome.",
+    "acao": "Se dados.motivo for \"bloqueado\", o Google pediu para confirmar que é uma pessoa: peça o link de compartilhar do perfil no Google Maps e rode de novo com --google <link>. Se for \"nao-achou\", pergunte o nome como aparece no Google e a cidade, e rode de novo com --negocio."
+  },
+  "LER_GOOGLE_PRIMEIRO_DA_LISTA": {
+    "texto": "Achei mais de um lugar com esse nome no Google e fiquei com {{escolhido}}. É esse mesmo?",
+    "acao": "Confirme com a pessoa (os outros nomes estão em dados.outros). Se for outro, rode de novo com --google e o link certo do Google Maps, ou com --negocio e a cidade."
+  },
+  "LER_GOOGLE_SEM_HORARIO": {
+    "texto": "O perfil do Google não mostra o horário de funcionamento.",
+    "acao": "Se o horário for para a apresentação, pergunte à pessoa e anote na tabela de fatos do brief.md com a fonte \"a própria pessoa disse em <data>\". Nunca use horário de trecho de resultado de busca."
+  },
+  "LER_GOOGLE_FALHOU": {
+    "texto": "Não consegui abrir o perfil do Google agora.",
+    "acao": "Leia dados.detalhe. Rode de novo uma vez; se repetir, peça à pessoa o link do perfil no Google Maps e rode com --google <link>."
+  },
+  "LER_SITE_OUTRO_ENDERECO": {
+    "texto": "Esse endereço não parece ser o site do próprio negócio, ou leva para outra página. Não li essa página.",
+    "acao": "dados.endereco é o que foi pedido e dados.final é onde ele foi parar (ou o próprio endereço, quando é rede social, página de links, loja de pedidos ou link curto). Confira com a pessoa se dados.final é o site do próprio negócio. Se for, rode de novo com --site <dados.final>. Se não for, siga sem o site e não use nada dessa página."
+  },
+  "LER_SITE_FALHOU": {
+    "texto": "Não consegui abrir o site atual.",
+    "acao": "Confira o endereço com a pessoa (dados.endereco) e rode de novo com --site. Se o site não existe mais, siga sem ele."
+  },
+  "LER_SITE_CONTATO_DE_TERCEIRO": {
+    "texto": "Achei no site um contato que pode não ser do negócio. Às vezes é de quem fez o site. Não anotei como certo.",
+    "acao": "dados.contatos lista cada um (tipo, valor, fonte e motivo: \"em-todas-as-paginas\" é contato repetido em toda página lida; \"so-no-rodape\" é, num site de uma página só, contato que só aparece no rodapé; os dois podem ser de quem fez o site, como em \"site feito por\"; \"dados-de-outro\" é dado escondido na página em nome de outra empresa, com o nome em \"de\"). Nada disso está na tabela de fatos. No portão 1, pergunte junto com o brief se algum é da pessoa; se for, anote na tabela de cima com a fonte \"a própria pessoa disse em <data>\". Sem esse sim, nunca vai para a tela."
+  },
+  "LER_SITE_CONTATO_A_CONFERIR": {
+    "texto": "Anotei os contatos do site, mas não tive com o que comparar. Confira se são mesmo do negócio.",
+    "acao": "Sem telefone do perfil do Google e sem contato que o próprio site declara, não dá para saber se um contato repetido em toda página (ou só no rodapé) é do negócio ou de quem fez o site. dados.contatos lista esses (tipo, valor, fonte, motivo); eles ESTÃO na tabela de fatos. No portão 1, pergunte junto com o brief se são da pessoa; o que não for, apague da parte \"Lido pelo estúdio\" e nunca ponha na tela."
+  },
+  "LER_BRIEF_MARCADOR_QUEBRADO": {
+    "texto": "Li o negócio, mas não mexi no resumo da apresentação: a parte que eu atualizo sozinho está quebrada ali.",
+    "acao": "O brief.md tem as marcas dados.inicio e dados.fim faltando, repetidas ou fora de ordem, e ficou como estava; o que foi lido está em arquivos.coleta (fatos-lidos.json). Para consertar: 1) mostre à pessoa o trecho entre as marcas e peça o sim antes de mexer; 2) com o sim, apague só a marca sobrando (a sem par, ou a repetida), sem apagar texto dela; ou, se a parte lida estiver toda estragada, apague as duas marcas e o que estiver entre elas e reescreva a parte \"Lido pelo estúdio\" a partir de coleta/fatos-lidos.json (Fato | Fonte | Data, uma linha por fato, entre um só par de marcas, início antes do fim); 3) rode o ler de novo e confira que saiu sem este aviso."
+  },
+  "LER_TEMPO_ESGOTADO": {
+    "texto": "A leitura passou do tempo e eu parei. Guardei o que já tinha lido.",
+    "acao": "A leitura tem teto de dados.minutos minutos para caber na espera do assistente. O que foi lido até ali está em arquivos.coleta e na parte \"Lido pelo estúdio\" do brief.md. Não rode de novo só por isso (a próxima leitura troca a parte lida inteira): siga com o que foi lido e pergunte à pessoa o que faltar."
   }
 }

@@ -1,6 +1,8 @@
 # Testes do kit (node --test) no Linux, no Mac e no Windows, com a conferencia das copias das
 # instrucoes (espelhar --conferir) e da sintaxe dos instaladores. Os testes que precisam de
-# navegador usam o Chrome que ja vem nas maquinas do GitHub; sem Chrome, eles sao pulados.
+# navegador usam o Chrome que ja vem nas maquinas do GitHub (as tres tem). Aqui eles nunca sao
+# pulados: ESTUDIO_TESTES_EXIGEM_NAVEGADOR=1 faz o teste FALHAR se o navegador nao for achado
+# (kit/testes/fixtures/navegador.mjs). Fora do CI, sem Chrome, eles sao pulados e contados.
 name: testes
 
 on:
@@ -29,6 +31,8 @@ jobs:
           node-version: '24.22.3'
       - name: Testes do kit
         run: npm test
+        env:
+          ESTUDIO_TESTES_EXIGEM_NAVEGADOR: '1'
       - name: Instrucoes iguais nas duas copias
         run: node kit/scripts/estudio.mjs espelhar --conferir
       - name: Sintaxe do instalador do Mac

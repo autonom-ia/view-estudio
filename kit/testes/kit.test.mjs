@@ -168,6 +168,7 @@ const CAMPOS_ENVIADOS = Object.freeze({
   FONTE_BAIXADA: ['familia'],
   FONTE_NAO_ACHADA: ['familia'],
   FONTE_SEM_LICENCA: ['familia'],
+  LER_GOOGLE_PRIMEIRO_DA_LISTA: ['escolhido'],
 });
 
 test('resumo: os {{campos}} do mensagens.json são os que o comando manda, e saem preenchidos', () => {

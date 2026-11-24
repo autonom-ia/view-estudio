@@ -11,7 +11,7 @@ import crypto from 'node:crypto';
 import zlib from 'node:zlib';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { acharNavegador } from '../scripts/lib/chrome.mjs';
+import { opcoesDoNavegador } from './fixtures/navegador.mjs';
 import {
   guardarAntes, pesadosAlterados, restaurarAntes, igualAoAntes, lerMudancas, ehPesado, PESADO_BYTES,
   caminhosDoAntesDepois, fecharAntes, impressao, mesmoArquivo, mesmoConteudo, pastasIguais, semLinkFixo, guardarTentativa,
@@ -24,7 +24,7 @@ import { telasMudadas, paginaDeComparacao, nomeDaFoto, fotosDiferentes, NOTA_SEM
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const DESPACHANTE = path.join(RAIZ, 'kit', 'scripts', 'estudio.mjs');
-const opcoes = { skip: acharNavegador() ? false : 'sem Chrome, Edge ou Chromium nesta máquina', timeout: 300000 };
+const opcoes = opcoesDoNavegador(300000);
 
 let base;
 before(() => {

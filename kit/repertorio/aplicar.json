@@ -1,0 +1,78 @@
+{
+  "acao": "aplicar",
+  "plateiaQuer": "Aprender e aplicar: sair com uma ideia que entende, lembra e consegue usar no dia seguinte.",
+  "fichas": [
+    {
+      "id": "rosling-estatisticas",
+      "nome": "Hans Rosling, As melhores estatísticas que você já viu",
+      "link": "https://www.ted.com/talks/hans_rosling_the_best_stats_you_ve_ever_seen",
+      "ondeVer": "Abra a palestra e vá ao trecho em que as bolhas dos países começam a se mover pelos anos.",
+      "formato": "Palestra TED com gráfico animado.",
+      "plateia": "Público geral, sem formação em estatística.",
+      "duvida": "O mundo que eu acho que conheço é o mundo de verdade?",
+      "estrutura": "Um teste que derruba o que a sala acha que sabe, depois os dados ganhando vida ano a ano, até a conclusão de que o preconceito é o problema.",
+      "abertura": "Conta que os melhores alunos suecos acertaram menos que chimpanzés num teste sobre o mundo.",
+      "ancora": "O gráfico de bolhas: cada bolha é um país, o tamanho é a população, e os eixos são filhos por mulher e expectativa de vida.",
+      "revelacao": "Ele narra o gráfico enquanto os anos passam, apontando para cada país que se move: a China aqui, a América Latina indo para famílias menores.",
+      "fecho": "Termina pedindo que os dados públicos fiquem livres para todos explorarem como ele fez.",
+      "naoCopiar": "O software e o jeito dele de narrar; o que vale é mover um dado no tempo enquanto se explica.",
+      "conferidaEm": "2026-11-24"
+    },
+    {
+      "id": "sinek-por-que",
+      "nome": "Simon Sinek, Como grandes líderes inspiram ação",
+      "link": "https://www.ted.com/talks/simon_sinek_how_great_leaders_inspire_action",
+      "ondeVer": "Abra a palestra e veja o começo, quando ele apresenta o círculo dourado: por quê, como, o quê.",
+      "formato": "Palestra TEDx com um desenho só.",
+      "plateia": "Gestores e público geral.",
+      "duvida": "Por que uns inspiram e outros não, com os mesmos recursos?",
+      "estrutura": "Uma pergunta, um modelo simples (por quê, como, o quê), três casos que o confirmam e a mesma frase repetida até a plateia sair falando junto.",
+      "abertura": "Pergunta por que a Apple é tão inovadora sendo só mais uma empresa de computador.",
+      "ancora": "A curva de difusão: 2,5% de inovadores e 13,5% de primeiros adeptos, os que compram por acreditar.",
+      "revelacao": "Um modelo de três círculos apresentado cedo e reaproveitado em cada caso novo.",
+      "fecho": "Fecha com a frase que repetiu a palestra inteira: quem começa pelo porquê inspira os outros.",
+      "naoCopiar": "Os casos dele; o que vale é um modelo que cabe num desenho e volta em cada exemplo.",
+      "conferidaEm": "2026-11-24"
+    },
+    {
+      "id": "pink-motivacao",
+      "nome": "Dan Pink, O enigma da motivação",
+      "link": "https://www.ted.com/talks/dan_pink_the_puzzle_of_motivation",
+      "ondeVer": "Abra a palestra e veja o trecho do problema da vela, perto do começo.",
+      "formato": "Palestra TED em forma de defesa num tribunal.",
+      "plateia": "Gestores e público de negócios.",
+      "duvida": "Prêmio em dinheiro faz a equipe render mais?",
+      "estrutura": "Uma confissão, um experimento que contraria o senso comum, a prova repetida e o modelo novo em três palavras, com exemplos de empresa.",
+      "abertura": "Confessa, com humor, que foi para a faculdade de direito, e passa a falar como advogado apresentando um caso.",
+      "ancora": "O grupo com prêmio levou em média três minutos e meio a mais para resolver o problema da vela.",
+      "revelacao": "Apresenta o problema da vela como prova num julgamento e só depois conta o resultado que contraria o senso comum.",
+      "fecho": "Termina como advogado: encerro meu caso.",
+      "naoCopiar": "O papel de advogado, que é a voz dele; o que vale é um experimento contra o senso comum antes do modelo.",
+      "conferidaEm": "2026-11-24",
+      "trechoConferido": {
+        "transcricao": "https://www.ted.com/talks/dan_pink_the_puzzle_of_motivation/transcript",
+        "trecho": "It took them, on average, three and a half minutes longer."
+      }
+    },
+    {
+      "id": "treasure-falar",
+      "nome": "Julian Treasure, Como falar para que as pessoas queiram ouvir",
+      "link": "https://www.ted.com/talks/julian_treasure_how_to_speak_so_that_people_want_to_listen",
+      "ondeVer": "Abra a palestra e vá ao fim, quando ele faz a plateia inteira fazer o aquecimento de voz.",
+      "formato": "Palestra TED com exercício na hora.",
+      "plateia": "Público geral que fala em público.",
+      "duvida": "O que eu mudo na minha fala para ser ouvido?",
+      "estrutura": "O que evitar (sete pecados), em que se apoiar (uma palavra de quatro letras) e as ferramentas da voz, terminando com a sala praticando.",
+      "abertura": "A voz humana é o instrumento que todos tocam, e mesmo assim muita gente fala e não é ouvida.",
+      "ancora": "A palavra HAIL: honestidade, autenticidade, integridade e amor, uma letra para cada apoio.",
+      "revelacao": "Uma lista curta por vez, cada item com um exemplo falado na própria voz dele.",
+      "fecho": "Antes do fecho, a plateia levanta os braços e faz seis aquecimentos de voz junto com ele.",
+      "naoCopiar": "O exercício de voz em si; o que vale é a plateia fazer na sala o que vai aplicar depois.",
+      "conferidaEm": "2026-11-24",
+      "trechoConferido": {
+        "transcricao": "https://www.ted.com/talks/julian_treasure_how_to_speak_so_that_people_want_to_listen/transcript",
+        "trecho": "Fortunately, these things spell a word. The word is \"hail,\" and it has a great definition as well."
+      }
+    }
+  ]
+}

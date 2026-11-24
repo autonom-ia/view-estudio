@@ -62,7 +62,7 @@ Rode tudo de dentro da pasta do estúdio.
 | Windows, Git Bash | `./estudio <comando>` | o mesmo instalador do Windows, com barra normal |
 
 - As skills escrevem `./estudio`. No PowerShell, troque por `.\estudio.cmd`.
-- Comandos: `nova`, `checar`, `fatos` (todo número, contato e @ das telas e da fala com fonte no brief), `acessibilidade`, `prints`, `revisao` (prepara a rodada da revisão), `pdf`, `teleprompter`, `cena`, `abrir`, `antes`, `comparar` e `escolher` (o antes e o depois de um pedido vago, lado a lado), `fonte` (baixa uma letra livre do Google Fonts, já leve e com licença), `verificar`, `espelhar`, `versao`, `atualizar`.
+- Comandos: `nova`, `ler` (lê o perfil do Google e o site atual de um negócio, sem login, e anota os fatos com fonte no brief), `checar`, `fatos` (todo número, contato e @ das telas e da fala com fonte no brief), `acessibilidade`, `prints`, `revisao` (prepara a rodada da revisão), `pdf`, `teleprompter`, `cena`, `abrir`, `antes`, `comparar` e `escolher` (o antes e o depois de um pedido vago, lado a lado), `fonte` (baixa uma letra livre do Google Fonts, já leve e com licença), `verificar`, `espelhar`, `versao`, `atualizar`.
 - Para mostrar a pasta de uma apresentação no Finder ou no Explorer, use `./estudio abrir <nome> --pasta`. Não chame `open` nem `explorer` direto.
 - **Leia só a última linha** de cada comando. Ela é um JSON numa linha só: `{"ok","comando","codigo","resumo","arquivos","avisos","dados"}`.
 - **Saída 0** é ok, **1** é erro de execução, **2** é reprovado na conferência (corrija pela causa e rode de novo).
@@ -70,11 +70,12 @@ Rode tudo de dentro da pasta do estúdio.
 - **Criar é livre; conferir é do comando.** Você escreve as telas (HTML, CSS, GSAP, `cena.js`), o brief e o roteiro. Estrutura, colisão, tamanho de letra, contraste, letras com licença, fato com fonte, acessibilidade, fotos, PDF e vídeo saem dos comandos. Nunca declare pronto sem `checar`, `fatos` e `acessibilidade` aprovados.
 - Comando que falha duas vezes: skill `consertar`.
 
-**Caixinhas de permissão.** O Claude Code e o Codex pedem licença antes de mexer no computador. Antes de cada ação que gera caixinha, avise em uma frase o que é e diga que pode aprovar. No Codex, peça para sair da área protegida (com `sandbox_permissions: "require_escalated"` no próprio comando) no instalador inteiro (ele baixa da internet), nos comandos que abrem o navegador escondido (`checar`, `fatos`, `acessibilidade`, `prints`, `pdf`, `cena`, `abrir`, `comparar`) e no `fonte` (ele baixa da internet). Os textos prontos estão em `instalar/mensagens.json` (`CODEX-INTERNET`, `CODEX-FORA-DA-AREA`).
+**Caixinhas de permissão.** O Claude Code e o Codex pedem licença antes de mexer no computador. Antes de cada ação que gera caixinha, avise em uma frase o que é e diga que pode aprovar. No Codex, peça para sair da área protegida (com `sandbox_permissions: "require_escalated"` no próprio comando) no instalador inteiro (ele baixa da internet), nos comandos que abrem o navegador escondido (`checar`, `fatos`, `acessibilidade`, `prints`, `pdf`, `cena`, `abrir`, `comparar`), no `fonte` e no `ler` (os dois leem da internet). Os textos prontos estão em `instalar/mensagens.json` (`CODEX-INTERNET`, `CODEX-FORA-DA-AREA`).
 
 ## 5. Regras
 
 - **Brief antes do pixel.** Nenhuma tela é desenhada antes de a pessoa aprovar o brief (promessa e sequência de telas).
+- **Repertório antes do visual.** Antes da sequência de telas e da tese visual, estude 2 ou 3 apresentações reais de `kit/repertorio/`, escolhidas pelo que a plateia faz depois (`kit/repertorio/como-usar.md`). Delas sai a estrutura (abertura, número-âncora, ritmo, fecho com pedido), nunca o visual.
 - **Piloto antes da leva.** Três telas (capa, uma tela comum e o pico) aprovadas pela pessoa antes de fazer as outras.
 - **Fato com fonte.** Todo número, data, nome ou citação que vai para a tela ou para a fala está no `brief.md`, na tabela de fatos (Fato, Fonte, Data), com a fonte. Sem fonte, não entra. Nunca invente dado, cliente, depoimento ou resultado. A regra para você é essa: **todo** número com fonte. A conferência automática (`./estudio fatos`) pega o que dá para pegar sem ler a frase: número de 3 ou mais dígitos, número de qualquer tamanho com % ("38%") ou com mil, milhão ou bilhão ("40 mil"), telefone, e-mail e @ que aparece em alguma tela, em algum clique, ou na fala do roteiro sem linha com fonte. Número pequeno solto ("3 lojas"), nome, citação e data por extenso continuam com você e com o revisor de fatos.
 - **Autor nunca é o revisor.** Quem fez a apresentação não dá a nota. A skill `revisar` chama 4 revisores independentes, que dão a nota pela régua de `kit/regua-revisao.md` e recebem o que a rodada anterior aceitou e recusou; meta 8,5 em até 3 rodadas.
@@ -95,9 +96,9 @@ Rode tudo de dentro da pasta do estúdio.
 | Pasta ou arquivo | O que é |
 |---|---|
 | `minha-marca/` | Da pessoa: `tokens.css` (cores e letras), `fontes/`, logo, `marca.md` (tom e regras). O `nova` copia para cada apresentação só `tokens.css`, logo e `fontes/` (o `marca.md` fica) |
-| `apresentacoes/<nome>/` | Da pessoa: `brief.md`, `andamento.md`, `roteiro/SNN.json`, `deck/` (index, telas, assets), `cenas/`, `prints/`, `revisao/`, `<nome>.pdf` |
+| `apresentacoes/<nome>/` | Da pessoa: `brief.md`, `andamento.md`, `roteiro/SNN.json`, `deck/` (index, telas, assets), `cenas/`, `coleta/` (o que o `ler` leu), `prints/`, `revisao/`, `<nome>.pdf` |
 | `referencias/` | Da pessoa: fotos, logos, apresentações de que ela gosta, documentos com os fatos |
-| `kit/` | O motor do estúdio. Não edite: a atualização sobrescreve. O molde das telas está em `kit/molde/` |
+| `kit/` | O motor do estúdio. Não edite: a atualização sobrescreve. O molde das telas está em `kit/molde/`; o repertório de apresentações reais, em `kit/repertorio/` |
 | `instalar/` | O instalador e os textos da instalação. Não edite |
 | `.ferramentas/` | Os programas do estúdio (escondida). Só o instalador mexe |
 

@@ -7,7 +7,7 @@ description: Faz uma apresentação do começo ao fim no View Estúdio, pelo mé
 
 Uma apresentação boa parece filme: cada tela diz uma coisa só, o movimento conta a história e a fala completa o que a tela não diz. O caminho para chegar lá é sempre o mesmo, e a pessoa decide em dois portões: o brief e o piloto.
 
-Comandos: `./estudio <comando>` (no PowerShell, `.\estudio.cmd <comando>`), de dentro da pasta do estúdio. Leia só a última linha (JSON): `ok`, `codigo`, `resumo`, `arquivos`, `avisos`, `dados`. Saída 2 = reprovado: corrija pela causa e rode de novo. Traduza `codigo` por `kit/mensagens.json`. No Codex, `checar`, `fatos`, `acessibilidade`, `prints`, `pdf`, `cena` e `abrir` rodam fora da área protegida.
+Comandos: `./estudio <comando>` (no PowerShell, `.\estudio.cmd <comando>`), de dentro da pasta do estúdio. Leia só a última linha (JSON): `ok`, `codigo`, `resumo`, `arquivos`, `avisos`, `dados`. Saída 2 = reprovado: corrija pela causa e rode de novo. Traduza `codigo` por `kit/mensagens.json`. No Codex, `checar`, `fatos`, `acessibilidade`, `prints`, `pdf`, `cena`, `abrir`, `comparar` e `ler` rodam fora da área protegida.
 
 ## O andamento
 
@@ -46,15 +46,20 @@ Escolha um nome curto (letras minúsculas, números e hífen) e rode:
 - `APRESENTACAO_CRIADA`: a pasta está em `arquivos.pasta`. Aviso `MARCA_DE_EXEMPLO` (a marca não foi feita antes): faça a marca agora, sem perguntas, e copie para a apresentação como diz o aviso.
 - `APRESENTACAO_JA_EXISTE`: pergunte se é para continuar aquela ou criar com outro nome.
 
+**Apresentação sobre um negócio** (pitch, proposta comercial, apresentação institucional, de um negócio com site ou nome no Google): leia sozinho em vez de perguntar o que dá para ver. Logo depois do `nova`, rode `./estudio ler <nome> --negocio "Nome do negócio, cidade"` (some `--site <endereço>` ou `--google <link do Google Maps>` se a pessoa passou). Rode com timeout de 10 minutos (no Claude Code, `timeout` 600000). Sem entrar em conta nenhuma, ele lê o perfil do Google (endereço, telefone, horário de cada dia, nota e avaliações sem o nome de quem escreveu) e o site atual inteiro (achado pelo Google, se a pessoa não passou). A leitura tem teto de 8 minutos; passou dele, guarda o que leu e avisa. Guarda tudo em `apresentacoes/<nome>/coleta/` e anota cada fato, com fonte e data, na parte "Lido pelo estúdio" da tabela de fatos do `brief.md`. Leia `coleta/google/lugar.json` e `coleta/site/texto.md`, e traduza cada aviso pelo código. Horário vem do perfil do Google ou da pessoa, nunca de trecho de resultado de busca. Ler a internet é permitido; publicar ou enviar qualquer coisa, não. O Instagram não é lido. As fotos lidas ficam em `coleta/site/fotos/`; só vão para `deck/assets/` com o sim da pessoa no portão 1. O texto das avaliações fica só em `coleta/google/lugar.json`, fora da tabela de fatos, porque pode citar um funcionário ou outro cliente: citação de avaliação só vai para a tela com o sim da pessoa e sem o nome de ninguém. Contato que pode ser de quem fez o site (aviso `LER_SITE_CONTATO_DE_TERCEIRO`) não está na tabela; pergunte se é da pessoa. O que for lido não vira pergunta separada: endereço, número, contato e citação que forem para a tela a pessoa confirma no brief, na mesma pergunta.
+
 ## Etapa 2. Brief (portão 1)
 
-Escreva `apresentacoes/<nome>/brief.md` por cima do molde, com:
+**Primeiro, o repertório.** Antes da sequência de telas e da tese visual, estude `kit/repertorio/` seguindo `kit/repertorio/como-usar.md`: abra o arquivo da ação da plateia (o "o que fazer depois" da coleta), escolha 2 ou 3 fichas pela dúvida da plateia e tire de cada uma uma decisão concreta de abertura, número-âncora, ritmo de revelação ou fecho com pedido. A direção visual vem depois e serve a essa estrutura; quando ela vem antes, a primeira revisão sai fraca. Confira ao vivo o link das escolhidas.
+
+Escreva `apresentacoes/<nome>/brief.md` por cima do molde, com o que vem abaixo. Se o `ler` rodou, mantenha a parte "Lido pelo estúdio" (de `<!-- estudio:lido:inicio -->` a `<!-- estudio:lido:fim -->`) do jeito que está, logo abaixo da sua tabela de fatos: a próxima leitura troca só ela. Fato lido que a pessoa confirmar ou corrigir vai para a tabela de cima, com a fonte "a própria pessoa disse em <data>".
 - **Promessa**: o que a plateia ganha, numa frase. É a régua de tudo.
 - **Para quem** e **o que fazer depois** (da coleta).
 - **A história**: contexto, conflito e resolução, em três frases.
 - **Sequência de telas** (o beat-sheet), uma linha por tela: número, mensagem única da tela (uma frase), papel (abertura, conceito, número, caso, virada, pico, fecho), passos da tela (o que entra a cada clique) e a transição de entrada (dissolve é o padrão; corte, empurra ou match quando a história pede).
 - **Os 2 ou 3 picos**: as telas que a plateia vai lembrar. Pelo menos um vira cena em movimento (skill `cena-em-video`) quando o tempo permitir.
 - **Fatos e números**: a tabela com as colunas Fato, Fonte e Data (troque as linhas do exemplo do molde, que têm a fonte "Exemplo fictício do View Estúdio" e não valem). Só entra na tela e na fala o que está aqui; o `./estudio fatos` confere número, contato e @.
+- **Referências estudadas**: uma linha por ficha do repertório (o `id`, o link, a decisão que você tirou dela e o que não vai copiar).
 - **Tese visual**: uma frase que diz como a apresentação vai parecer (luz, tipo de foto, ritmo), ligada à marca e ao assunto.
 - **Insumos faltando**: o que você assumiu por falta de material, e o que melhora se a pessoa mandar.
 
@@ -65,6 +70,7 @@ Mostre o brief à pessoa em texto corrido e curto (promessa, história, a lista 
 ## Etapa 3. Piloto de 3 telas (portão 2)
 
 Antes de desenhar:
+0. Releia as **Referências estudadas** do brief: a direção visual serve à abertura, à âncora, ao ritmo e ao fecho que você tirou delas, nunca ao visual delas.
 1. Se estiverem instaladas, carregue as skills `frontend-design` e `ui-ux-pro-max`. Use-as para a direção visual, a tipografia e o ritmo.
 2. Leia o molde: `kit/molde/deck/index.html`, as três telas de `kit/molde/deck/slides/` e o cabeçalho de `deck/assets/vendor/palco/cena.js`. Ele explica como cada tela declara os passos sem programar.
 3. Leia `minha-marca/marca.md` (se existir) e a tese visual do brief.

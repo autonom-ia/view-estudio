@@ -2,7 +2,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pastaApresentacoes, relativoARaiz, ehPasta } from './caminhos.mjs';
-import { falha } from './saida.mjs';
+import { avisarNaSaida, falha } from './saida.mjs';
+import { recuperarSobras } from './antes-depois.mjs';
 import { lerTexto } from './json.mjs';
 
 export function caminhosDe(nome, base = pastaApresentacoes()) {
@@ -25,10 +26,13 @@ export function caminhosDe(nome, base = pastaApresentacoes()) {
   };
 }
 
-// Abre uma apresentação existente com deck/index.html.
+// Abre uma apresentação existente com deck/index.html. Antes, põe de volta no lugar o que uma troca
+// do "escolher" parada no meio deixou fora (lib/antes-depois.mjs, recuperarSobras), com um aviso.
 export function abrirApresentacao(nome) {
   const c = caminhosDe(nome);
   if (!ehPasta(c.pasta)) falha('APRESENTACAO_NAO_ACHADA', { nome, pasta: relativoARaiz(c.pasta) });
+  const voltaram = recuperarSobras(c.pasta);
+  if (voltaram.length) avisarNaSaida('APRESENTACAO_POSTA_DE_VOLTA', { nome, itens: voltaram });
   if (!fs.existsSync(c.index)) falha('DECK_SEM_INDEX', { arquivo: c.rel('deck', 'index.html') });
   return c;
 }

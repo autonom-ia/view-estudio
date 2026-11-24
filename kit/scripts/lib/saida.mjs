@@ -30,6 +30,13 @@ export function aviso(codigo, dados = {}) {
   return { codigo, dados };
 }
 
+// Aviso que nasce fora do comando (ao abrir a apresentação, por exemplo) e vai junto na saída de
+// qualquer comando, deu certo ou não.
+const avisosDoProcesso = [];
+export function avisarNaSaida(codigo, dados = {}) {
+  avisosDoProcesso.push(aviso(codigo, dados));
+}
+
 let cacheMensagens = null;
 export function mensagens() {
   if (cacheMensagens) return cacheMensagens;
@@ -98,7 +105,7 @@ export function montarResultado(comando, resultado) {
     codigo: resultado.codigo || (ok ? 'OK' : 'DESCONHECIDO'),
     resumo: resultado.resumo || textoDoCodigo(resultado.codigo, limpar(resultado.dados || {})) || '',
     arquivos: resultado.arquivos || {},
-    avisos: limpar(resultado.avisos || []),
+    avisos: limpar([...(resultado.avisos || []), ...avisosDoProcesso]),
     dados: limpar(resultado.dados === undefined ? {} : resultado.dados),
   };
 }

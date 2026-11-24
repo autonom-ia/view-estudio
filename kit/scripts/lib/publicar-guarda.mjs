@@ -81,18 +81,19 @@ export function gravarPedido(base, pedido, ferr = FERR) {
   gravarPrivado(arquivoPedido(ferr), { servico: base, ...pedido, guardado_em: Date.now() });
 }
 
-// Envio cujo concluir ficou sem resposta: { versao_antes, sha256 } (a versão que estava no ar antes e
-// o SHA-256 do pacote que foi mandado), ou null. Sem sha256 (arquivo antigo) vale como nenhum.
+// Envio cujo concluir ficou sem resposta: { versao_antes, impressao } (a versão que estava no ar antes
+// e a impressão do conteúdo mandado, pacote.impressao), ou null. Sem impressão (arquivo antigo) vale
+// como nenhum: a próxima publicação manda de novo.
 export function lerConferir(base, nome, ferr = FERR) {
   const c = lerPrivado(arquivoConferir(nome, ferr));
   const versaoOk = c && (c.versao_antes === null || Number.isInteger(c.versao_antes));
-  if (versaoOk && c.servico === base && typeof c.sha256 === 'string' && c.sha256.length === 64) return c;
+  if (versaoOk && c.servico === base && typeof c.impressao === 'string' && c.impressao.length === 64) return c;
   if (c) apagar(arquivoConferir(nome, ferr));
   return null;
 }
 
-export function gravarConferir(base, nome, versaoAntes, sha256, ferr = FERR) {
-  gravarPrivado(arquivoConferir(nome, ferr), { servico: base, versao_antes: versaoAntes, sha256 });
+export function gravarConferir(base, nome, versaoAntes, impressao, ferr = FERR) {
+  gravarPrivado(arquivoConferir(nome, ferr), { servico: base, versao_antes: versaoAntes, impressao });
 }
 
 // --sair: apaga chave e pedido. Devolve o que existia.

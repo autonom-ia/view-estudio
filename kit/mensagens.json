@@ -535,6 +535,10 @@
     "texto": "Nesse endereço está no ar algo que não foi esta apresentação que pôs ali daqui: um site seu, outra apresentação, ou uma versão publicada de outro computador. Se eu publicar, esta apresentação toma o lugar do que está no ar.",
     "acao": "Veja dados.nome, dados.versao_no_ar e dados.versao_desta. Pergunte à pessoa, com duas opções: \"Usar outro endereço ★\" (proponha um nome curto e livre e, com o sim dela, rode ./estudio publicar <nome> --no-ar <outro>) ou \"Trocar o que está lá por esta apresentação\" (rode de novo com --por-cima; as versões de antes ficam guardadas por um tempo e dá para voltar com --voltar). Nunca use --por-cima sem esse sim, dado para este endereço."
   },
+  "PUBLICAR_PASTA_MUDOU": {
+    "texto": "Esta apresentação está num lugar diferente de onde eu a pus no ar da última vez. Pode ser que você tenha movido ou copiado a apresentação. Antes de trocar o que está no ar, preciso que você confirme.",
+    "acao": "Veja dados.lugar (onde ela está agora), dados.lugar_anterior (de onde foi publicada) e dados.anterior_existe. Se anterior_existe é false, ela foi movida: diga isso em uma frase e pergunte \"Posso pôr esta no lugar da que está no ar? ★\"; com o sim, rode de novo com --por-cima (só desta vez: daí em diante este lugar é o dela). Se anterior_existe é true, há duas cópias: pergunte qual deve ficar no ar. Se for esta, com o sim rode com --por-cima; se as duas devem ficar no ar, proponha outro endereço para esta e rode com --no-ar <outro>. Nunca use --por-cima sem esse sim."
+  },
   "PUBLICAR_LIMITE_DE_SITES": {
     "texto": "Você chegou ao número máximo de endereços no ar (sites e apresentações contam juntos).",
     "acao": "Diga que dá para pôr no ar uma versão nova de algo que já está no ar, ou pedir para tirar um do ar em sites.autonomia.site."

@@ -102,6 +102,6 @@ Rode tudo de dentro da pasta do estúdio.
 | `referencias/` | Da pessoa: fotos, logos, apresentações de que ela gosta, documentos com os fatos |
 | `kit/` | O motor do estúdio. Não edite: a atualização sobrescreve. O molde das telas está em `kit/molde/`; o repertório de apresentações reais, em `kit/repertorio/` |
 | `instalar/` | O instalador e os textos da instalação. Não edite |
-| `.ferramentas/` | Os programas do estúdio (escondida). Só o instalador mexe; o `publicar` guarda ali o acesso deste computador (`publicar/`), que você nunca abre nem mostra |
+| `.ferramentas/` | Os programas do estúdio (escondida). Só o instalador mexe; o `publicar` guarda ali o acesso deste computador e de onde cada apresentação foi publicada (`publicar/`), que você nunca abre nem mostra |
 
 **Nunca apague** `minha-marca/`, `apresentacoes/` nem `referencias/`, nem o que está dentro delas, a não ser que a pessoa peça uma remoção específica.

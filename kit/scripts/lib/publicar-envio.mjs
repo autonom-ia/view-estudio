@@ -120,7 +120,7 @@ async function concluir(cfg, chave, envio) {
 // Depois de um concluir sem resposta: guarda a versão de antes (qualquer erro daqui em diante deixa a
 // conferência para a próxima chamada) e procura a versão nova na lista até o prazo que sobra.
 async function confirmarOuGuardar(cfg, chave, nome, versaoAntes, pacote, ferr) {
-  gravarConferir(cfg.base, nome, versaoAntes, pacote.sha256, ferr);
+  gravarConferir(cfg.base, nome, versaoAntes, pacote.impressao, ferr);
   const limite = Date.now() + prazoDaEspera(cfg);
   for (;;) {
     try {
@@ -140,12 +140,13 @@ async function confirmarOuGuardar(cfg, chave, nome, versaoAntes, pacote, ferr) {
 // Publica o pacote montado (lib/pacote.mjs). Devolve { slug, versao, endereco, partes }.
 export async function enviarPacote(cfg, chave, nome, pacote, ferr = FERR) {
   const antes = await semFalhaDeRede(() => lerSite(cfg, chave, nome));
-  // Só pula o envio se a versão nova que apareceu é deste mesmo pacote: a apresentação pode ter mudado
-  // entre o envio sem resposta e agora, e aí o que está no ar não é o que a pessoa quer publicar.
+  // Só pula o envio se a versão nova que apareceu é deste mesmo conteúdo (pacote.impressao: nomes e
+  // bytes, sem as datas que mudam o zip): a apresentação pode ter mudado entre o envio sem resposta e
+  // agora, e aí o que está no ar não é o que a pessoa quer publicar.
   const pendente = lerConferir(cfg.base, nome, ferr);
   if (pendente) {
     apagar(arquivoConferir(nome, ferr));
-    const mesmoPacote = pendente.sha256 === pacote.sha256;
+    const mesmoPacote = pendente.impressao === pacote.impressao;
     if (mesmoPacote && versaoNova(antes, pendente.versao_antes) && podeSerDeste(antes, pacote.zip.length)) return { slug: nome, versao: antes.versao, endereco: antes.endereco, partes: 0 };
   }
   const bytes = pacote.zip.length;

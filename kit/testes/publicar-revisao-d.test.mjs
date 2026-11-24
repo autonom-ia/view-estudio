@@ -175,3 +175,83 @@ test('7. PARTE_EM_ANDAMENTO se reenvia; pedidos de espera do painel viram PUBLIC
     assert.equal(espera.json.resumo, MENSAGENS.PUBLICAR_ESPERE_UM_POUCO.texto);
   }
 });
+
+// Rodada 2 da revisão do bloco D.
+test('r2.1 cópia da pasta exige --por-cima; a mesma pasta republica sem pedir; pasta movida pede uma vez', async (t) => {
+  const ctx = await preparar(t);
+  darChave(ctx);
+  assert.equal((await ctx.publicar()).json.codigo, 'PUBLICADO');
+  assert.equal((await ctx.publicar()).json.dados.versao, 2, 'a mesma pasta republica sem pedir');
+  const apresentacoes = path.dirname(ctx.c.pasta);
+  // cópia: vai junto o no-ar.json, mas não o registro de dono
+  fs.cpSync(ctx.c.pasta, path.join(apresentacoes, 'copia-da-aula'), { recursive: true });
+  const copia = await rodar(['publicar', 'copia-da-aula'], ctx.env);
+  assert.deepEqual([copia.codigo, copia.json.codigo, copia.json.dados.anterior_existe], [2, 'PUBLICAR_PASTA_MUDOU', true], copia.saida);
+  assert.equal(copia.json.dados.nome, NOME, 'o endereço veio do no-ar.json copiado');
+  assert.equal(ctx.servico.estado.aberturas, 2, 'a cópia não mandou nada');
+  const troca = await rodar(['publicar', 'copia-da-aula', '--por-cima'], ctx.env);
+  assert.deepEqual([troca.json.codigo, troca.json.dados.versao], ['PUBLICADO', 3]);
+  // a original agora não é mais dona do que está no ar
+  assert.equal((await ctx.publicar()).json.codigo, 'PUBLICAR_ENDERECO_JA_EM_USO');
+  // pasta movida: a anterior não existe mais
+  fs.renameSync(path.join(apresentacoes, 'copia-da-aula'), path.join(apresentacoes, 'aula-movida'));
+  const movida = await rodar(['publicar', 'aula-movida'], ctx.env);
+  assert.deepEqual([movida.json.codigo, movida.json.dados.anterior_existe], ['PUBLICAR_PASTA_MUDOU', false]);
+  assert.equal((await rodar(['publicar', 'aula-movida', '--por-cima'], ctx.env)).json.dados.versao, 4);
+  assert.equal((await rodar(['publicar', 'aula-movida'], ctx.env)).json.dados.versao, 5, 'depois da vez com --por-cima, não pede mais');
+  assert.ok(MENSAGENS.PUBLICAR_PASTA_MUDOU.acao.includes('--por-cima'));
+});
+
+test('r2.1 quem publicou antes do registro de dono (só no-ar.json) republica sem pedir, uma vez migrado', async (t) => {
+  const ctx = await preparar(t);
+  darChave(ctx);
+  const e = ctx.servico.estado;
+  e.publicados.push({ slug: NOME, versao: 1, zip: Buffer.from('versão publicada antes do registro') });
+  fs.writeFileSync(path.join(ctx.c.pasta, 'no-ar.json'), JSON.stringify({ nome: NOME, versao: 1 }));
+  const r = await ctx.publicar();
+  assert.deepEqual([r.json.codigo, r.json.dados.versao], ['PUBLICADO', 2], r.saida);
+  const donos = JSON.parse(fs.readFileSync(path.join(ctx.ferr, 'publicar', 'donos.json'), 'utf8'));
+  assert.equal(Object.values(donos)[0][NOME].versao, 2, 'o dono ficou registrado fora das pastas da pessoa');
+  // no-ar.json que não bate com o que está no ar não migra
+  fs.writeFileSync(path.join(ctx.ferr, 'publicar', 'donos.json'), '{}');
+  fs.writeFileSync(path.join(ctx.c.pasta, 'no-ar.json'), JSON.stringify({ nome: NOME, versao: 1 }));
+  assert.equal((await ctx.publicar()).json.codigo, 'PUBLICAR_ENDERECO_JA_EM_USO');
+});
+
+test('r2.2 tela que cita outro nome que só termina igual não é citação ("data.md" não cita "a.md")', async (t) => {
+  const { citaCaminho } = await import('../scripts/lib/pacote.mjs');
+  assert.equal(citaCaminho('<a href="data.md">', 'a.md'), false);
+  assert.equal(citaCaminho('<a href="a.md">', 'a.md'), true);
+  assert.equal(citaCaminho('<a href="a.md?x=1">', 'a.md'), true);
+  assert.equal(citaCaminho('<a href="a.md.bak">', 'a.md'), false);
+  assert.equal(citaCaminho('<img src="../_lab/x.png">', '_lab/x.png'), true);
+  assert.equal(citaCaminho('<img src="./_lab/x.png">', '_lab/x.png'), true);
+  assert.equal(citaCaminho('<img src="assets/_lab/x.png">', '_lab/x.png'), false);
+  assert.equal(citaCaminho("url('../../_lab/x.png')", '_lab/x.png'), true);
+  const ctx = await preparar(t);
+  darChave(ctx);
+  escrever(ctx.c, 'deck/a.md', 'anotação');
+  escrever(ctx.c, 'deck/slides/s01-capa.html', '<h1>Capa</h1><img src="../assets/foto.txt"><p>veja data.md e meta.md</p>');
+  conferirTudo(ctx.c);
+  const r = await ctx.publicar();
+  assert.deepEqual([r.codigo, r.json.codigo], [0, 'PUBLICADO'], r.saida);
+});
+
+test('r2.3 impressão do envio é do conteúdo (nomes e bytes), não do zip: só a data mudar não manda de novo', async (t) => {
+  const { montarPacote } = await import('../scripts/lib/pacote.mjs');
+  const ctx = await preparar(t);
+  darChave(ctx);
+  const capa = path.join(ctx.c.deck, 'slides', 's01-capa.html');
+  const antes = montarPacote(ctx.c.deck);
+  fs.utimesSync(capa, new Date('2020-01-01T00:00:00Z'), new Date('2020-01-01T00:00:00Z'));
+  const depois = montarPacote(ctx.c.deck);
+  assert.notEqual(antes.sha256, depois.sha256, 'o zip muda com a data');
+  assert.equal(antes.impressao, depois.impressao, 'o conteúdo não mudou');
+  const e = ctx.servico.estado;
+  e.concluirCai = 'sem_publicar';
+  assert.equal((await ctx.publicar()).json.codigo, 'PUBLICAR_CONCLUSAO_INCERTA');
+  ctx.servico.publicarPendentes();
+  fs.utimesSync(capa, new Date('2021-01-01T00:00:00Z'), new Date('2021-01-01T00:00:00Z'));
+  const r = await ctx.publicar();
+  assert.deepEqual([r.json.codigo, r.json.dados.versao, e.aberturas], ['PUBLICADO', 1, 1], 'confirmou sem mandar de novo');
+});

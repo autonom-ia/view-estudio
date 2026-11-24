@@ -99,6 +99,29 @@ const lerTextos = (pasta, arquivos) => arquivos
   .filter((rel) => TEXTOS_QUE_CITAM.includes(extensao(rel)))
   .map((rel) => ({ rel, texto: fs.readFileSync(path.join(pasta, ...rel.split('/')), 'utf8') }));
 
+// Letra que continua um nome de arquivo ou pasta (o resto, como aspas, parêntese, espaço, "?" e "#",
+// termina o nome).
+const continuaNome = (ch) => ch !== undefined && (ch.toLowerCase() !== ch.toUpperCase() || (ch >= '0' && ch <= '9') || '_-.~%'.includes(ch));
+
+// O texto cita o caminho inteiro, e não só um pedaço de outro nome ("data.md" não cita "a.md";
+// "assets/_lab/x.png" não cita "_lab/x.png")? Antes do caminho só vale fim de nome, ou "./" e "../".
+export function citaCaminho(texto, caminho) {
+  let i = texto.indexOf(caminho);
+  while (i !== -1) {
+    const depois = texto[i + caminho.length];
+    let k = i;
+    for (;;) {
+      if (k >= 3 && texto.startsWith('../', k - 3)) k -= 3;
+      else if (k >= 2 && texto.startsWith('./', k - 2)) k -= 2;
+      else break;
+    }
+    const antes = texto[k - 1];
+    if (!continuaNome(antes) && antes !== '/' && !continuaNome(depois) && depois !== '/') return true;
+    i = texto.indexOf(caminho, i + 1);
+  }
+  return false;
+}
+
 // Arquivos que ficam fora do pacote e que uma página, estilo ou script do pacote cita, pelo caminho a
 // partir da raiz de deck/ ou a partir da pasta de quem cita ("../_lab/foto.png"). [{ arquivo, citado_em }]
 export function citadosForaDoPacote(pasta, arquivos, fora) {
@@ -107,7 +130,7 @@ export function citadosForaDoPacote(pasta, arquivos, fora) {
   for (const rel of fora) {
     const quem = textos.find((t) => {
       const relativo = path.posix.relative(path.posix.dirname(t.rel), rel);
-      return t.texto.includes(rel) || t.texto.includes(relativo);
+      return citaCaminho(t.texto, rel) || citaCaminho(t.texto, relativo);
     });
     if (quem) achados.push({ arquivo: `deck/${rel}`, citado_em: `deck/${quem.rel}` });
   }
@@ -147,9 +170,17 @@ export function montarPacote(deck) {
     return { nome: rel, dados: fs.readFileSync(abs), data: fs.statSync(abs).mtime, guardar: SEM_COMPRIMIR.includes(extensao(rel)) };
   });
   const zip = montarZip(entradas);
+  // Impressão do conteúdo: nomes e bytes, em ordem, sem a data dos arquivos (que muda o zip). É ela
+  // que diz se um envio sem resposta era deste mesmo conteúdo.
+  const impressao = crypto.createHash('sha256');
+  for (const e of [...entradas].sort((a, b) => (a.nome < b.nome ? -1 : a.nome > b.nome ? 1 : 0))) {
+    impressao.update(`${e.nome}\0${e.dados.length}\0`);
+    impressao.update(e.dados);
+  }
   return {
     zip,
     sha256: crypto.createHash('sha256').update(zip).digest('hex'),
+    impressao: impressao.digest('hex'),
     arquivos: entradas.length,
     nomes: arquivos,
     telas: arquivos.filter((a) => a.endsWith('.html') && a !== 'index.html').length,

@@ -42,6 +42,8 @@ Diga, com estas palavras ou parecidas: "Eu ponho no ar só com a sua confirmaç�
 
 **Endereço com algo no ar que não foi esta apresentação que pôs** (`PUBLICAR_ENDERECO_JA_EM_USO`): é um site dela, outra apresentação, ou uma versão publicada de outro computador ou de uma cópia da apresentação; publicar ali (ou voltar versão) tira aquilo do ar. Pergunte: "Usar outro endereço ★" ou "Trocar o que está lá por esta apresentação". Outro endereço: `--no-ar <outro>`, como acima. Trocar: só com esse sim, rode `./estudio publicar <nome> --por-cima`. Nunca use `--por-cima` por conta própria.
 
+**Apresentação movida ou copiada** (`PUBLICAR_PASTA_MUDOU`): ela foi publicada de outro lugar deste computador. Siga a ação da mensagem: movida, uma vez `--por-cima` com o sim dela; duas cópias, pergunte qual fica no ar (a outra pode ir para outro endereço com `--no-ar`).
+
 **Tela que usa um arquivo que fica fora** (`PACOTE_CITA_ARQUIVO_FORA`): leve o arquivo para `deck/assets/` e troque o caminho na tela. **Esperar** (`PUBLICAR_ESPERE_UM_POUCO`): espere uns 2 minutos e rode de novo, sem perguntar outra vez.
 
 **Grande demais ou arquivo que o serviço não aceita** (`PUBLICAR_SITE_GRANDE_DEMAIS`, `PUBLICAR_TIPO_NAO_ACEITO`, `PUBLICAR_NOME_DE_ARQUIVO_RECUSADO`, `PUBLICAR_NOMES_REPETIDOS`, `PUBLICAR_ARQUIVOS_DEMAIS`, `PUBLICAR_PACOTE_RECUSADO`): o teto é 200 MB, e o que mais pesa costuma ser vídeo de cena. Vídeo `.mov` ou `.m4v` vira `.mp4` (skill `cena-em-video`). Depois de corrigir, rode as três conferências e pergunte de novo antes de publicar.

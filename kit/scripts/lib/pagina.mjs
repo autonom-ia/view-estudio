@@ -54,8 +54,19 @@ export const ASSENTAR = (n) => `(async () => {
     if (v.readyState < 2 && v.readyState > 0) await Promise.race([new Promise((r) => v.addEventListener('loadeddata', r, { once: true })), dormir(3000)]);
   }
   for (const el of document.querySelectorAll('[data-controle], .dica')) el.style.visibility = 'hidden';
+  // transição e animação de CSS (uma cor que muda no clique, por exemplo) terminam agora: sem isso a
+  // foto e as medidas pegam o meio do caminho. A infinita (um pulso) só para onde está.
+  try {
+    for (const a of document.getAnimations()) {
+      try {
+        const vezes = a.effect && a.effect.getComputedTiming ? a.effect.getComputedTiming().iterations : 1;
+        if (vezes === Infinity) a.pause(); else a.finish();
+      } catch (e) {}
+    }
+  } catch (e) {}
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
   await dormir(60);
+  await new Promise((r) => requestAnimationFrame(r));
   return { beat: alvo, last };
 })()`;
 
@@ -280,10 +291,20 @@ export const MEDIR = (limites, beat = 0) => `(() => {
     return ['IMG', 'VIDEO', 'CANVAS', 'PICTURE', 'IFRAME', 'svg', 'OBJECT', 'EMBED'].includes(e.tagName);
   };
   const contraste = [];
+  let decorativos = 0;
+  let recuados = 0;
   for (const it of itens) {
     if (!it.vis || it.op < 0.05) continue;
-    if (it.el.closest('[aria-hidden="true"]') || recuado(it.el)) continue;
-    const preenchimento = cor(it.cs.webkitTextFillColor || it.cs.color);
+    if (it.el.closest('[aria-hidden="true"]')) { decorativos += 1; continue; }
+    if (recuado(it.el)) { recuados += 1; continue; }
+    // texto de SVG é pintado pelo fill, não pelo color
+    const ehSvg = typeof SVGElement !== 'undefined' && it.el instanceof SVGElement;
+    const tinta = ehSvg ? it.cs.fill : (it.cs.webkitTextFillColor || it.cs.color);
+    if (ehSvg && String(tinta).startsWith('url')) {
+      warn.push({ tipo: 'contraste-nao-medido', detalhe: 'texto de SVG pintado com degradê ou padrão: ' + nomeDe(it) });
+      continue;
+    }
+    const preenchimento = cor(tinta === 'none' ? 'transparent' : tinta);
     if (preenchimento.a < 0.05) {
       warn.push({ tipo: 'contraste-nao-medido', detalhe: 'texto pintado com o fundo (transparente): ' + nomeDe(it) });
       continue;
@@ -298,6 +319,12 @@ export const MEDIR = (limites, beat = 0) => `(() => {
         const x1 = Math.min(q.right, pr.right); const y1 = Math.min(q.bottom, pr.bottom);
         if (x1 - x0 > 1 && y1 - y0 > 1) caixas.push({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
       }
+    }
+    if (!caixas.length) {
+      // texto que o navegador não mede pela linha (alguns SVG): usa a caixa do elemento
+      const x0 = Math.max(it.r.left, pr.left); const y0 = Math.max(it.r.top, pr.top);
+      const x1 = Math.min(it.r.right, pr.right); const y1 = Math.min(it.r.bottom, pr.bottom);
+      if (x1 - x0 > 1 && y1 - y0 > 1) caixas.push({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
     }
     if (!caixas.length) continue;
     const q = caixas[0];
@@ -319,7 +346,18 @@ export const MEDIR = (limites, beat = 0) => `(() => {
       peso: parseInt(it.cs.fontWeight, 10) || 400,
     });
   }
-  return { red: red.slice(0, L.maximo), warn: warn.slice(0, L.maximo), medidos: itens.length, contraste: contraste.slice(0, L.contraste_maximo || 60) };
+  // o que fica fora da medida de propósito é dito, com o motivo e quantos (só texto visível conta)
+  if (decorativos || recuados) {
+    const partes = [];
+    if (decorativos) partes.push(decorativos + (decorativos === 1 ? ' texto decorativo (aria-hidden)' : ' textos decorativos (aria-hidden)'));
+    if (recuados) partes.push(recuados + (recuados === 1 ? ' texto recuado de propósito (data-recua)' : ' textos recuados de propósito (data-recua)'));
+    warn.push({ tipo: 'contraste-fora-da-medida', detalhe: partes.join(' e ') + ' fora da medida de contraste' });
+  }
+  const teto = L.contraste_maximo || 60;
+  if (contraste.length > teto) {
+    warn.unshift({ tipo: 'contraste-nao-medido', detalhe: contraste.length + ' textos neste clique; só os ' + teto + ' primeiros foram medidos (' + (contraste.length - teto) + ' sem medir)' });
+  }
+  return { red: red.slice(0, L.maximo), warn: warn.slice(0, L.maximo), medidos: itens.length, contraste: contraste.slice(0, teto) };
 })()`;
 
 // Esconde a letra de todo texto da tela (a sombra fica: ela é parte do fundo que dá leitura) para a
@@ -329,7 +367,8 @@ export const ESCONDER_TEXTO = `(async () => {
   if (!s) { s = document.createElement('style'); s.id = '__estudio_sem_texto'; (document.head || document.documentElement).appendChild(s); }
   s.textContent = '*,*::before,*::after{color:transparent!important;-webkit-text-fill-color:transparent!important;'
     + '-webkit-text-stroke-color:transparent!important;text-decoration-color:transparent!important;'
-    + 'caret-color:transparent!important;transition:none!important}';
+    + 'caret-color:transparent!important;transition:none!important}'
+    + 'text,tspan,textPath{fill:transparent!important;stroke:transparent!important}';
   void document.documentElement.offsetWidth;
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
   return true;

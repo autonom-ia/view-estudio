@@ -147,4 +147,79 @@ test('contraste no Chrome: reprova o fraco no fundo de verdade e não acusa letr
   // as telas do molde continuam passando: contraste só aparece na tela nova
   assert.deepEqual(r.json.dados.vermelhos.filter((v) => v.tela !== 's04-contraste.html'), []);
   assert.ok(r.json.dados.contraste_medido > 20);
+  // o que fica fora da medida de propósito é dito, com motivo e contagem
+  const fora = r.json.dados.amarelos.filter((w) => w.tela === 's04-contraste.html' && w.tipo === 'contraste-fora-da-medida');
+  assert.deepEqual(fora.map((w) => `${w.beat}:${w.detalhe}`), [
+    '0:1 texto decorativo (aria-hidden) fora da medida de contraste',
+    '1:1 texto decorativo (aria-hidden) e 1 texto recuado de propósito (data-recua) fora da medida de contraste',
+  ]);
+});
+
+// Tela com texto que escurece no clique por transição de CSS (5 s), texto de SVG claro (reprova) e
+// texto de SVG escuro e grosso (passa só se a foto do fundo sair sem a letra do SVG).
+const TELA_TRANSICAO = `<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Transição</title>
+<link rel="stylesheet" href="../assets/marca/tokens.css">
+<link rel="stylesheet" href="../assets/vendor/palco/tela.css">
+<style>
+.palco-tela{background:#ffffff;font-family:Arial,sans-serif}
+.muda{position:absolute;left:100px;top:100px;font-size:30px;color:#e8e8e8;transition:color 5s linear}
+.muda.escuro{color:#111111}
+.svg{position:absolute;left:100px;top:400px}
+</style>
+</head>
+<body>
+<div class="palco-tela">
+  <p class="muda">texto que escurece no clique</p>
+  <p data-beat="1" style="position:absolute;left:100px;top:250px;font-size:30px;color:#111">segundo clique</p>
+  <svg class="svg" width="900" height="120" viewBox="0 0 900 120"><text x="0" y="80" font-size="48" fill="#e6e6e6">svg claro no fundo branco</text></svg>
+  <svg style="position:absolute;left:100px;top:600px" width="1200" height="200" viewBox="0 0 1200 200"><text x="0" y="150" font-size="160" font-weight="900" fill="#111">SVG ESCURO</text></svg>
+</div>
+<script>
+window.CENA = {
+  beats: { 1: () => document.querySelector('.muda').classList.add('escuro') },
+  assentar: (n) => document.querySelector('.muda').classList.toggle('escuro', n >= 1),
+};
+</script>
+<script src="../assets/vendor/gsap/gsap.min.js"></script>
+<script src="../assets/vendor/palco/cena.js"></script>
+</body>
+</html>
+`;
+
+// 61 textos escuros em fundo claro: passa do teto de 60 por clique.
+function telaComMuitos(n) {
+  const ps = [];
+  for (let k = 0; k < n; k += 1) {
+    ps.push(`<p style="position:absolute;left:${60 + (k % 4) * 460}px;top:${40 + Math.floor(k / 4) * 62}px;font-size:20px;color:#111">item ${String.fromCharCode(97 + (k % 26))}${k}</p>`);
+  }
+  return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Muitos</title>
+<link rel="stylesheet" href="../assets/marca/tokens.css"><link rel="stylesheet" href="../assets/vendor/palco/tela.css">
+<style>.palco-tela{background:#fff;font-family:Arial,sans-serif}</style></head><body><div class="palco-tela">
+${ps.join('\n')}
+</div><script src="../assets/vendor/gsap/gsap.min.js"></script><script src="../assets/vendor/palco/cena.js"></script></body></html>`;
+}
+
+test('contraste no Chrome: transição de cor termina antes da medida, texto de SVG é medido pelo fill, teto avisado', opcoes, () => {
+  assert.equal(estudio('nova', 'transicao').codigo, 0);
+  const deck = path.join(base, 'transicao', 'deck');
+  fs.writeFileSync(path.join(deck, 'slides', 's04-transicao.html'), TELA_TRANSICAO);
+  fs.writeFileSync(path.join(deck, 'slides', 's05-muitos.html'), telaComMuitos(61));
+  const index = path.join(deck, 'index.html');
+  const secoes = ['s04-transicao', 's05-muitos'].map((n, k) => `    <section class="slide" id="t0${k + 4}"><iframe data-src="slides/${n}.html"></iframe></section>`).join('\n');
+  fs.writeFileSync(index, fs.readFileSync(index, 'utf8').replace('  </div>\n</div>', `${secoes}\n  </div>\n</div>`));
+  const r = estudio('checar', 'transicao');
+  const contraste = r.json.dados.vermelhos.filter((v) => v.tipo === 'contraste').map((v) => `${v.tela}|${v.beat}|${v.detalhe.split('"')[1]}`).sort();
+  // beat 0: o texto claro reprova (é a cor dele); beat 1: já escureceu (a transição terminou)
+  assert.deepEqual(contraste, [
+    's04-transicao.html|0|svg claro no fundo branco',
+    's04-transicao.html|0|texto que escurece no clique',
+    's04-transicao.html|1|svg claro no fundo branco',
+  ], JSON.stringify(r.json.dados.vermelhos));
+  const teto = r.json.dados.amarelos.filter((w) => w.tela === 's05-muitos.html' && w.tipo === 'contraste-nao-medido');
+  assert.equal(teto.length, 1, JSON.stringify(r.json.dados.amarelos));
+  assert.ok(teto[0].detalhe.startsWith('61 textos') && teto[0].detalhe.includes('1 sem medir'), teto[0].detalhe);
 });

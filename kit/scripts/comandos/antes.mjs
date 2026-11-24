@@ -12,7 +12,7 @@ import { abrirApresentacao } from '../lib/apresentacao.mjs';
 import { listarArquivos } from '../lib/caminhos.mjs';
 import { escreverJson, lerJson } from '../lib/json.mjs';
 import { reprovado } from '../lib/saida.mjs';
-import { caminhosDoAntesDepois, guardarAntes, temAntes } from '../lib/antes-depois.mjs';
+import { caminhosDoAntesDepois, guardarAntes, liberarPesados, temAntes } from '../lib/antes-depois.mjs';
 
 export default async function antes(args) {
   const nome = nomeDaApresentacao(args);
@@ -20,6 +20,8 @@ export default async function antes(args) {
   const ad = caminhosDoAntesDepois(c);
   const estado = lerJson(ad.estado, { aberto: false });
   if (temAntes(ad) && estado.aberto === true && args.opcoes['de-novo'] !== true) reprovado('ANTES_EM_ABERTO', { nome });
+  // o antes anterior sai: os pesados ligados voltam ao modo de antes (são os da apresentação também)
+  if (temAntes(ad)) liberarPesados(ad.antes, lerJson(ad.manifesto, { pesados: [] }));
   fs.rmSync(ad.pasta, { recursive: true, force: true });
   const manifesto = guardarAntes(c.pasta, ad.antes);
   escreverJson(ad.manifesto, manifesto);

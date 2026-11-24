@@ -7,12 +7,15 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { acharNavegador } from '../scripts/lib/chrome.mjs';
 import {
   guardarAntes, pesadosAlterados, restaurarAntes, igualAoAntes, lerMudancas, ehPesado, PESADO_BYTES,
+  caminhosDoAntesDepois, fecharAntes, impressao, mesmoArquivo, pastasIguais, semLinkFixo,
 } from '../scripts/lib/antes-depois.mjs';
+import { renderizarSemPerderOAnterior } from '../scripts/lib/hyperframes.mjs';
 import { telasMudadas, paginaDeComparacao, nomeDaFoto } from '../scripts/lib/comparacao.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -31,6 +34,11 @@ function escrever(arquivo, conteudo) {
   fs.mkdirSync(path.dirname(arquivo), { recursive: true });
   fs.writeFileSync(arquivo, conteudo);
 }
+
+// Gravável por alguém? (no Windows, só para leitura aparece como 0o444)
+const gravavel = (arquivo) => (fs.statSync(arquivo).mode & 0o222) !== 0;
+// Como root, só para leitura não impede gravar: a checagem de "gravar dá erro" pula.
+const ehRoot = typeof process.getuid === 'function' && process.getuid() === 0;
 
 function apresentacaoDeBrinquedo(nome) {
   const pasta = path.join(base, nome);
@@ -60,6 +68,8 @@ test('antes-depois: guarda deck, roteiro e brief; vídeo vira link fixo (sem dup
   const video = fs.statSync(path.join(pasta, 'deck', 'assets', 'cena.mp4'));
   const guardado = fs.statSync(path.join(antes, 'deck', 'assets', 'cena.mp4'));
   assert.equal(guardado.ino, video.ino, 'o vídeo do antes é o mesmo arquivo no disco');
+  assert.equal(gravavel(path.join(pasta, 'deck', 'assets', 'cena.mp4')), false, 'vídeo ligado ao antes fica só para leitura');
+  assert.equal(gravavel(path.join(pasta, 'brief.md')), true, 'o que foi copiado continua gravável');
   assert.notEqual(fs.statSync(path.join(antes, 'deck', 'slides', 's01-capa.html')).ino, fs.statSync(path.join(pasta, 'deck', 'slides', 's01-capa.html')).ino);
   assert.equal(fs.lstatSync(path.join(antes, 'deck', 'atalho.md')).isSymbolicLink(), true, 'link simbólico é recriado, não seguido');
   assert.equal(fs.readlinkSync(path.join(antes, 'deck', 'atalho.md')), path.join(pasta, 'brief.md'));
@@ -77,8 +87,11 @@ test('antes-depois: vídeo trocado pelo nome mantém o antes; gravado por cima d
   assert.deepEqual(pesadosAlterados(antes, m), []);
   assert.equal(fs.readFileSync(path.join(antes, 'deck', 'assets', 'cena.mp4'), 'utf8'), 'video-original');
   assert.equal(igualAoAntes(pasta, antes, m), false);
-  // gravar por cima do mesmo arquivo muda o antes junto: comparar e escolher precisam recusar
+  // gravar por cima do mesmo arquivo muda o antes junto: dá erro na hora (só para leitura) e, se
+  // alguém tirar a proteção e gravar mesmo assim, comparar e escolher precisam recusar
   const m2 = guardarAntes(pasta, antes);
+  if (!ehRoot) assert.throws(() => fs.writeFileSync(video, 'video-por-cima'), (e) => e.code === 'EACCES' || e.code === 'EPERM');
+  fs.chmodSync(video, 0o644);
   fs.writeFileSync(video, 'video-por-cima');
   assert.deepEqual(pesadosAlterados(antes, m2), ['deck/assets/cena.mp4']);
 });
@@ -99,7 +112,63 @@ test('antes-depois: restaurar volta cada item e tira o que a tentativa criou', (
   assert.equal(fs.existsSync(path.join(pasta, 'cenas')), false);
   assert.equal(fs.readFileSync(path.join(pasta, 'brief.md'), 'utf8'), '# Brief');
   assert.equal(fs.statSync(path.join(pasta, 'deck', 'assets', 'cena.mp4')).ino, fs.statSync(path.join(antes, 'deck', 'assets', 'cena.mp4')).ino, 'o vídeo volta sem cópia');
+  assert.equal(gravavel(path.join(pasta, 'deck', 'assets', 'cena.mp4')), false, 'o antes continua em aberto: o vídeo segue só para leitura');
   assert.equal(igualAoAntes(pasta, antes, m), true);
+});
+
+test('antes-depois: fechar o antes devolve ao vídeo o modo que ele tinha', () => {
+  const pasta = apresentacaoDeBrinquedo('fechar');
+  const ad = caminhosDoAntesDepois({ revisao: path.join(pasta, 'revisao') });
+  const video = path.join(pasta, 'deck', 'assets', 'cena.mp4');
+  fs.chmodSync(video, 0o640);
+  const m = guardarAntes(pasta, ad.antes);
+  escrever(ad.manifesto, JSON.stringify(m));
+  assert.equal(gravavel(video), false);
+  fecharAntes(ad, 'depois');
+  assert.equal(fs.existsSync(ad.antes), false);
+  assert.equal(gravavel(video), true);
+  if (process.platform !== 'win32') assert.equal(fs.statSync(video).mode & 0o777, 0o640);
+  fs.writeFileSync(video, 'video-gravavel-de-novo');
+});
+
+test('antes-depois: "cena" troca pelo nome mesmo com o vídeo só para leitura, e o antes fica inteiro', async () => {
+  const pasta = apresentacaoDeBrinquedo('cena-protegida');
+  const antes = path.join(pasta, 'revisao', 'antes-depois', 'antes');
+  guardarAntes(pasta, antes);
+  const video = path.join(pasta, 'deck', 'assets', 'cena.mp4');
+  const r = await renderizarSemPerderOAnterior(video, async (tmp) => {
+    fs.writeFileSync(tmp, 'video-novo');
+    return { codigo: 0, saida: '', erro: '' };
+  });
+  assert.equal(r.ok, true);
+  assert.equal(fs.readFileSync(video, 'utf8'), 'video-novo');
+  assert.equal(fs.readFileSync(path.join(antes, 'deck', 'assets', 'cena.mp4'), 'utf8'), 'video-original');
+});
+
+test('antes-depois: link fixo só cai na cópia quando o disco não faz link; outro erro sobe', () => {
+  for (const code of ['EXDEV', 'EPERM', 'ENOTSUP', 'EMLINK']) assert.equal(semLinkFixo({ code }), true, code);
+  for (const code of ['ENOSPC', 'ENOENT', 'EACCES', undefined]) assert.equal(semLinkFixo({ code }), false, String(code));
+  assert.equal(semLinkFixo(null), false);
+});
+
+test('antes-depois: mesmo arquivo só com número de arquivo de verdade e mesmo disco; senão, o conteúdo decide', () => {
+  assert.equal(mesmoArquivo({ ino: 7n, dev: 1n }, { ino: 7n, dev: 1n }), true);
+  assert.equal(mesmoArquivo({ ino: 0n, dev: 1n }, { ino: 0n, dev: 1n }), false, 'número zero não é número de arquivo');
+  assert.equal(mesmoArquivo({ ino: 7n, dev: 1n }, { ino: 7n, dev: 2n }), false, 'outro disco');
+  const a = path.join(base, 'iguais-a');
+  const b = path.join(base, 'iguais-b');
+  escrever(path.join(a, 'x.txt'), 'mesmo texto');
+  escrever(path.join(b, 'x.txt'), 'mesmo texto');
+  assert.equal(pastasIguais(a, b), true);
+  escrever(path.join(b, 'x.txt'), 'outro texto');
+  assert.equal(pastasIguais(a, b), false);
+});
+
+test('antes-depois: impressão digital lida aos pedaços dá o mesmo SHA-256 do arquivo inteiro', () => {
+  const arquivo = path.join(base, 'grande.bin');
+  const dados = crypto.randomBytes(2 * 1024 * 1024 + 123);
+  fs.writeFileSync(arquivo, dados);
+  assert.equal(impressao(arquivo), crypto.createHash('sha256').update(dados).digest('hex'));
 });
 
 test('antes-depois: só mudança com título conta; telas aceita número e nome de arquivo', () => {
@@ -262,6 +331,7 @@ test('antes, comparar e escolher: só a tela e o clique que mudaram, vídeo sem 
 
     // vídeo gravado por cima do mesmo arquivo: comparar e voltar recusam; ficar com o depois pode
     assert.equal(estudio(env, 'antes', 'cafe').json.codigo, 'ANTES_GUARDADO');
+    fs.chmodSync(video, 0o644);
     fs.writeFileSync(video, 'video-gravado-por-cima');
     fs.writeFileSync(mudancas, JSON.stringify({ pedido: 'x', mudancas: [{ titulo: 'um' }, { titulo: 'dois' }] }));
     const videoMudou = estudio(env, 'comparar', 'cafe', '--sem-navegador');

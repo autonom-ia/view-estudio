@@ -77,6 +77,20 @@ export async function hyperframes(argumentos, opcoes = {}) {
 // render bom (código 0, arquivo existe e tem tamanho > 0). Falha: o temporário some e o vídeo
 // anterior fica como estava. "renderizar(temporario)" devolve { codigo, saida, erro } (o do rodar);
 // é injetável para os testes simularem um render sem o motor.
+// O vídeo anterior pode estar só para leitura (ligado ao "antes" de um antes e depois em aberto). No
+// Windows, trocar pelo nome um arquivo só para leitura falha; aqui ele volta a ser gravável antes da
+// troca. O conteúdo dele não muda: a troca pelo nome deixa o arquivo antigo inteiro no antes.
+function liberarParaTrocar(saida) {
+  let modo;
+  try {
+    modo = fs.statSync(saida).mode;
+  } catch (erro) {
+    if (erro.code === 'ENOENT') return;
+    throw erro;
+  }
+  if ((modo & 0o200) === 0) fs.chmodSync(saida, (modo & 0o777) | 0o200);
+}
+
 export async function renderizarSemPerderOAnterior(saida, renderizar) {
   const temporario = path.join(path.dirname(saida), `.renderizando-${process.pid}-${path.basename(saida)}`);
   fs.rmSync(temporario, { force: true });
@@ -95,6 +109,7 @@ export async function renderizarSemPerderOAnterior(saida, renderizar) {
     fs.rmSync(temporario, { force: true });
     return { ...r, ok: false, tamanho };
   }
+  liberarParaTrocar(saida);
   fs.renameSync(temporario, saida);
   return { ...r, ok: true, tamanho };
 }

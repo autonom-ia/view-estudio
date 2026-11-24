@@ -313,7 +313,7 @@
   },
   "ANTES_GUARDADO": {
     "texto": "Guardei como a apresentação está agora, para mostrar o antes e o depois.",
-    "acao": "Faça 2 ou 3 mudanças concretas que se vejam (tela, fala, cena) e preencha arquivos.mudancas com {\"pedido\": \"as palavras da pessoa\", \"mudancas\": [{\"titulo\": \"o que mudou, em palavras do dia a dia\", \"porque\": \"como isso atende o pedido\", \"telas\": [2]}]}. Depois rode ./estudio comparar <nome>. Vídeo e arquivo pesado ficaram ligados ao original, sem cópia (dados.pesados_sem_duplicar): para mudar uma cena, use ./estudio cena, que grava o vídeo novo ao lado; nunca grave por cima do mesmo arquivo."
+    "acao": "Faça 2 ou 3 mudanças concretas que se vejam (tela, fala, cena) e preencha arquivos.mudancas com {\"pedido\": \"as palavras da pessoa\", \"mudancas\": [{\"titulo\": \"o que mudou, em palavras do dia a dia\", \"porque\": \"como isso atende o pedido\", \"telas\": [2]}]}. Depois rode ./estudio comparar <nome>. Vídeo e arquivo pesado ficaram ligados ao original, sem cópia (dados.pesados_sem_duplicar): para mudar uma cena, use ./estudio cena, que grava o vídeo novo ao lado; nunca grave por cima do mesmo arquivo. Enquanto o antes está em aberto, esses arquivos ficam só para leitura: para trocar um, grave o novo ao lado e troque pelo nome."
   },
   "ANTES_EM_ABERTO": {
     "texto": "Ainda falta você escolher entre o antes e o depois da última mudança.",

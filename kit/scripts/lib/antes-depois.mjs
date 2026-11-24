@@ -318,8 +318,15 @@ export function guardarTentativa(pastaDaApresentacao, ad, manifesto) {
   }
 }
 
+// Número escrito como texto ("2", " 3 "): vira número, para marcar a tela certa na página.
+function telaComoNumero(t) {
+  const limpo = t.trim();
+  if (!limpo || [...limpo].some((ch) => ch < '0' || ch > '9')) return t;
+  return Number(limpo);
+}
+
 // Só as mudanças com título de verdade contam. "telas" (opcional) diz em que telas a mudança está:
-// números (2) ou nomes de arquivo ("s02-numero.html"). Devolve { pedido, mudancas, ignoradas }.
+// números (2, ou "2" em texto) ou nomes de arquivo ("s02-numero.html"). Devolve { pedido, mudancas, ignoradas }.
 export function lerMudancas(json) {
   const pedido = typeof json?.pedido === 'string' ? json.pedido.trim() : '';
   const lista = Array.isArray(json?.mudancas) ? json.mudancas : [];
@@ -327,7 +334,9 @@ export function lerMudancas(json) {
   for (const m of lista) {
     const titulo = typeof m?.titulo === 'string' ? m.titulo.trim() : '';
     if (!titulo) continue;
-    const telas = Array.isArray(m.telas) ? m.telas.filter((t) => typeof t === 'string' || Number.isInteger(t)) : [];
+    const telas = Array.isArray(m.telas)
+      ? m.telas.filter((t) => typeof t === 'string' || Number.isInteger(t)).map((t) => (typeof t === 'string' ? telaComoNumero(t) : t))
+      : [];
     mudancas.push({ titulo, porque: typeof m.porque === 'string' ? m.porque.trim() : '', telas });
   }
   return { pedido, mudancas, ignoradas: lista.length - mudancas.length };

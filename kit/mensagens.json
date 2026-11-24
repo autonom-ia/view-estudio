@@ -313,23 +313,23 @@
   },
   "ANTES_GUARDADO": {
     "texto": "Guardei como a apresentação está agora, para mostrar o antes e o depois.",
-    "acao": "Faça 2 ou 3 mudanças concretas que se vejam (tela, fala, cena) e preencha arquivos.mudancas com {\"pedido\": \"as palavras da pessoa\", \"mudancas\": [{\"titulo\": \"o que mudou, em palavras do dia a dia\", \"porque\": \"como isso atende o pedido\", \"telas\": [2]}]}. Depois rode ./estudio comparar <nome>. Vídeo e arquivo pesado ficaram ligados ao original, sem cópia (dados.pesados_sem_duplicar): para mudar uma cena, use ./estudio cena, que grava o vídeo novo ao lado; nunca grave por cima do mesmo arquivo. Enquanto o antes está em aberto, esses arquivos ficam só para leitura: para trocar um, grave o novo ao lado e troque pelo nome."
+    "acao": "Faça 2 ou 3 mudanças concretas que se vejam (tela, fala, cena) e preencha arquivos.mudancas com {\"pedido\": \"as palavras da pessoa\", \"mudancas\": [{\"titulo\": \"o que mudou, em palavras do dia a dia\", \"porque\": \"como isso atende o pedido\", \"telas\": [2]}]}. Depois rode ./estudio comparar <nome>. Vídeo e arquivo pesado ficaram ligados ao original, sem cópia (dados.pesados_sem_duplicar): para mudar uma cena, use ./estudio cena, que grava o vídeo novo ao lado; nunca grave por cima do mesmo arquivo. dados.apagados diz o que da comparação anterior saiu (o antes, a versão vista e as fotos), quando havia uma. Enquanto o antes está em aberto, esses arquivos ficam só para leitura: para trocar um, grave o novo ao lado e troque pelo nome."
   },
   "ANTES_EM_ABERTO": {
     "texto": "Ainda falta você escolher entre o antes e o depois da última mudança.",
     "acao": "A pessoa ainda não respondeu o \"Qual fica?\". Não guarde um antes novo por cima: rode ./estudio escolher <nome> com depois, antes ou outro, conforme a resposta. Só use --de-novo se a pessoa pediu para partir da apresentação como está agora."
   },
   "ANTES_NAO_GUARDADO": {
-    "texto": "Esqueci de guardar como a apresentação estava antes. Vou refazer do jeito certo.",
-    "acao": "Desfaça a mudança, rode ./estudio antes <nome>, refaça a mudança e rode comparar de novo."
+    "texto": "Esqueci de guardar como a apresentação estava antes, então desta vez não dá para mostrar o antes e o depois. Daqui em diante, guardo antes de mudar.",
+    "acao": "Não desfaça de memória: o que você lembra não é o que estava. Diga à pessoa que desta vez não dá para comparar e siga a partir de agora: rode ./estudio antes <nome> para guardar a apresentação como está, refaça a mudança a partir daí e rode ./estudio comparar <nome>."
   },
   "ANTES_JA_RESOLVIDO": {
     "texto": "Essa comparação já foi resolvida. Vou guardar a apresentação de agora antes de mudar de novo.",
     "acao": "A pessoa já escolheu (dados.escolha) e a cópia do antes foi apagada. Para outra mudança, rode ./estudio antes <nome> primeiro."
   },
   "ANTES_VIDEO_MUDOU": {
-    "texto": "Um vídeo guardado no antes foi trocado no meio do caminho, e o antes já não é o de antes. Vou refazer a comparação do jeito certo.",
-    "acao": "dados.arquivos foi gravado por cima do mesmo arquivo (o antes guarda vídeo sem cópia). Não compare nem volte com esse antes. Regrave a cena com ./estudio cena (ele grava ao lado e troca pelo nome); se a pessoa ainda quer comparar com o original, refaça a cena original, rode ./estudio antes <nome> --de-novo e repita a mudança."
+    "texto": "Um arquivo pesado guardado no antes foi substituído no meio do caminho, e o antes já não é o de antes. Vou refazer a comparação do jeito certo.",
+    "acao": "dados.arquivos foi gravado por cima do mesmo arquivo: o antes guarda arquivo pesado sem cópia, então o arquivo de antes foi substituído e não volta pelo antes. Não compare nem volte com esse antes. Se é o vídeo de uma cena (deck/assets/<cena>.mp4), dá para recriar o de antes a partir da cópia guardada da composição em revisao/antes-depois/antes/cenas/<cena>/: guarde com outro nome a pasta cenas/<cena>/ de agora (se a pessoa ainda pode querer a mudança), copie a de antes para cenas/<cena>/ e rode ./estudio cena <nome> <cena>, que grava ao lado e troca pelo nome. Depois rode ./estudio antes <nome> --de-novo e repita a mudança, renderizando sempre com ./estudio cena. Arquivo pesado que não é cena (foto grande, áudio): peça o original à pessoa."
   },
   "POUCAS_MUDANCAS": {
     "texto": "Ainda falta mostrar pelo menos duas mudanças concretas.",

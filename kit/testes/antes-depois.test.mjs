@@ -254,11 +254,11 @@ test('antes-depois: impressão digital lida aos pedaços dá o mesmo SHA-256 do 
 test('antes-depois: só mudança com título conta; telas aceita número e nome de arquivo', () => {
   const r = lerMudancas({
     pedido: ' mais vida ',
-    mudancas: [{ titulo: ' Letra maior ', porque: 'lê do fundo', telas: [2, 's03-movimentos.html', 2.5, null] }, { titulo: '' }, { porque: 'x' }],
+    mudancas: [{ titulo: ' Letra maior ', porque: 'lê do fundo', telas: [2, 's03-movimentos.html', 2.5, null, '4', ' 5 ', '6a'] }, { titulo: '' }, { porque: 'x' }],
   });
   assert.equal(r.pedido, 'mais vida');
   assert.equal(r.ignoradas, 2);
-  assert.deepEqual(r.mudancas, [{ titulo: 'Letra maior', porque: 'lê do fundo', telas: [2, 's03-movimentos.html'] }]);
+  assert.deepEqual(r.mudancas, [{ titulo: 'Letra maior', porque: 'lê do fundo', telas: [2, 's03-movimentos.html', 4, 5, '6a'] }], 'número em texto vira número');
   assert.deepEqual(lerMudancas(null), { pedido: '', mudancas: [], ignoradas: 0 });
 });
 
@@ -408,6 +408,30 @@ test('escolher: volta que falha vira RESTAURACAO_FALHOU, nada se perde e a segun
   assert.ok(fs.readFileSync(slide, 'utf8').includes('A manhã já é nossa.'));
   assert.ok(fs.readFileSync(path.join(tentativa, 'deck', 'slides', 's02-numero.html'), 'utf8').includes('Versão que a pessoa viu.'));
   assert.equal(path.resolve(RAIZ, volta.json.arquivos.tentativa), tentativa);
+});
+
+test('antes --de-novo diz o que da comparação anterior foi apagado', () => {
+  const env = ambiente('de-novo');
+  assert.equal(estudio(env, 'nova', 'bolo').codigo, 0);
+  const pasta = path.join(env.ESTUDIO_APRESENTACOES, 'bolo');
+  const primeiro = estudio(env, 'antes', 'bolo');
+  assert.equal(primeiro.json.dados.apagados, null, 'não havia comparação anterior');
+  fs.writeFileSync(path.join(pasta, 'revisao', 'antes-depois', 'mudancas.json'), JSON.stringify({ pedido: 'mais vida', mudancas: [{ titulo: 'Letra maior' }] }));
+  const r = estudio(env, 'antes', 'bolo', '--de-novo');
+  assert.equal(r.json.codigo, 'ANTES_GUARDADO');
+  assert.equal(r.json.dados.apagados.antes, primeiro.json.dados.arquivos);
+  assert.equal(r.json.dados.apagados.tentativa, 0);
+  assert.equal(r.json.dados.apagados.pedido, 'mais vida');
+  assert.deepEqual(r.json.dados.apagados.mudancas, ['Letra maior']);
+});
+
+test('mensagens do antes e depois: não manda desfazer de memória e diz de onde recriar o arquivo pesado', () => {
+  const m = JSON.parse(fs.readFileSync(path.join(RAIZ, 'kit', 'mensagens.json'), 'utf8'));
+  assert.ok(m.ANTES_NAO_GUARDADO.acao.startsWith('Não desfaça de memória'));
+  assert.ok(m.ANTES_NAO_GUARDADO.texto.includes('não dá para mostrar o antes e o depois'));
+  assert.ok(m.ANTES_VIDEO_MUDOU.texto.startsWith('Um arquivo pesado'));
+  assert.ok(m.ANTES_VIDEO_MUDOU.acao.includes('substituído') && m.ANTES_VIDEO_MUDOU.acao.includes('revisao/antes-depois/antes/cenas/'));
+  assert.ok(m.NADA_MUDOU.texto.includes('Vídeo e movimento não entram'));
 });
 
 test('escolher: com a volta pendente, "depois" devolve a versão vista inteira', { skip: semTrava }, () => {

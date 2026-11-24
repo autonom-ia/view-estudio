@@ -50,6 +50,8 @@ Escolha um nome curto (letras minúsculas, números e hífen) e rode:
 
 ## Etapa 2. Brief (portão 1)
 
+**Primeiro, o repertório.** Antes da sequência de telas e da tese visual, estude `kit/repertorio/` seguindo `kit/repertorio/como-usar.md`: abra o arquivo da ação da plateia (o "o que fazer depois" da coleta), escolha 2 ou 3 fichas pela dúvida da plateia e tire de cada uma uma decisão concreta de abertura, número-âncora, ritmo de revelação ou fecho com pedido. A direção visual vem depois e serve a essa estrutura; quando ela vem antes, a primeira revisão sai fraca. Confira ao vivo o link das escolhidas.
+
 Escreva `apresentacoes/<nome>/brief.md` por cima do molde, com o que vem abaixo. Se o `ler` rodou, mantenha a parte "Lido pelo estúdio" (de `<!-- estudio:lido:inicio -->` a `<!-- estudio:lido:fim -->`) do jeito que está, logo abaixo da sua tabela de fatos: a próxima leitura troca só ela. Fato lido que a pessoa confirmar ou corrigir vai para a tabela de cima, com a fonte "a própria pessoa disse em <data>".
 - **Promessa**: o que a plateia ganha, numa frase. É a régua de tudo.
 - **Para quem** e **o que fazer depois** (da coleta).
@@ -57,6 +59,7 @@ Escreva `apresentacoes/<nome>/brief.md` por cima do molde, com o que vem abaixo.
 - **Sequência de telas** (o beat-sheet), uma linha por tela: número, mensagem única da tela (uma frase), papel (abertura, conceito, número, caso, virada, pico, fecho), passos da tela (o que entra a cada clique) e a transição de entrada (dissolve é o padrão; corte, empurra ou match quando a história pede).
 - **Os 2 ou 3 picos**: as telas que a plateia vai lembrar. Pelo menos um vira cena em movimento (skill `cena-em-video`) quando o tempo permitir.
 - **Fatos e números**: a tabela com as colunas Fato, Fonte e Data (troque as linhas do exemplo do molde, que têm a fonte "Exemplo fictício do View Estúdio" e não valem). Só entra na tela e na fala o que está aqui; o `./estudio fatos` confere número, contato e @.
+- **Referências estudadas**: uma linha por ficha do repertório (o `id`, o link, a decisão que você tirou dela e o que não vai copiar).
 - **Tese visual**: uma frase que diz como a apresentação vai parecer (luz, tipo de foto, ritmo), ligada à marca e ao assunto.
 - **Insumos faltando**: o que você assumiu por falta de material, e o que melhora se a pessoa mandar.
 
@@ -67,6 +70,7 @@ Mostre o brief à pessoa em texto corrido e curto (promessa, história, a lista 
 ## Etapa 3. Piloto de 3 telas (portão 2)
 
 Antes de desenhar:
+0. Releia as **Referências estudadas** do brief: a direção visual serve à abertura, à âncora, ao ritmo e ao fecho que você tirou delas, nunca ao visual delas.
 1. Se estiverem instaladas, carregue as skills `frontend-design` e `ui-ux-pro-max`. Use-as para a direção visual, a tipografia e o ritmo.
 2. Leia o molde: `kit/molde/deck/index.html`, as três telas de `kit/molde/deck/slides/` e o cabeçalho de `deck/assets/vendor/palco/cena.js`. Ele explica como cada tela declara os passos sem programar.
 3. Leia `minha-marca/marca.md` (se existir) e a tese visual do brief.

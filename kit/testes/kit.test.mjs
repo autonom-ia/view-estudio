@@ -169,6 +169,10 @@ const CAMPOS_ENVIADOS = Object.freeze({
   FONTE_NAO_ACHADA: ['familia'],
   FONTE_SEM_LICENCA: ['familia'],
   LER_GOOGLE_PRIMEIRO_DA_LISTA: ['escolhido'],
+  PUBLICADO: ['endereco'],
+  PUBLICADO_CERTIFICADO_PENDENTE: ['endereco'],
+  PUBLICAR_AGUARDANDO_LOGIN: ['codigo_curto', 'endereco'],
+  PUBLICAR_VERSAO_VOLTOU: ['versao'],
 });
 
 test('resumo: os {{campos}} do mensagens.json são os que o comando manda, e saem preenchidos', () => {

@@ -20,6 +20,7 @@ import { ESPERAR_PRONTA, ASSENTAR, TEXTO_PARA_FATOS } from '../lib/pagina.mjs';
 import { lerTabelaDeFatos, tabelaDeFatosIlegivel, montarLastro, conferirTexto } from '../lib/fatos.mjs';
 import { lerTexto } from '../lib/json.mjs';
 import { progresso } from '../lib/executar.mjs';
+import { impressaoDaApresentacao, anotarConferencia } from '../lib/conferencias.mjs';
 
 // O texto de uma tela em todos os beats, junto (cada beat acrescenta o que estava visível nele).
 async function textoDaTela(sessao, url) {
@@ -48,6 +49,7 @@ function lerTabela(c) {
 export default async function fatos(args) {
   const nome = nomeDaApresentacao(args);
   const c = abrirApresentacao(nome);
+  const impressao = impressaoDaApresentacao(c);
   const { temTabela, ilegivel, linhas } = lerTabela(c);
   const lastro = montarLastro(linhas);
   const vermelhos = [];
@@ -85,6 +87,7 @@ export default async function fatos(args) {
   }
 
   const aprovado = vermelhos.length === 0;
+  anotarConferencia(c, 'fatos', impressao, aprovado);
   const avisos = [];
   if (!temTabela) avisos.push({ codigo: ilegivel ? 'FATOS_TABELA_ILEGIVEL' : 'FATOS_SEM_TABELA', dados: { arquivo: c.rel('brief.md') } });
   return {

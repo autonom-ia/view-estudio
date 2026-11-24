@@ -1,0 +1,134 @@
+// Monta o pacote de uma apresentação: o .zip da pasta deck/, em memória, com o SHA-256 e a contagem.
+// É a apresentação pronta para abrir em qualquer navegador: index.html na raiz, as telas (slides/) e
+// assets/ (letras, vendor, fotos e os vídeos de cena), com caminhos relativos e nada de fora.
+// Usado pelo "pacote" (grava o zip, para hospedar onde a pessoa quiser) e pelo "publicar" (envia).
+//
+// O que nunca sobe: tudo o que mora fora de deck/ (brief, roteiro, coleta, revisao, prints, cenas e
+// as composições *-hf/) e, dentro de deck/, o que não é da apresentação no ar:
+// - teleprompter.html: leva a fala inteira e as notas de quem apresenta. Ele funciona publicado (o
+//   aviso de tela e clique é BroadcastChannel, da mesma origem, sem o servidor do "abrir"), mas o
+//   link do ar vai para a plateia, e a fala é de quem apresenta. Fica no computador.
+// - rascunho: arquivo ou pasta que começa com "_" (_lab/, _rascunho.html) e pasta terminada em -hf;
+// - anotação (.md) e arquivo-fonte de desenho (.psd, .ai…).
+// Antes de montar, recusa (PACOTE_ARQUIVO_PRIVADO, saída 2) o que não pode ir para a internet:
+// arquivo ou pasta oculta, link, .env, chave, e cópia de segurança (nome terminado em .old, .backup,
+// .bak, .orig, .tmp, .swp ou ~, e pasta backup, backups, old, _old ou tmp).
+// Portado do Site Estúdio (lib/pacote.mjs), adaptado ao deck.
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import { listarArquivos } from './caminhos.mjs';
+import { montarZip } from './zip.mjs';
+import { reprovado } from './saida.mjs';
+import { ehLicencaDeFonte } from './marca.mjs';
+
+export const FORA_DO_PACOTE = Object.freeze(['.md', '.psd', '.ai', '.sketch', '.fig', '.xcf', '.afdesign', '.indd']);
+export const TELEPROMPTER = 'teleprompter.html';
+// Vídeo e áudio já vêm comprimidos: vão para o zip como estão.
+const SEM_COMPRIMIR = Object.freeze(['.mp4', '.webm', '.mov', '.m4v', '.mp3', '.m4a', '.wav', '.ogg', '.woff2', '.jpg', '.jpeg', '.png', '.webp', '.avif']);
+// Arquivos que os serviços de hospedagem leem pelo nome, sem nenhuma página citar.
+const LIDOS_PELO_SERVIDOR = Object.freeze(['robots.txt', 'favicon.ico', 'cname', '.nojekyll', '_headers', '_redirects', '404.html']);
+const TEXTOS_QUE_CITAM = Object.freeze(['.html', '.css', '.js', '.mjs', '.json', '.webmanifest', '.xml', '.svg']);
+
+const extensao = (rel) => {
+  const nome = rel.split('/').pop().toLowerCase();
+  const ponto = nome.lastIndexOf('.');
+  return ponto > 0 ? nome.slice(ponto) : '';
+};
+
+const ehRascunho = (pedaco) => (pedaco.startsWith('_') && !LIDOS_PELO_SERVIDOR.includes(pedaco.toLowerCase())) || pedaco.toLowerCase().endsWith('-hf');
+
+// Lixo que o sistema cria sozinho: o Finder (.DS_Store e ._nome, em pen drive), o Windows
+// (Thumbs.db, desktop.ini). Nunca vai para o zip e não reprova.
+const LIXO_DO_SISTEMA = Object.freeze(['.ds_store', 'thumbs.db', 'desktop.ini']);
+export const ehLixoDoSistema = (nome) => LIXO_DO_SISTEMA.includes(nome.toLowerCase()) || nome.startsWith('._');
+
+// Fica fora do pacote (sem reprovar): teleprompter, rascunho, anotação, arquivo-fonte de desenho e
+// lixo do sistema.
+export function foraDoPacote(rel) {
+  if (rel === TELEPROMPTER) return true;
+  if (ehLixoDoSistema(rel.split('/').pop())) return true;
+  if (rel.split('/').some(ehRascunho)) return true;
+  return FORA_DO_PACOTE.includes(extensao(rel));
+}
+
+const OCULTOS_PERMITIDOS = Object.freeze({ arquivos: ['.nojekyll'], pastas: ['.well-known'] });
+const FINS_DE_CHAVE = Object.freeze(['.pem', '.key']);
+// Cópia de segurança e rascunho: valem para arquivo e para pasta ("assets.old/").
+const FINS_DE_COPIA = Object.freeze(['.old', '.backup', '.bak', '.orig', '.tmp', '.swp', '~']);
+const PASTAS_DE_COPIA = Object.freeze(['backup', 'backups', 'old', '_old', 'tmp']);
+
+// Este nome (de arquivo ou pasta) pode estar na internet?
+export function nomePrivado(nome, ehPasta) {
+  const baixo = nome.toLowerCase();
+  if (baixo.startsWith('.')) {
+    const permitidos = ehPasta ? OCULTOS_PERMITIDOS.pastas : OCULTOS_PERMITIDOS.arquivos;
+    if (!permitidos.includes(baixo)) return true;
+  }
+  if (FINS_DE_COPIA.some((fim) => baixo.endsWith(fim))) return true;
+  if (ehPasta) return PASTAS_DE_COPIA.includes(baixo);
+  if (baixo.includes('.env') || baixo.startsWith('id_rsa')) return true;
+  return FINS_DE_CHAVE.some((fim) => baixo.endsWith(fim));
+}
+
+// Anda a pasta sem seguir link e devolve o que não pode ir (caminho relativo, "/" no fim se pasta).
+export function arquivosPrivados(pasta, rel = '') {
+  const achados = [];
+  for (const nome of fs.readdirSync(path.join(pasta, ...rel.split('/').filter(Boolean))).sort()) {
+    if (ehLixoDoSistema(nome)) continue;
+    const r = rel ? `${rel}/${nome}` : nome;
+    const st = fs.lstatSync(path.join(pasta, ...r.split('/')));
+    if (st.isSymbolicLink()) achados.push(r);
+    else if (st.isDirectory()) {
+      if (nomePrivado(nome, true)) achados.push(`${r}/`);
+      else achados.push(...arquivosPrivados(pasta, r));
+    } else if (nomePrivado(nome, false)) achados.push(r);
+  }
+  return achados;
+}
+
+// Arquivos (fora as páginas) cujo nome não aparece em nenhuma página, CSS, script ou manifesto.
+export function arquivosNaoCitados(pasta, arquivos) {
+  const textos = arquivos
+    .filter((rel) => TEXTOS_QUE_CITAM.includes(extensao(rel)))
+    .map((rel) => ({ rel, texto: fs.readFileSync(path.join(pasta, ...rel.split('/')), 'utf8') }));
+  const soltos = [];
+  for (const rel of arquivos) {
+    const nome = rel.split('/').pop();
+    if (extensao(rel) === '.html' || LIDOS_PELO_SERVIDOR.includes(nome.toLowerCase())) continue;
+    if (ehLicencaDeFonte(nome) || nome.toUpperCase().startsWith('LICENSE')) continue;
+    if (!textos.some((t) => t.rel !== rel && t.texto.includes(nome))) soltos.push(rel);
+  }
+  return soltos;
+}
+
+// Os arquivos de deck/ que vão para o ar (caminho relativo a deck/) e os que ficam de fora.
+export function arquivosDoPacote(deck) {
+  const todos = listarArquivos(deck);
+  const fora = todos.filter((rel) => foraDoPacote(rel) && !ehLixoDoSistema(rel.split('/').pop()));
+  return { arquivos: todos.filter((rel) => !foraDoPacote(rel)), fora };
+}
+
+// Monta o zip de deck/ sem gravar nada. Recusa com PACOTE_ARQUIVO_PRIVADO (saída 2) antes de ler
+// qualquer arquivo para o zip. Caminhos devolvidos são relativos a deck/.
+export function montarPacote(deck) {
+  const privados = arquivosPrivados(deck);
+  if (privados.length) reprovado('PACOTE_ARQUIVO_PRIVADO', { arquivos: privados.map((r) => `deck/${r}`) });
+  const { arquivos, fora } = arquivosDoPacote(deck);
+  const entradas = arquivos.map((rel) => {
+    const abs = path.join(deck, ...rel.split('/'));
+    return { nome: rel, dados: fs.readFileSync(abs), data: fs.statSync(abs).mtime, guardar: SEM_COMPRIMIR.includes(extensao(rel)) };
+  });
+  const zip = montarZip(entradas);
+  return {
+    zip,
+    sha256: crypto.createHash('sha256').update(zip).digest('hex'),
+    arquivos: entradas.length,
+    nomes: arquivos,
+    telas: arquivos.filter((a) => a.endsWith('.html') && a !== 'index.html').length,
+    videos: arquivos.filter((a) => ['.mp4', '.webm'].includes(extensao(a))).length,
+    conteudoBytes: entradas.reduce((s, e) => s + e.dados.length, 0),
+    foraDoPacote: fora,
+    naoCitados: arquivosNaoCitados(deck, arquivos),
+  };
+}

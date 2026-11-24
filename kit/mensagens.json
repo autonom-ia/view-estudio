@@ -402,5 +402,153 @@
   "LER_SITE_FALHOU": {
     "texto": "Não consegui abrir o site atual.",
     "acao": "Confira o endereço com a pessoa (dados.endereco) e rode de novo com --site. Se o site não existe mais, siga sem ele."
+  },
+  "PACOTE_PRONTO": {
+    "texto": "A apresentação está pronta para pôr no ar onde você quiser, guardada num arquivo só.",
+    "acao": "Diga onde ficou (arquivos.zip) e siga o caminho alternativo da skill por-no-ar (Netlify, Cloudflare Pages ou GitHub Pages, passo a passo, com a pessoa clicando na conta dela). Ficam fora do zip, de propósito: o teleprompter (leva a fala inteira), rascunho (_lab/, nome com _ na frente, composição *-hf/) e anotação (.md) — dados.fora_do_pacote. Tudo o que mora fora de deck/ (brief, roteiro, coleta, revisao, prints) nunca entra."
+  },
+  "PACOTE_ARQUIVO_PRIVADO": {
+    "texto": "Ainda não preparei a apresentação para a internet: há nela arquivos que não podem ir para fora do computador (senha, chave, configuração, cópia de segurança, arquivo oculto ou atalho).",
+    "acao": "Mostre dados.arquivos à pessoa. Tire cada um de deck/ (guarde na pasta da apresentação, fora de deck/, se for dela) e rode de novo. Cópia de segurança é nome terminado em .old, .backup, .bak, .orig, .tmp, .swp ou ~, ou pasta backup, backups, old, _old ou tmp. Só dois ocultos passam, de propósito: o arquivo .nojekyll e a pasta .well-known/. Nunca apague sem perguntar e nunca contorne a conferência."
+  },
+  "ARQUIVO_NAO_USADO": {
+    "texto": "Há arquivos na apresentação que nenhuma tela usa.",
+    "acao": "Veja dados.arquivos. Foram junto, mas pesam e podem expor o que não devia. Se não são da apresentação, tire-os de deck/ e rode de novo (as conferências voltam a valer só depois de rodar de novo)."
+  },
+  "PUBLICAR_CONFERIR_ANTES": {
+    "texto": "Ainda não ponho a apresentação no ar: antes ela precisa passar pelas conferências do jeito que está agora.",
+    "acao": "Veja dados.faltam (checar, fatos, acessibilidade). Rode cada uma em <nome>. Vermelho não vai para o ar: se alguma reprovar, conserte, rode de novo e só depois publique. Qualquer mudança na apresentação, no brief ou no roteiro depois de uma conferência pede a conferência de novo. Nunca contorne nem anote aprovação à mão."
+  },
+  "PUBLICAR_TIPO_NAO_ACEITO": {
+    "texto": "Há arquivos na apresentação de um tipo que o serviço de publicação não aceita.",
+    "acao": "Veja dados.arquivos. O serviço aceita página, estilo, código de tela, imagem (png, jpg, gif, webp, avif, svg, ico), letra (woff2, woff, ttf, otf), vídeo mp4 ou webm, áudio mp3, ogg ou wav e pdf. Vídeo .mov ou .m4v: converta para mp4 (a skill cena-em-video sabe). Se o arquivo não é da apresentação, tire-o de deck/. Depois rode as conferências e pergunte de novo antes de publicar. Pelo caminho alternativo (./estudio pacote) o arquivo vai junto."
+  },
+  "PUBLICADO": {
+    "texto": "Sua apresentação está no ar, com cadeado de site seguro, em {{endereco}}.",
+    "acao": "Diga dados.endereco e peça para a pessoa abrir no celular e no computador antes de mandar o link. O teleprompter não vai junto: quem apresenta usa ./estudio abrir no próprio computador. Para pôr no ar uma mudança depois, rode as conferências e a publicação de novo, sempre com a confirmação dela."
+  },
+  "PUBLICADO_CERTIFICADO_PENDENTE": {
+    "texto": "Sua apresentação já subiu. O cadeado de site seguro ainda está sendo preparado e costuma ficar pronto em poucos minutos: {{endereco}}.",
+    "acao": "Diga dados.endereco e explique que, se abrir agora, o navegador pode reclamar do cadeado por alguns minutos. Peça para tentar de novo daqui a pouco. Não publique de novo só por isso."
+  },
+  "PUBLICAR_AGUARDANDO_LOGIN": {
+    "texto": "Para pôr no ar, preciso que você autorize este computador. Abra {{endereco}}, entre com o Google e digite o código {{codigo_curto}}.",
+    "acao": "Mostre dados.codigo_curto bem visível e dados.endereco. O código vale 10 minutos. Quando a pessoa disser que autorizou, rode a mesma publicação de novo: ela continua o mesmo pedido. Se a pessoa ainda não tem acesso, diga que ela pede em sites.autonomia.site (é o mesmo acesso dos sites). Se dados.chave_recusada for true, o acesso antigo deste computador deixou de valer e por isso é preciso autorizar de novo."
+  },
+  "PUBLICAR_ACESSO_LIBERADO": {
+    "texto": "Pronto: este computador está autorizado a pôr apresentações no ar em seu nome.",
+    "acao": "Rode agora, de novo, exatamente a mesma publicação que acabou de rodar. A pessoa já confirmou: não pergunte outra vez. Esta vez parou aqui só para não estourar o tempo."
+  },
+  "PUBLICAR_VERSAO_VOLTOU": {
+    "texto": "Pronto: voltei a apresentação para a versão {{versao}}.",
+    "acao": "Peça para a pessoa abrir o endereço da apresentação e conferir. As outras versões continuam guardadas por um tempo."
+  },
+  "PUBLICAR_SAIU": {
+    "texto": "Pronto: apaguei deste computador o acesso de publicação.",
+    "acao": "Explique que isso apaga só a cópia guardada aqui. Para cortar o acesso de vez (computador emprestado, vendido, ou com cópia de segurança do estúdio em outro lugar), a pessoa precisa também revogar este computador na página da conta: dados.revogar_em. O que já está no ar continua no ar. Para publicar de novo, rode a publicação: ela pede uma nova autorização."
+  },
+  "PUBLICAR_SEM_CONEXAO": {
+    "texto": "Não consegui falar com o serviço de publicação agora. Pode ser a internet daqui.",
+    "acao": "Confira se há internet. No Codex, a publicação precisa sair da área protegida (sandbox_permissions: \"require_escalated\"). Tente de novo em alguns minutos; se continuar, diga à pessoa que o serviço parece fora do ar e que o que já está no ar continua no ar."
+  },
+  "PUBLICAR_LOGIN_RECUSADO": {
+    "texto": "A autorização deste computador foi recusada no navegador.",
+    "acao": "Pergunte se foi de propósito. Se a pessoa quiser pôr no ar, rode a publicação de novo: ela mostra um código novo."
+  },
+  "PUBLICAR_MUITAS_TENTATIVAS": {
+    "texto": "Foram muitas tentativas seguidas. Preciso esperar uns minutos antes de tentar de novo.",
+    "acao": "Espere 10 minutos e rode a publicação de novo. Não insista antes disso."
+  },
+  "PUBLICAR_ENDERECO_DE_TESTE_INVALIDO": {
+    "texto": "O endereço de teste da publicação está errado.",
+    "acao": "A variável ESTUDIO_PUBLICAR_URL só aceita http://127.0.0.1:<porta>, usada em teste. Tire a variável para publicar de verdade."
+  },
+  "PUBLICAR_RESPOSTA_ESTRANHA": {
+    "texto": "O serviço de publicação respondeu de um jeito que eu não esperava. Não publiquei nada pela metade.",
+    "acao": "Veja dados.etapa e dados.status. Tente de novo em alguns minutos; se repetir, diga à pessoa que achou um erro na publicação e mostre dados.etapa."
+  },
+  "PUBLICAR_NOME_RECUSADO": {
+    "texto": "Esse nome não pode virar endereço. Ele precisa ter de 2 a 40 letras, números ou hífen, e não pode ser um nome reservado.",
+    "acao": "Veja dados.detalhe. Proponha à pessoa um nome curto, parecido e livre para o endereço (letras minúsculas, números e hífen). Com o sim dela, rode ./estudio publicar <nome> --no-ar <outro>: a apresentação continua a mesma, só o endereço muda, e o estúdio guarda o nome novo para as próximas vezes (inclusive para --voltar). O sim para o endereço novo vale como a confirmação desta publicação."
+  },
+  "PUBLICAR_CHAVE_RECUSADA": {
+    "texto": "O acesso deste computador deixou de valer. Preciso que você autorize de novo.",
+    "acao": "Rode a publicação de novo: ela pede uma nova autorização e mostra o código."
+  },
+  "PUBLICAR_SITE_DE_OUTRA_PESSOA": {
+    "texto": "Esse endereço já é de outra pessoa. Vamos escolher outro nome para a sua apresentação no ar.",
+    "acao": "Proponha à pessoa um nome curto, parecido e livre para o endereço (letras minúsculas, números e hífen). Com o sim dela, rode ./estudio publicar <nome> --no-ar <outro>: a apresentação continua a mesma, só o endereço muda, e o estúdio guarda o nome novo para as próximas vezes (inclusive para --voltar). O sim para o endereço novo vale como a confirmação desta publicação. Nunca tente publicar por cima do endereço de outra pessoa."
+  },
+  "PUBLICAR_ENDERECO_JA_EM_USO": {
+    "texto": "Você já tem outra coisa no ar com esse endereço, um site ou outra apresentação. Se eu puser esta apresentação ali, ela toma o lugar do que está no ar.",
+    "acao": "Veja dados.nome. Pergunte à pessoa, com duas opções: \"Usar outro endereço ★\" (proponha um nome curto e livre e, com o sim dela, rode ./estudio publicar <nome> --no-ar <outro>) ou \"Trocar o que está lá por esta apresentação\" (rode de novo com --por-cima; as versões de antes ficam guardadas por um tempo e dá para voltar com --voltar). Nunca use --por-cima sem esse sim, dado para este endereço."
+  },
+  "PUBLICAR_LIMITE_DE_SITES": {
+    "texto": "Você chegou ao número máximo de endereços no ar (sites e apresentações contam juntos).",
+    "acao": "Diga que dá para pôr no ar uma versão nova de algo que já está no ar, ou pedir para tirar um do ar em sites.autonomia.site."
+  },
+  "PUBLICAR_SITE_GRANDE_DEMAIS": {
+    "texto": "A apresentação ficou grande demais para pôr no ar aqui.",
+    "acao": "Veja dados.mb e dados.mb_max (ou dados.detalhe, quando quem recusou foi o serviço). O que mais pesa costuma ser vídeo de cena: renderize mais curto ou com menos qualidade (skill cena-em-video), e tire de deck/ o que nenhuma tela usa. Depois rode as conferências e pergunte de novo antes de publicar. Pelo caminho alternativo (./estudio pacote) não há esse teto."
+  },
+  "PUBLICAR_LIMITE_DO_DIA": {
+    "texto": "Você já pôs no ar muitas vezes hoje. Amanhã dá para publicar de novo.",
+    "acao": "Junte as próximas mudanças e publique uma vez só, amanhã."
+  },
+  "PUBLICAR_LIMITE_DA_SEMANA": {
+    "texto": "Nesta semana já saíram muitos endereços novos. Sua apresentação pode ir ao ar nos próximos dias.",
+    "acao": "Explique que é um limite de todos, não só dela, e que versões novas do que já está no ar continuam liberadas. Tente de novo em um ou dois dias."
+  },
+  "PUBLICAR_DESLIGADA": {
+    "texto": "A publicação está pausada por enquanto. O que já está no ar continua no ar.",
+    "acao": "Diga que é uma pausa do serviço, não um problema da apresentação. Tente de novo mais tarde."
+  },
+  "PUBLICAR_SEM_ESPACO": {
+    "texto": "O serviço de publicação está sem espaço agora. Nada mudou no ar.",
+    "acao": "Tente de novo mais tarde. Se repetir, diga à pessoa para avisar em sites.autonomia.site."
+  },
+  "PUBLICAR_ENVIO_PERDIDO": {
+    "texto": "O envio demorou demais e foi descartado. Vou mandar de novo.",
+    "acao": "Rode a publicação de novo: ela começa um envio novo do começo."
+  },
+  "PUBLICAR_ENVIO_FALHOU": {
+    "texto": "A apresentação não chegou inteira ao serviço. Nada foi publicado pela metade.",
+    "acao": "Rode a publicação de novo. Se falhar duas vezes, veja a internet e use a skill consertar."
+  },
+  "PUBLICAR_VERSAO_INEXISTENTE": {
+    "texto": "Essa versão da apresentação não está mais guardada.",
+    "acao": "Veja dados.detalhe. Pergunte qual versão a pessoa quer, ou volte sem número, para a anterior."
+  },
+  "PUBLICAR_PACOTE_RECUSADO": {
+    "texto": "O serviço recusou a apresentação por causa de um arquivo que não pode ir para a internet.",
+    "acao": "Veja dados.detalhe e dados.codigo_do_servico, mostre à pessoa o arquivo citado e tire-o de deck/ (guarde fora de deck/, se for dela). Depois rode as conferências e pergunte de novo antes de publicar."
+  },
+  "PUBLICAR_RECUSADO": {
+    "texto": "O serviço de publicação não aceitou o pedido agora.",
+    "acao": "Veja dados.detalhe (a frase do serviço) e dados.status e diga à pessoa em palavras simples. Antes de tentar de novo, abra o endereço e confira se a mudança já está no ar; se não estiver, tente mais tarde."
+  },
+  "PUBLICAR_CONCLUSAO_INCERTA": {
+    "texto": "A apresentação chegou inteira ao serviço, mas a confirmação de que foi para o ar não voltou a tempo. Ela pode já estar no ar.",
+    "acao": "Não publique por cima agora. Espere uns 3 minutos e rode a mesma publicação de novo: antes de mandar qualquer coisa, ela confere se esta versão já está no ar e, se estiver, só confirma, sem mandar a apresentação outra vez."
+  },
+  "PUBLICAR_NO_AR_AJUSTANDO": {
+    "texto": "A mudança já foi para o ar, mas um passo final do serviço falhou. Ele acerta sozinho em alguns minutos.",
+    "acao": "Não publique de novo por isso. Peça para a pessoa abrir o endereço daqui a uns minutos e conferir. Se depois de 15 minutos ainda estiver estranho, diga para avisar em sites.autonomia.site."
+  },
+  "PUBLICAR_SITE_AINDA_NAO_PUBLICADO": {
+    "texto": "Essa apresentação ainda não foi para o ar, então não há versão anterior para voltar.",
+    "acao": "Confira o nome com a pessoa (se ela publicou com outro endereço, use --no-ar <outro>). Para pôr no ar pela primeira vez, rode a publicação sem --voltar, com a confirmação dela."
+  },
+  "PUBLICAR_SITE_TIRADO_DO_AR": {
+    "texto": "Esse endereço está fora do ar no serviço. Enquanto estiver assim, não dá para publicar nem voltar versão nele.",
+    "acao": "Diga à pessoa para pedir a volta em sites.autonomia.site. Não tente de novo antes disso."
+  },
+  "PUBLICAR_ENVIO_EM_ANDAMENTO": {
+    "texto": "Já tem um envio desta apresentação sendo concluído no serviço.",
+    "acao": "Não mande de novo agora. Espere uns 3 minutos, abra o endereço e veja se a mudança já está no ar; só se não estiver, rode a publicação de novo."
+  },
+  "PUBLICAR_VERSAO_RUIM": {
+    "texto": "Essa versão guardada não tem uma tela inicial que funcione. Nada mudou no ar.",
+    "acao": "Pergunte à pessoa qual outra versão ela quer, ou volte sem número, para a anterior."
   }
 }

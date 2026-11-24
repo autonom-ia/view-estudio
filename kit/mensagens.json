@@ -103,6 +103,22 @@
     "texto": "A apresentação ainda não tem a lista de fatos com a fonte de cada um. Vou montar.",
     "acao": "Preencha a tabela Fato | Fonte | Data do brief.md com o que a pessoa informou e os documentos de referencias/, e rode fatos de novo."
   },
+  "ACESSIBILIDADE_OK": {
+    "texto": "A conferência de acessibilidade não achou nada.",
+    "acao": "Siga em frente. Ela não substitui o olhar do revisor de QA."
+  },
+  "ACESSIBILIDADE_COM_AVISOS": {
+    "texto": "A conferência de acessibilidade achou pontos menores.",
+    "acao": "Leia dados.amarelos (tela, beat, regra, ajuda, nos.alvo) e corrija os que forem simples."
+  },
+  "ACESSIBILIDADE_REPROVADA": {
+    "texto": "A conferência de acessibilidade achou problemas sérios. Vou corrigir.",
+    "acao": "Leia dados.vermelhos (tela, beat, regra, ajuda, nos.alvo). Corrija na tela (texto alternativo na imagem, título, idioma, nome dos botões) e rode acessibilidade de novo. Não mostre à pessoa uma apresentação reprovada."
+  },
+  "AXE_AUSENTE": {
+    "texto": "Falta a peça que confere acessibilidade.",
+    "acao": "Veja dados.arquivo. Rode ./estudio atualizar ou baixe o estúdio de novo: kit/vendor/axe/ vem com ele."
+  },
   "FONTE_BAIXADA": {
     "texto": "Baixei a letra {{familia}} já leve, com a licença dela.",
     "acao": "Cole dados.css no topo do tokens.css que fica ao lado da pasta em arquivos.pasta (minha-marca/tokens.css, ou deck/assets/marca/tokens.css da apresentação), no lugar das linhas @font-face antigas dessa família, e use dados.familia em --fonte-titulo ou --fonte-texto. A licença fica ao lado, com o nome da família (dados.licenca): nunca apague nem renomeie para OFL.txt."

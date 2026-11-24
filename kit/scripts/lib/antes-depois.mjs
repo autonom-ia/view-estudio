@@ -2,7 +2,8 @@
 // antes/ (o que a mudança pode tocar: deck/, roteiro/, cenas/ e brief.md, guardados pelo "antes"),
 // manifesto.json (o que existia e os arquivos pesados ligados), mudancas.json (escrito pelo
 // assistente), estado.json (em aberto até a pessoa escolher), fotos/ e index.html (a página do
-// "comparar"). Tudo fora de deck/: nada disso vai para a apresentação nem para o PDF.
+// "comparar") e tentativa/ (a versão que a pessoa viu e recusou, guardada pelo "escolher" antes de
+// voltar, até o próximo "antes"). Tudo fora de deck/: nada disso vai para a apresentação nem para o PDF.
 // Portado do Site Estúdio (lib/antes-depois.mjs), adaptado a telas, cliques e vídeo de cena.
 //
 // Vídeo de cena não é duplicado. Arquivo pesado (vídeo, áudio, ou 2 MB ou mais) entra no antes como
@@ -51,6 +52,7 @@ export function caminhosDoAntesDepois(c) {
   return {
     pasta,
     antes: path.join(pasta, 'antes'),
+    tentativa: path.join(pasta, 'tentativa'),
     manifesto: path.join(pasta, 'manifesto.json'),
     mudancas: path.join(pasta, 'mudancas.json'),
     estado: path.join(pasta, 'estado.json'),
@@ -196,39 +198,107 @@ export function pesadosAlterados(antes, manifesto) {
     .map((p) => p.rel);
 }
 
-// Devolve a apresentação ao que o antes guardou. Cada item é montado ao lado primeiro e só depois
-// trocado, para uma cópia que falhe no meio nunca deixar a apresentação pela metade. Item que não
-// existia no antes (uma cena criada na tentativa) sai. Os pesados ligados ficam graváveis só durante
-// a troca (no Windows, arquivo só para leitura não sai da pasta) e voltam a só leitura no fim.
-export function restaurarAntes(pastaDaApresentacao, antes, manifesto) {
-  liberarPesados(antes, manifesto);
-  try {
-    return trocarItens(pastaDaApresentacao, antes, manifesto);
-  } finally {
-    protegerPesados(antes, manifesto);
+// Devolve a apresentação ao que o antes guardou. Item que não existia no antes (uma cena criada na
+// tentativa) sai. Ver restaurarDe.
+export function restaurarAntes(pastaDaApresentacao, antes, manifesto, opcoes = {}) {
+  const itens = Array.isArray(manifesto && manifesto.itens) ? manifesto.itens : [];
+  return restaurarDe(pastaDaApresentacao, antes, itens, { ...opcoes, antes, manifesto });
+}
+
+// Falha numa troca: diz qual item não trocou. A apresentação nunca fica sem o item (ver trocarItem).
+export class ErroDeRestauracao extends Error {
+  constructor(item, causa) {
+    super(causa && causa.message ? causa.message : String(causa));
+    this.codigo = 'RESTAURACAO_FALHOU';
+    this.item = item;
+    this.cause = causa;
   }
 }
 
-function trocarItens(pastaDaApresentacao, antes, manifesto) {
-  const tinha = new Set(Array.isArray(manifesto && manifesto.itens) ? manifesto.itens : []);
-  const restaurados = [];
-  for (const item of ITENS_GUARDADOS) {
-    const atual = path.join(pastaDaApresentacao, item);
-    if (!tinha.has(item)) {
-      if (existe(atual)) {
-        fs.rmSync(atual, { recursive: true, force: true });
-        restaurados.push(`-${item}`);
+// Devolve a apresentação ao que está em "origem" (o antes, ou a tentativa quando uma troca anterior
+// falhou), item por item. Os pesados ligados ao antes ficam graváveis só durante a troca (no
+// Windows, arquivo só para leitura não sai da pasta) e voltam a só leitura no fim. "renomear" é
+// injetável para os testes simularem uma troca que falha.
+export function restaurarDe(pastaDaApresentacao, origem, itens, { antes, manifesto, renomear = fs.renameSync } = {}) {
+  const tinha = new Set(itens);
+  if (antes) liberarPesados(antes, manifesto);
+  try {
+    const restaurados = [];
+    for (const item of ITENS_GUARDADOS) {
+      let feito;
+      try {
+        feito = trocarItem(pastaDaApresentacao, origem, item, tinha.has(item), renomear);
+      } catch (erro) {
+        throw new ErroDeRestauracao(item, erro);
       }
-      continue;
+      if (feito) restaurados.push(feito);
     }
-    const novo = `${atual}.trocando`;
-    fs.rmSync(novo, { recursive: true, force: true });
-    guardarItem(path.join(antes, item), novo, item, null);
-    fs.rmSync(atual, { recursive: true, force: true });
-    fs.renameSync(novo, atual);
-    restaurados.push(item);
+    return restaurados;
+  } finally {
+    if (antes) protegerPesados(antes, manifesto);
   }
-  return restaurados;
+}
+
+const existeSemSeguir = (caminho) => {
+  try {
+    fs.lstatSync(caminho);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+// Troca um item sem deixar a apresentação sem ele: o novo é montado ao lado (.trocando), o atual
+// vai para .descartando, o novo entra no lugar e só então o descartado sai. Se a entrada do novo
+// falhar, o atual volta. Uma sobra de troca anterior que falhou é apagada no começo: ela é a
+// versão que foi vista (guardada na tentativa) ou o próprio antes, nunca a única cópia.
+function trocarItem(pasta, origem, item, existia, renomear) {
+  const atual = path.join(pasta, item);
+  if (!existia) {
+    if (!existeSemSeguir(atual)) return null;
+    fs.rmSync(atual, { recursive: true, force: true });
+    return `-${item}`;
+  }
+  const novo = `${atual}.trocando`;
+  const velho = `${atual}.descartando`;
+  fs.rmSync(novo, { recursive: true, force: true });
+  fs.rmSync(velho, { recursive: true, force: true });
+  guardarItem(path.join(origem, item), novo, item, null);
+  const tinhaAtual = existeSemSeguir(atual);
+  if (tinhaAtual) renomear(atual, velho);
+  try {
+    renomear(novo, atual);
+  } catch (erro) {
+    if (tinhaAtual) renomear(velho, atual);
+    fs.rmSync(novo, { recursive: true, force: true });
+    throw erro;
+  }
+  fs.rmSync(velho, { recursive: true, force: true });
+  return item;
+}
+
+// Guarda a versão que a pessoa viu (a tentativa) antes de voltar ao antes, em tentativa/, com o
+// vídeo ligado como no antes. Fica até o próximo "antes"; uma tentativa nova substitui a anterior.
+// Montada ao lado e trocada no fim. Devolve os itens guardados.
+export function guardarTentativa(pastaDaApresentacao, ad, manifesto) {
+  const montando = `${ad.tentativa}.guardando`;
+  liberarPesados(ad.antes, manifesto);
+  try {
+    fs.rmSync(montando, { recursive: true, force: true });
+    const itens = [];
+    for (const item of ITENS_GUARDADOS) {
+      const de = path.join(pastaDaApresentacao, item);
+      if (!existeSemSeguir(de)) continue;
+      itens.push(item);
+      guardarItem(de, path.join(montando, item), item, null);
+    }
+    fs.mkdirSync(montando, { recursive: true });
+    fs.rmSync(ad.tentativa, { recursive: true, force: true });
+    fs.renameSync(montando, ad.tentativa);
+    return itens;
+  } finally {
+    protegerPesados(ad.antes, manifesto);
+  }
 }
 
 // Só as mudanças com título de verdade contam. "telas" (opcional) diz em que telas a mudança está:
@@ -285,8 +355,8 @@ export function igualAoAntes(pastaDaApresentacao, antes, manifesto) {
 }
 
 // Depois do "Qual fica?" resolvido (depois ou antes), o antes e as fotos saem: o vídeo velho que só
-// o antes segurava não fica ocupando o disco. Ficam estado.json (para dizer que já foi resolvido) e
-// mudancas.json (o que foi pedido e mudado).
+// o antes segurava não fica ocupando o disco. Ficam estado.json (para dizer que já foi resolvido),
+// mudancas.json (o que foi pedido e mudado) e tentativa/ (a versão vista, até o próximo "antes").
 export function fecharAntes(ad, escolha) {
   liberarPesados(ad.antes, lerJson(ad.manifesto, { pesados: [] }));
   fs.rmSync(ad.antes, { recursive: true, force: true });

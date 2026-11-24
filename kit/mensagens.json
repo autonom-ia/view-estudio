@@ -349,18 +349,22 @@
   },
   "COMPARACAO_PRONTA": {
     "texto": "Abri o antes e o depois lado a lado, só nas telas que mudaram, com cada mudança numerada.",
-    "acao": "Diga em uma frase cada mudança de dados.mudancas, na ordem, e pergunte qual fica: \"O depois ★\", \"Voltar como estava\", \"Outro caminho\". Com a resposta, rode ./estudio escolher <nome> depois, antes ou outro. dados.telas diz que telas e cliques mudaram. Endereço em dados.endereco (só neste computador)."
+    "acao": "Diga em uma frase cada mudança de dados.mudancas, na ordem, e pergunte qual fica: \"O depois ★\", \"Voltar como estava\", \"Outro caminho\". Diga junto que a versão que ela está vendo fica guardada até a próxima mudança, qualquer que seja a escolha. Com a resposta, rode ./estudio escolher <nome> depois, antes ou outro. dados.telas diz que telas e cliques mudaram. Endereço em dados.endereco (só neste computador)."
   },
   "FICOU_O_DEPOIS": {
     "texto": "Combinado, fica o depois.",
     "acao": "Grave no andamento.md o pedido e as mudanças que ficaram. A cópia do antes foi apagada; o próximo pedido vago começa com ./estudio antes <nome>. Rode checar, fatos e acessibilidade antes de entregar."
   },
   "VOLTOU_COMO_ESTAVA": {
-    "texto": "Voltei a apresentação para como estava antes.",
-    "acao": "deck/, roteiro/, cenas/ e brief.md voltaram ao que o antes guardou (dados.restaurados) e a cópia do antes foi apagada. Rode ./estudio abrir <nome> para a pessoa ver."
+    "texto": "Voltei a apresentação para como estava antes. A versão que você viu fica guardada até a próxima mudança.",
+    "acao": "deck/, roteiro/, cenas/ e brief.md voltaram ao que o antes guardou (dados.restaurados) e a cópia do antes foi apagada. A versão vista ficou em arquivos.tentativa (vídeo sem cópia) até o próximo ./estudio antes: se a pessoa mudar de ideia antes disso, copie de lá os itens de dados.tentativa de volta para a apresentação. Rode ./estudio abrir <nome> para a pessoa ver."
   },
   "PRONTO_PARA_OUTRO_CAMINHO": {
-    "texto": "Voltei para o ponto de partida. Vou tentar outro caminho.",
-    "acao": "A apresentação voltou ao original e o antes continua guardado. Não rode ./estudio antes: faça 2 ou 3 mudanças diferentes, preencha arquivos.mudancas e rode ./estudio comparar <nome>."
+    "texto": "Voltei para o ponto de partida. Vou tentar outro caminho. A versão que você viu fica guardada até a próxima mudança.",
+    "acao": "A apresentação voltou ao original e o antes continua guardado. A versão vista ficou em arquivos.tentativa até a próxima escolha (uma tentativa nova toma o lugar dela) ou o próximo ./estudio antes. Não rode ./estudio antes: faça 2 ou 3 mudanças diferentes, preencha arquivos.mudancas e rode ./estudio comparar <nome>."
+  },
+  "RESTAURACAO_FALHOU": {
+    "texto": "Não consegui voltar a apresentação agora. Nada se perdeu: a versão de antes e a que você viu continuam guardadas. Vou tentar de novo.",
+    "acao": "dados.item não trocou; dados.erro diz por quê (no Windows, quase sempre um arquivo aberto em outro programa, como o vídeo num player). Peça para fechar o que estiver usando os arquivos da apresentação e rode o mesmo ./estudio escolher <nome> dados.escolha de novo: ele continua de onde parou e não guarda a apresentação pela metade por cima da versão vista (dados.tentativa). Se a pessoa preferir ficar com a versão vista, rode escolher depois: ela volta inteira. Não desfaça de memória e não apague nada com final .trocando ou .descartando."
   }
 }

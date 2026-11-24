@@ -13,7 +13,8 @@ import { fileURLToPath } from 'node:url';
 import { acharNavegador } from '../scripts/lib/chrome.mjs';
 import {
   guardarAntes, pesadosAlterados, restaurarAntes, igualAoAntes, lerMudancas, ehPesado, PESADO_BYTES,
-  caminhosDoAntesDepois, fecharAntes, impressao, mesmoArquivo, pastasIguais, semLinkFixo,
+  caminhosDoAntesDepois, fecharAntes, impressao, mesmoArquivo, pastasIguais, semLinkFixo, guardarTentativa,
+  ErroDeRestauracao,
 } from '../scripts/lib/antes-depois.mjs';
 import { renderizarSemPerderOAnterior } from '../scripts/lib/hyperframes.mjs';
 import { telasMudadas, paginaDeComparacao, nomeDaFoto } from '../scripts/lib/comparacao.mjs';
@@ -114,6 +115,53 @@ test('antes-depois: restaurar volta cada item e tira o que a tentativa criou', (
   assert.equal(fs.statSync(path.join(pasta, 'deck', 'assets', 'cena.mp4')).ino, fs.statSync(path.join(antes, 'deck', 'assets', 'cena.mp4')).ino, 'o vídeo volta sem cópia');
   assert.equal(gravavel(path.join(pasta, 'deck', 'assets', 'cena.mp4')), false, 'o antes continua em aberto: o vídeo segue só para leitura');
   assert.equal(igualAoAntes(pasta, antes, m), true);
+});
+
+test('antes-depois: troca que falha no meio não deixa a apresentação sem o item nem sobra ao lado', () => {
+  const pasta = apresentacaoDeBrinquedo('troca-falha');
+  const antes = path.join(pasta, 'revisao', 'antes-depois', 'antes');
+  const m = guardarAntes(pasta, antes);
+  escrever(path.join(pasta, 'deck', 'slides', 's01-capa.html'), '<h1>Capa nova</h1>');
+  escrever(path.join(pasta, 'roteiro', 'S01.json'), '{"tela":1,"beats":[{"fala":"Fala nova."}]}');
+  const roteiro = path.join(pasta, 'roteiro');
+  // a entrada do roteiro de antes no lugar falha (no Windows: arquivo aberto em outro programa)
+  const renomear = (de, para) => {
+    if (para === roteiro && de === `${roteiro}.trocando`) throw Object.assign(new Error('arquivo em uso'), { code: 'EBUSY' });
+    fs.renameSync(de, para);
+  };
+  assert.throws(() => restaurarAntes(pasta, antes, m, { renomear }), (e) => e instanceof ErroDeRestauracao && e.codigo === 'RESTAURACAO_FALHOU' && e.item === 'roteiro');
+  assert.equal(fs.readFileSync(path.join(pasta, 'deck', 'slides', 's01-capa.html'), 'utf8'), '<h1>Capa</h1>', 'o deck já tinha voltado');
+  assert.equal(fs.readFileSync(path.join(roteiro, 'S01.json'), 'utf8'), '{"tela":1,"beats":[{"fala":"Fala nova."}]}', 'o roteiro volta ao que estava, inteiro');
+  assert.deepEqual(fs.readdirSync(pasta).filter((n) => n.endsWith('.trocando') || n.endsWith('.descartando')), []);
+  assert.equal(gravavel(path.join(pasta, 'deck', 'assets', 'cena.mp4')), false, 'a proteção volta mesmo com a falha');
+  // de novo, sem falha: termina
+  assert.deepEqual(restaurarAntes(pasta, antes, m), ['deck', 'roteiro', 'brief.md']);
+  assert.equal(igualAoAntes(pasta, antes, m), true);
+});
+
+test('antes-depois: a tentativa é guardada inteira, com o vídeo ligado, e uma nova toma o lugar dela', () => {
+  const pasta = apresentacaoDeBrinquedo('tentativa');
+  const ad = caminhosDoAntesDepois({ revisao: path.join(pasta, 'revisao') });
+  const m = guardarAntes(pasta, ad.antes);
+  escrever(path.join(pasta, 'deck', 'slides', 's01-capa.html'), '<h1>Tentativa 1</h1>');
+  escrever(path.join(pasta, 'cenas', 'abertura', 'index.html'), 'cena da tentativa');
+  const video = path.join(pasta, 'deck', 'assets', 'cena.mp4');
+  fs.writeFileSync(`${video}.novo`, 'video-da-tentativa');
+  fs.renameSync(`${video}.novo`, video);
+  assert.deepEqual(guardarTentativa(pasta, ad, m), ['deck', 'roteiro', 'cenas', 'brief.md']);
+  assert.equal(fs.readFileSync(path.join(ad.tentativa, 'deck', 'slides', 's01-capa.html'), 'utf8'), '<h1>Tentativa 1</h1>');
+  assert.equal(fs.readFileSync(path.join(ad.tentativa, 'cenas', 'abertura', 'index.html'), 'utf8'), 'cena da tentativa');
+  assert.equal(fs.statSync(path.join(ad.tentativa, 'deck', 'assets', 'cena.mp4')).ino, fs.statSync(video).ino, 'vídeo da tentativa sem cópia');
+  restaurarAntes(pasta, ad.antes, m);
+  assert.equal(fs.readFileSync(path.join(ad.tentativa, 'deck', 'assets', 'cena.mp4'), 'utf8'), 'video-da-tentativa', 'voltar não mexe na tentativa');
+  escrever(path.join(pasta, 'deck', 'slides', 's01-capa.html'), '<h1>Tentativa 2</h1>');
+  guardarTentativa(pasta, ad, m);
+  assert.equal(fs.readFileSync(path.join(ad.tentativa, 'deck', 'slides', 's01-capa.html'), 'utf8'), '<h1>Tentativa 2</h1>');
+  assert.equal(fs.existsSync(`${ad.tentativa}.guardando`), false);
+  // fechar o antes não apaga a tentativa
+  escrever(ad.manifesto, JSON.stringify(m));
+  fecharAntes(ad, 'antes');
+  assert.equal(fs.existsSync(path.join(ad.tentativa, 'deck', 'slides', 's01-capa.html')), true);
 });
 
 test('antes-depois: fechar o antes devolve ao vídeo o modo que ele tinha', () => {
@@ -232,7 +280,65 @@ test('comparação: a página numera as mudanças, marca as telas, não tem <sel
   assert.equal(nomeDaFoto('antes', 's02-numero.html', 1), 'antes-s02-numero-b1.jpg');
 });
 
-// --- no navegador, pelos comandos ---
+// --- pelos comandos ---
+
+const ambiente = (nome) => ({
+  ...process.env,
+  ESTUDIO_APRESENTACOES: path.join(base, nome, 'apresentacoes'),
+  ESTUDIO_MARCA: path.join(base, nome, 'sem-marca'),
+  ESTUDIO_FERRAMENTAS: path.join(base, nome, '.ferramentas'),
+  ESTUDIO_NAO_ABRIR: '1',
+});
+
+const semTrava = process.platform === 'win32' || ehRoot ? 'pasta só para leitura não impede gravar no Windows nem como root' : false;
+
+test('escolher: volta que falha vira RESTAURACAO_FALHOU, nada se perde e a segunda vez termina', { skip: semTrava }, () => {
+  const env = ambiente('volta-falha');
+  assert.equal(estudio(env, 'nova', 'bolo').codigo, 0);
+  const pasta = path.join(env.ESTUDIO_APRESENTACOES, 'bolo');
+  const slide = path.join(pasta, 'deck', 'slides', 's02-numero.html');
+  const tentativa = path.join(pasta, 'revisao', 'antes-depois', 'tentativa');
+  assert.equal(estudio(env, 'antes', 'bolo').json.codigo, 'ANTES_GUARDADO');
+  trocarNoArquivo(slide, 'A manhã já é nossa.', 'Versão que a pessoa viu.');
+  fs.chmodSync(pasta, 0o555);
+  let r;
+  try {
+    r = estudio(env, 'escolher', 'bolo', 'antes');
+  } finally {
+    fs.chmodSync(pasta, 0o755);
+  }
+  assert.equal(r.codigo, 1, JSON.stringify(r.json));
+  assert.equal(r.json.codigo, 'RESTAURACAO_FALHOU');
+  assert.equal(r.json.dados.item, 'deck');
+  assert.ok(fs.readFileSync(slide, 'utf8').includes('Versão que a pessoa viu.'), 'a apresentação ficou inteira');
+  assert.ok(fs.readFileSync(path.join(tentativa, 'deck', 'slides', 's02-numero.html'), 'utf8').includes('Versão que a pessoa viu.'));
+  // a segunda vez não guarda por cima da tentativa o que estiver na apresentação
+  trocarNoArquivo(slide, 'Versão que a pessoa viu.', 'Meio do caminho.');
+  const volta = estudio(env, 'escolher', 'bolo', 'antes');
+  assert.equal(volta.json.codigo, 'VOLTOU_COMO_ESTAVA', JSON.stringify(volta.json));
+  assert.ok(fs.readFileSync(slide, 'utf8').includes('A manhã já é nossa.'));
+  assert.ok(fs.readFileSync(path.join(tentativa, 'deck', 'slides', 's02-numero.html'), 'utf8').includes('Versão que a pessoa viu.'));
+  assert.equal(path.resolve(RAIZ, volta.json.arquivos.tentativa), tentativa);
+});
+
+test('escolher: com a volta pendente, "depois" devolve a versão vista inteira', { skip: semTrava }, () => {
+  const env = ambiente('depois-pendente');
+  assert.equal(estudio(env, 'nova', 'bolo').codigo, 0);
+  const pasta = path.join(env.ESTUDIO_APRESENTACOES, 'bolo');
+  const slide = path.join(pasta, 'deck', 'slides', 's02-numero.html');
+  assert.equal(estudio(env, 'antes', 'bolo').json.codigo, 'ANTES_GUARDADO');
+  trocarNoArquivo(slide, 'A manhã já é nossa.', 'Versão que a pessoa viu.');
+  fs.chmodSync(pasta, 0o555);
+  try {
+    assert.equal(estudio(env, 'escolher', 'bolo', 'outro').json.codigo, 'RESTAURACAO_FALHOU');
+  } finally {
+    fs.chmodSync(pasta, 0o755);
+  }
+  trocarNoArquivo(slide, 'Versão que a pessoa viu.', 'Meio do caminho.');
+  const r = estudio(env, 'escolher', 'bolo', 'depois');
+  assert.equal(r.json.codigo, 'FICOU_O_DEPOIS', JSON.stringify(r.json));
+  assert.ok(fs.readFileSync(slide, 'utf8').includes('Versão que a pessoa viu.'));
+});
 
 function estudio(env, ...args) {
   const r = spawnSync(process.execPath, [DESPACHANTE, ...args], { encoding: 'utf8', env, timeout: 280000 });
@@ -314,6 +420,10 @@ test('antes, comparar e escolher: só a tela e o clique que mudaram, vídeo sem 
     assert.ok(fs.readFileSync(path.join(pasta, 'deck', 'slides', 's02-numero.html'), 'utf8').includes('A manhã já é nossa.'));
     assert.ok(fs.readFileSync(path.join(pasta, 'roteiro', 'S03.json'), 'utf8').includes('Primeiro, em março,'));
     assert.deepEqual(JSON.parse(fs.readFileSync(mudancas, 'utf8')), { pedido: 'mais vida', mudancas: [] });
+    // a versão vista fica guardada, com o vídeo ligado
+    assert.ok(fs.readFileSync(path.join(ad, 'tentativa', 'deck', 'slides', 's02-numero.html'), 'utf8').includes('A manhã é toda nossa.'));
+    assert.ok(fs.readFileSync(path.join(ad, 'tentativa', 'roteiro', 'S03.json'), 'utf8').includes('Logo em março,'));
+    assert.equal(fs.statSync(path.join(ad, 'tentativa', 'deck', 'assets', 'abertura.mp4')).ino, fs.statSync(video).ino);
     assert.equal(fs.statSync(video).ino, fs.statSync(path.join(ad, 'antes', 'deck', 'assets', 'abertura.mp4')).ino);
 
     // voltar como estava: fecha o antes e apaga a cópia
@@ -323,6 +433,7 @@ test('antes, comparar e escolher: só a tela e o clique que mudaram, vídeo sem 
     assert.ok(fs.readFileSync(path.join(pasta, 'deck', 'slides', 's02-numero.html'), 'utf8').includes('A manhã já é nossa.'));
     assert.equal(fs.existsSync(path.join(ad, 'antes')), false);
     assert.equal(fs.existsSync(path.join(ad, 'fotos')), false);
+    assert.ok(fs.readFileSync(path.join(ad, 'tentativa', 'deck', 'slides', 's02-numero.html'), 'utf8').includes('Outra tentativa.'), 'a versão vista fica até o próximo antes');
     assert.equal(fs.readFileSync(video, 'utf8'), 'video-da-cena');
     const resolvido = estudio(env, 'escolher', 'cafe', 'depois');
     assert.equal(resolvido.codigo, 2);
@@ -331,6 +442,7 @@ test('antes, comparar e escolher: só a tela e o clique que mudaram, vídeo sem 
 
     // vídeo gravado por cima do mesmo arquivo: comparar e voltar recusam; ficar com o depois pode
     assert.equal(estudio(env, 'antes', 'cafe').json.codigo, 'ANTES_GUARDADO');
+    assert.equal(fs.existsSync(path.join(ad, 'tentativa')), false, 'o próximo antes apaga a tentativa');
     fs.chmodSync(video, 0o644);
     fs.writeFileSync(video, 'video-gravado-por-cima');
     fs.writeFileSync(mudancas, JSON.stringify({ pedido: 'x', mudancas: [{ titulo: 'um' }, { titulo: 'dois' }] }));

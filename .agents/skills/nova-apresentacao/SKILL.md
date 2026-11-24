@@ -138,10 +138,11 @@ Skill `entregar`: PDF, teleprompter, pasta pronta e como apresentar. Marque `eta
 2. Faça as 2 ou 3 mudanças, cada uma ligada ao pedido, nas telas e no roteiro. Mudou a tela, ajuste a fala daquela tela.
 3. Escreva `arquivos.mudancas` (`revisao/antes-depois/mudancas.json`) com as palavras da pessoa em `pedido` e cada mudança com `titulo` (o que mudou, em palavras do dia a dia), `porque` (como atende o pedido) e `telas` (os números das telas em que ela aparece).
 4. `./estudio comparar <nome>` (`COMPARACAO_PRONTA`): abre o antes e o depois lado a lado, só nas telas que mudaram, clique por clique, com as mudanças numeradas. Saída 2: `POUCAS_MUDANCAS` (menos de 2) ou `NADA_MUDOU` (nenhuma tela, clique ou fala mudou); corrija e rode de novo. Saída 1 com `ANTES_VIDEO_MUDOU`: um vídeo foi gravado por cima; siga a ação da mensagem.
-5. Diga em uma frase cada mudança e pergunte: "Qual fica?" com "O depois ★", "Voltar como estava" e "Outro caminho". Com a resposta, rode `./estudio escolher <nome> depois`, `antes` ou `outro`. Nunca desfaça de memória:
+5. Diga em uma frase cada mudança e pergunte: "Qual fica? A versão que você está vendo fica guardada até a próxima mudança." com "O depois ★", "Voltar como estava" e "Outro caminho". Com a resposta, rode `./estudio escolher <nome> depois`, `antes` ou `outro`. Antes de voltar, o `escolher` guarda a versão vista em `revisao/antes-depois/tentativa/` (até o próximo `antes`). Nunca desfaça de memória:
    - "O depois": `FICOU_O_DEPOIS`. Grave no `andamento.md` o que ficou e rode `checar`, `fatos` e `acessibilidade`.
    - "Voltar como estava": `VOLTOU_COMO_ESTAVA`. Tudo voltou ao que o passo 1 guardou; abra a apresentação de novo.
    - "Outro caminho": `PRONTO_PARA_OUTRO_CAMINHO`. A apresentação voltou ao original e o antes continua guardado. Pule o passo 1: faça outra leitura do pedido a partir do passo 2, e a nova comparação mostra o original contra a tentativa nova.
+   - `RESTAURACAO_FALHOU` (saída 1): a volta parou no meio, sem perder nada. Siga a ação da mensagem e rode o mesmo `escolher` de novo.
 
 ## Onde você para e pergunta
 

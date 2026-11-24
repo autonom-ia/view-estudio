@@ -247,3 +247,29 @@ export const MEDIR = (limites) => `(() => {
   }
   return { red: red.slice(0, L.maximo), warn: warn.slice(0, L.maximo), medidos: itens.length };
 })()`;
+
+// O texto que a plateia lê numa tela assentada, para a conferência de fatos: o innerText (que deixa
+// de fora o que está escondido neste beat), o que o CSS escreve com content: nos elementos visíveis e
+// os endereços tel: e mailto: dos links. A dica de teclado ([data-controle]) fica de fora.
+export const TEXTO_PARA_FATOS = `(() => {
+  const raiz = document.querySelector('.palco-tela') || document.body;
+  const pedacos = [raiz.innerText || ''];
+  const visivel = (el) => {
+    try { if (el.checkVisibility) return el.checkVisibility({ opacityProperty: true, visibilityProperty: true }); } catch (e) {}
+    return getComputedStyle(el).visibility !== 'hidden';
+  };
+  for (const el of raiz.querySelectorAll('*')) {
+    if (el.closest('[data-controle]') || !visivel(el)) continue;
+    for (const pseudo of ['::before', '::after']) {
+      const c = getComputedStyle(el, pseudo).content;
+      if (c && c !== 'none' && c !== 'normal' && c.length > 2 && c.startsWith('"')) pedacos.push(c.slice(1, -1));
+    }
+  }
+  const enderecos = [];
+  for (const a of raiz.querySelectorAll('a[href]')) {
+    const h = (a.getAttribute('href') || '').trim();
+    const baixo = h.toLowerCase();
+    if (baixo.startsWith('tel:') || baixo.startsWith('mailto:')) enderecos.push(h);
+  }
+  return { texto: pedacos.join('\\n'), enderecos };
+})()`;

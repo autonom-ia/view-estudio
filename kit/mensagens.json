@@ -91,6 +91,18 @@
     "texto": "A conferência achou problemas nas telas. Vou corrigir antes de mostrar.",
     "acao": "Leia dados.vermelhos (tela, beat, tipo, detalhe). Corrija pela causa e rode checar de novo. Não mostre à pessoa um deck reprovado."
   },
+  "FATOS_OK": {
+    "texto": "Todo número, contato e @ das telas e da fala tem a fonte guardada.",
+    "acao": "Siga em frente. O revisor de fatos ainda confere datas escritas por extenso, nomes e citações."
+  },
+  "FATOS_SEM_FONTE": {
+    "texto": "Há números, contatos ou @ nas telas ou na fala sem fonte guardada. Vou conferir antes de seguir.",
+    "acao": "Leia dados.vermelhos (tela, beat, tipo, trecho, motivo). Para cada um: confirme com a pessoa e registre na tabela de fatos do brief.md com a fonte, ou tire da tela e do roteiro. fonte-de-exemplo: apague as linhas do exemplo do molde. Nunca invente fonte."
+  },
+  "FATOS_SEM_TABELA": {
+    "texto": "A apresentação ainda não tem a lista de fatos com a fonte de cada um. Vou montar.",
+    "acao": "Preencha a tabela Fato | Fonte | Data do brief.md com o que a pessoa informou e os documentos de referencias/, e rode fatos de novo."
+  },
   "PRINTS_PRONTOS": {
     "texto": "Fotografei todas as telas, a cada clique.",
     "acao": "Abra e olhe cada arquivo de dados.fotos, um por um, antes de dizer que está bom."

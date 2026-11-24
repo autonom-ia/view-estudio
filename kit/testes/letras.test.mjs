@@ -225,6 +225,7 @@ test('letras: a licença vale só para a família com o mesmo nome (sem prefixo)
 test('letras do deck: licença com nome próprio por família, OFL.txt só vale para uma família, peso e formato', () => {
   assert.equal(familiaDoArquivo('BigShouldersDisplay-latin.woff2'), 'bigshouldersdisplay');
   assert.equal(familiaDoArquivo('Figtree.ttf'), 'figtree');
+  assert.equal(familiaDoArquivo('Inter_18pt-Regular.ttf'), 'inter', 'estático por tamanho óptico');
   assert.equal(familiaDaLicenca('OFL-BigShouldersDisplay.txt'), 'bigshouldersdisplay');
   assert.equal(familiaDaLicenca('OFL.txt'), '');
   const base = fs.mkdtempSync(path.join(os.tmpdir(), 'estudio-letras-'));

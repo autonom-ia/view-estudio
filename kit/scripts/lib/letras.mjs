@@ -19,11 +19,12 @@ const chave = (texto) => [...String(texto).toLowerCase()].filter(ehLetraOuNumero
 export const ehArquivoDeLetra = (nome) => EXTENSOES_DE_FONTE.some((ext) => nome.toLowerCase().endsWith(ext));
 
 // "BigShouldersDisplay-latin.woff2" → "bigshouldersdisplay"; "Figtree.ttf" → "figtree";
-// "Inter[opsz,wght].ttf" (nome do repositório oficial) → "inter". A família vai até o primeiro
-// hífen, colchete ou ponto.
+// "Inter[opsz,wght].ttf" (nome do repositório oficial) → "inter"; "Inter_18pt-Regular.ttf" (estático
+// por tamanho óptico, também do repositório oficial) → "inter". A família vai até o primeiro hífen,
+// sublinhado, colchete ou ponto.
 export function familiaDoArquivo(nome) {
   let fim = nome.length;
-  for (const marca of ['-', '[', '.']) {
+  for (const marca of ['-', '_', '[', '.']) {
     const k = nome.indexOf(marca);
     if (k > 0 && k < fim) fim = k;
   }

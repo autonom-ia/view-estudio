@@ -7,6 +7,8 @@
 export const BASE_GOOGLE = 'https://www.google.com';
 const PRAZO_DA_PAGINA_MS = 20000;
 const PRAZO_DAS_AVALIACOES_MS = 10000;
+// Depois do "Mais", o tempo para o texto aparecer com as estrelas.
+const PRAZO_DO_TEXTO_MS = 3000;
 // O Maps mostra o painel antes de trocar o endereço da busca pelo do lugar: espera a troca.
 const PRAZO_DO_ENDERECO_MS = 8000;
 const DIAS = Object.freeze([
@@ -93,9 +95,21 @@ function abrirAvaliacoes() {
   return true;
 }
 
-// Estrelas, texto e quando. O nome de quem escreveu fica de fora de propósito.
+// As avaliações já apareceram na aba?
+function haAvaliacoes() {
+  return document.querySelectorAll('div[data-review-id]').length > 0;
+}
+
+// Abre o texto inteiro de cada avaliação ("Mais"). Roda UMA vez: o botão alterna, e um segundo
+// clique fecharia o texto de novo.
+function abrirTextosInteiros() {
+  const botoes = [...document.querySelectorAll('button.w8nwRe')];
+  for (const b of botoes) b.click();
+  return botoes.length;
+}
+
+// Estrelas, texto e quando. O nome de quem escreveu fica de fora de propósito. Só lê; não clica.
 function lerAvaliacoesNaPagina(maximo) {
-  for (const b of document.querySelectorAll('button.w8nwRe')) b.click();
   const vistas = new Set();
   const lista = [];
   for (const d of document.querySelectorAll('div[data-review-id]')) {
@@ -179,8 +193,9 @@ export async function lerGoogle(leitor, entrada, { base = BASE_GOOGLE, maximoAva
   await leitor.esperarAte(enderecoDoLugar, PRAZO_DO_ENDERECO_MS);
   const lugar = dadosDoLugar(await leitor.avaliar(lerLugarNaPagina));
   let avaliacoes = [];
-  if (await leitor.avaliar(abrirAvaliacoes)) {
-    avaliacoes = (await leitor.esperarAte(lerAvaliacoesNaPagina, PRAZO_DAS_AVALIACOES_MS, maximoAvaliacoes)) || [];
+  if ((await leitor.avaliar(abrirAvaliacoes)) && (await leitor.esperarAte(haAvaliacoes, PRAZO_DAS_AVALIACOES_MS))) {
+    await leitor.avaliar(abrirTextosInteiros);
+    avaliacoes = (await leitor.esperarAte(lerAvaliacoesNaPagina, PRAZO_DO_TEXTO_MS, maximoAvaliacoes)) || [];
   }
   return {
     achou: true,

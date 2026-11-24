@@ -3,7 +3,8 @@
 // páginas públicas dele, sem entrar em conta nenhuma: o perfil do Google (endereço, telefone,
 // horário, nota e avaliações sem o nome de quem escreveu) e o site atual inteiro (achado pelo Google
 // se não vier --site). Salva tudo em apresentacoes/<nome>/coleta/ e põe cada fato, com a fonte e a
-// data, na parte "Lido pelo estúdio" da tabela de fatos do brief.md. Ler é permitido; nada é
+// data, na parte "Lido pelo estúdio" da tabela de fatos do brief.md (o texto das avaliações fica só
+// em coleta/, nunca na tabela). Ler é permitido; nada é
 // publicado nem enviado. O Instagram não é lido (fica para depois).
 // Portado do Site Estúdio (comando "ler").
 import path from 'node:path';

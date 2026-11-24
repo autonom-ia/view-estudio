@@ -19,12 +19,16 @@ export function celula(texto, teto = TETO_DA_CELULA) {
     else t += ch;
   }
   t = t.split(' ').filter(Boolean).join(' ');
-  return t.length > teto ? `${t.slice(0, teto - 1)}…` : t;
+  // Corta por caractere inteiro (Array.from), nunca no meio de um emoji.
+  const letras = Array.from(t);
+  return letras.length > teto ? `${letras.slice(0, teto - 1).join('')}…` : t;
 }
 
 const registro = (fato, fonte, data) => ({ fato: celula(fato), fonte: celula(fonte), data });
 
-export function registrosDoGoogle({ lugar, avaliacoes }, data) {
+// O texto das avaliações NÃO vira fato: pode citar o nome de um funcionário ou de outro cliente.
+// Ele fica só em coleta/google/lugar.json; a nota e a quantidade de avaliações continuam como fato.
+export function registrosDoGoogle({ lugar }, data) {
   const fonte = `Perfil do Google, ${lugar.fonte}`;
   const lista = [];
   if (lugar.nome) lista.push(registro(`Nome no Google: ${lugar.nome}`, fonte, data));
@@ -33,11 +37,6 @@ export function registrosDoGoogle({ lugar, avaliacoes }, data) {
   if (lugar.site) lista.push(registro(`Site: ${lugar.site}`, fonte, data));
   for (const h of lugar.horario) lista.push(registro(`Horário de ${h.dia}: ${h.horas}`, fonte, data));
   if (lugar.nota) lista.push(registro(`Nota no Google: ${lugar.nota}${lugar.total ? ` (${lugar.total} avaliações)` : ''}`, fonte, data));
-  for (const a of avaliacoes) {
-    if (!a.texto) continue;
-    const quando = a.quando ? `, ${a.quando}` : '';
-    lista.push(registro(`Avaliação no Google (${a.estrelas} estrelas${quando}): "${a.texto}"`, `${fonte} (sem o nome de quem escreveu)`, data));
-  }
   return lista;
 }
 
@@ -76,14 +75,35 @@ export function secaoLida(registros, data) {
 }
 
 const ehTituloDosFatos = (linha) => linha.startsWith('## ') && linha.toLowerCase().includes('fatos');
+const vezes = (texto, trecho) => texto.split(trecho).length - 1;
+
+// As marcas da parte lida estão inteiras? Nenhuma marca, ou um início e um fim, nessa ordem.
+// Marca sem par, repetida ou fora de ordem: trocar a parte apagaria texto que a pessoa escreveu.
+export function marcasInteiras(markdown) {
+  const texto = String(markdown || '');
+  const ini = vezes(texto, MARCA_INICIO);
+  const fim = vezes(texto, MARCA_FIM);
+  if (ini === 0 && fim === 0) return true;
+  return ini === 1 && fim === 1 && texto.indexOf(MARCA_INICIO) < texto.indexOf(MARCA_FIM);
+}
 
 // Põe a parte lida no brief: no lugar da que já existe; senão, no fim da seção "Fatos e números"
-// (antes do próximo título "## "); sem essa seção, numa seção nova no fim do brief.
+// (antes do próximo título "## "); sem essa seção, numa seção nova no fim do brief. Mantém o fim
+// de linha do arquivo (CRLF no Windows). Devolve null, sem mexer em nada, se as marcas estão
+// quebradas (marcasInteiras).
 export function juntarNoBrief(markdown, secao) {
-  const texto = String(markdown || '');
+  const original = String(markdown || '');
+  if (!marcasInteiras(original)) return null;
+  const crlf = original.includes('\r\n');
+  const texto = crlf ? original.split('\r\n').join('\n') : original;
+  const junto = juntarLf(texto, String(secao).split('\r\n').join('\n'));
+  return crlf ? junto.split('\n').join('\r\n') : junto;
+}
+
+function juntarLf(texto, secao) {
   const ini = texto.indexOf(MARCA_INICIO);
   const fim = texto.indexOf(MARCA_FIM);
-  if (ini !== -1 && fim > ini) return `${texto.slice(0, ini)}${secao}${texto.slice(fim + MARCA_FIM.length)}`;
+  if (ini !== -1) return `${texto.slice(0, ini)}${secao}${texto.slice(fim + MARCA_FIM.length)}`;
   const linhas = texto.split('\n');
   const k = linhas.findIndex(ehTituloDosFatos);
   if (k === -1) {

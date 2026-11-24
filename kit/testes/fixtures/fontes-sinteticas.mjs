@@ -1,12 +1,16 @@
 // Páginas públicas SINTÉTICAS para testar a leitura sem internet: o perfil do Google (lista com dois
 // resultados, painel do lugar, avaliações com nome de autor que NÃO pode ser lido) e um site de duas
-// páginas com JSON-LD. Negócio, nomes, endereço e telefone são inventados.
+// páginas com JSON-LD e, nas duas, o rodapé da agência que fez o site (contato e JSON-LD de
+// TERCEIRO, que não podem virar fato). Negócio, nomes, endereço e telefone são inventados.
 // Portado do Site Estúdio (kit/testes/fixtures/fontes-sinteticas.mjs), sem o Instagram.
 import http from 'node:http';
 import zlib from 'node:zlib';
 
 export const NEGOCIO = 'Casa Exemplo';
 export const AUTORES = Object.freeze(['Pessoa Inventada Um', 'Pessoa Inventada Dois']);
+// O rodapé "site feito por" em toda página: WhatsApp da agência e o JSON-LD dela.
+export const AGENCIA = Object.freeze({ nome: 'Agência Inventada', whatsapp: '5599999990000', telefone: '(99) 9999-0000' });
+const MAIS_TEXTO = ' e o atendimento foi ótimo.';
 
 const pagina = (cabeca, corpo) => `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">${cabeca}</head><body>${corpo}</body></html>`;
 
@@ -48,7 +52,7 @@ function listaDoGoogle() {
 function lugarDoGoogle(origem) {
   const dia = (d, h) => `<tr><td>${d}</td><td>${h}</td></tr>`;
   const avaliacao = (id, autor, estrelas, texto, quando) =>
-    `<div data-review-id="${id}"><div data-review-id="${id}"><div class="d4r55">${autor}</div><span role="img" aria-label="${estrelas} estrelas"></span><span class="rsqaWe">${quando}</span><span class="wiI7pd">${texto}</span><button class="w8nwRe" onclick="this.previousElementSibling.textContent += ' e o atendimento foi ótimo.'">Mais</button></div></div>`;
+    `<div data-review-id="${id}"><div data-review-id="${id}"><div class="d4r55">${autor}</div><span role="img" aria-label="${estrelas} estrelas"></span><span class="rsqaWe">${quando}</span><span class="wiI7pd">${texto}</span><button class="w8nwRe" onclick="const t = this.previousElementSibling; t.textContent = t.textContent.endsWith('${MAIS_TEXTO}') ? t.textContent.slice(0, -${MAIS_TEXTO.length}) : t.textContent + '${MAIS_TEXTO}'">Mais</button></div></div>`;
   const avaliacoes = `<div id="avaliacoes" hidden>${avaliacao('r1', AUTORES[0], 5, 'Revisão rápida perfeito', 'há 2 semanas')}${avaliacao('r2', AUTORES[1], 4, 'Entrega no horário', 'há 1 mês')}</div>`;
   const aba = '<button role="tab" aria-label="Avaliações de Casa Exemplo" onclick="document.getElementById(\'avaliacoes\').hidden = false">Avaliações</button>';
   const corpo = `<div role="main" aria-label="${NEGOCIO}"><h1>${NEGOCIO}</h1>
@@ -60,12 +64,17 @@ function lugarDoGoogle(origem) {
   return pagina('<title>Casa Exemplo - Google Maps</title>', corpo);
 }
 
+function rodapeDaAgencia() {
+  return `<footer>Site feito por ${AGENCIA.nome} · <a href="https://wa.me/${AGENCIA.whatsapp}">fale com a agência</a></footer>`;
+}
+
 function site(rel, origem) {
+  const ldAgencia = { '@context': 'https://schema.org', '@type': 'Organization', name: AGENCIA.nome, telephone: AGENCIA.telefone };
   const ld = { '@context': 'https://schema.org', '@type': 'BicycleStore', name: NEGOCIO, telephone: '(00) 0000-1234', address: { '@type': 'PostalAddress', streetAddress: 'Rua Inventada, 100', addressLocality: 'Cidade Exemplo' }, openingHoursSpecification: [{ dayOfWeek: ['https://schema.org/Wednesday'], opens: '07:00', closes: '19:00' }] };
-  if (rel === '/site/contato/') return pagina('<title>Contato</title>', '<h1>Contato</h1><p>Fale com a gente.</p><a href="mailto:ola@casa.example">ola@casa.example</a><a href="/site/">início</a>');
+  if (rel === '/site/contato/') return pagina('<title>Contato</title>', `<h1>Contato</h1><p>Fale com a gente.</p><a href="mailto:ola@casa.example">ola@casa.example</a><a href="/site/">início</a>${rodapeDaAgencia()}`);
   return pagina(
-    `<title>Casa Exemplo</title><meta name="description" content="Bicicletas"><script type="application/ld+json">${JSON.stringify(ld)}</script>`,
-    `<h1>Bicicletas da casa</h1><img src="${origem}/img/site-foto.png" alt="vitrine" width="320"><img src="${origem}/img/pequena.png" alt="ícone" width="40"><a href="/site/contato/">Contato</a><a href="/site/tabela-de-precos.pdf">Tabela de preços</a><a href="https://example.com/fora">fora</a><a href="tel:+5500000001234">Ligue</a><a href="#topo">topo</a>`,
+    `<title>Casa Exemplo</title><meta name="description" content="Bicicletas"><script type="application/ld+json">${JSON.stringify(ld)}</script><script type="application/ld+json">${JSON.stringify(ldAgencia)}</script>`,
+    `<h1>Bicicletas da casa</h1><img src="${origem}/img/site-foto.png" alt="vitrine" width="320"><img src="${origem}/img/pequena.png" alt="ícone" width="40"><a href="/site/contato/">Contato</a><a href="/site/tabela-de-precos.pdf">Tabela de preços</a><a href="https://example.com/fora">fora</a><a href="tel:+5500000001234">Ligue</a><a href="#topo">topo</a>${rodapeDaAgencia()}`,
   );
 }
 

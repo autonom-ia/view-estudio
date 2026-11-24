@@ -109,3 +109,25 @@ export function semAncora(url) {
     return '';
   }
 }
+
+// A leitura passou do teto de tempo (lib/ler.mjs).
+export class TempoEsgotado extends Error {
+  constructor() {
+    super('tempo esgotado');
+    this.name = 'TempoEsgotado';
+  }
+}
+
+// Espera a promessa até a hora "prazo" (Date.now); depois disso, desiste com TempoEsgotado. A
+// promessa abandonada segue sozinha e o erro dela, se vier, é descartado (nunca derruba o processo).
+export function antesDoPrazo(promessa, prazo) {
+  promessa.catch(() => {});
+  if (!Number.isFinite(prazo)) return promessa;
+  const resta = prazo - Date.now();
+  if (resta <= 0) return Promise.reject(new TempoEsgotado());
+  let relogio;
+  const esgota = new Promise((_, rejeitar) => {
+    relogio = setTimeout(() => rejeitar(new TempoEsgotado()), resta);
+  });
+  return Promise.race([promessa, esgota]).finally(() => clearTimeout(relogio));
+}

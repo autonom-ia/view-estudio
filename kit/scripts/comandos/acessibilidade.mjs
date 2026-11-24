@@ -93,7 +93,12 @@ export default async function acessibilidade(args) {
   let medidas = 0;
   const sessao = await abrirSessao(c.deck);
   try {
-    const telas = (await telasDoIndex(sessao)).filter((t) => t.rel && fs.existsSync(path.join(c.deck, ...t.rel.split('/'))));
+    const telas = [];
+    for (const t of await telasDoIndex(sessao)) {
+      // tela que o index pede e não existe: reprova, como no checar (não some calada da conferência)
+      if (t.rel && fs.existsSync(path.join(c.deck, ...t.rel.split('/')))) telas.push(t);
+      else red.push({ tela: t.arquivo || t.id, regra: 'tela-sem-arquivo', impacto: 'serious', ajuda: 'O index pede uma tela que não existe', nos: [{ alvo: t.rel || t.url || t.id, resumo: 'arquivo da tela não achado' }], total: 1 });
+    }
     progresso('Conferindo a acessibilidade do index...');
     await sessao.ir(sessao.url('index.html'));
     await sessao.tab.evaluate(ESPERAR_PALCO);

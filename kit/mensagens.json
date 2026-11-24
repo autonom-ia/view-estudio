@@ -113,7 +113,7 @@
   },
   "ACESSIBILIDADE_REPROVADA": {
     "texto": "A conferência de acessibilidade achou problemas sérios. Vou corrigir.",
-    "acao": "Leia dados.vermelhos (tela, beat, regra, ajuda, nos.alvo). Corrija na tela (texto alternativo na imagem, título, idioma, nome dos botões) e rode acessibilidade de novo. Não mostre à pessoa uma apresentação reprovada."
+    "acao": "Leia dados.vermelhos (tela, beat, regra, ajuda, nos.alvo). Corrija na tela (texto alternativo na imagem, título, idioma, nome dos botões) e rode acessibilidade de novo. tela-sem-arquivo: o index pede uma tela que não existe. Não mostre à pessoa uma apresentação reprovada."
   },
   "AXE_AUSENTE": {
     "texto": "Falta a peça que confere acessibilidade.",

@@ -74,4 +74,11 @@ test('acessibilidade no Chrome: molde passa; imagem sem texto alternativo no bea
   assert.equal(r.json.codigo, 'ACESSIBILIDADE_REPROVADA');
   const achados = r.json.dados.vermelhos.map((v) => `${v.tela}|${v.beat}|${v.regra}`).sort();
   assert.deepEqual(achados, ['s02-numero.html|0|html-has-lang', 's03-movimentos.html|1|image-alt'], JSON.stringify(r.json.dados.vermelhos));
+
+  // tela que o index pede e não existe reprova (não some calada da conferência)
+  const index = path.join(base, 'inacessivel', 'deck', 'index.html');
+  const secao = '<section class="slide" id="t09"><iframe data-src="slides/s09-sumiu.html"></iframe></section>';
+  fs.writeFileSync(index, fs.readFileSync(index, 'utf8').replace('  </div>\n</div>', `    ${secao}\n  </div>\n</div>`));
+  const sumiu = estudio('acessibilidade', 'inacessivel');
+  assert.ok(sumiu.json.dados.vermelhos.some((v) => v.regra === 'tela-sem-arquivo' && v.nos[0].alvo === 'slides/s09-sumiu.html'), JSON.stringify(sumiu.json.dados.vermelhos));
 });

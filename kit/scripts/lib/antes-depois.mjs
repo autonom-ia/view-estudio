@@ -10,14 +10,16 @@
 // Linux. Isso é seguro porque o "cena" grava o vídeo novo ao lado e troca pelo nome (o arquivo antigo
 // continua inteiro no antes). O que não é seguro é gravar por cima do mesmo arquivo: então o
 // manifesto guarda a impressão digital (SHA-256) de cada pesado, e "comparar" e "escolher" recusam
-// (ANTES_VIDEO_MUDOU) em vez de comparar ou devolver um antes que já não é o antes. Sem link fixo
-// (outro disco), o arquivo é copiado; o resto é copiado com clonagem quando o disco sabe (APFS no
-// Mac: cópia que não ocupa espaço até mudar).
+// (ANTES_VIDEO_MUDOU) em vez de comparar ou devolver um antes que já não é o antes. Além disso, o
+// arquivo ligado fica só para leitura enquanto o antes está em aberto (gravar por cima dá erro na
+// hora); o modo de antes volta quando o antes fecha. Sem link fixo (outro disco, disco sem esse
+// recurso), o arquivo é copiado; o resto é copiado com clonagem quando o disco sabe (APFS no Mac:
+// cópia que não ocupa espaço até mudar).
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { listarArquivos, ehPasta, existe, recriarLink } from './caminhos.mjs';
-import { escreverJson } from './json.mjs';
+import { escreverJson, lerJson } from './json.mjs';
 
 export const MINIMO_DE_MUDANCAS = 2;
 export const MAXIMO_DE_MUDANCAS = 3;
@@ -27,6 +29,19 @@ export const ITENS_GUARDADOS = Object.freeze(['deck', 'roteiro', 'cenas', 'brief
 
 export const EXTENSOES_PESADAS = Object.freeze(['.mp4', '.webm', '.mov', '.m4v', '.mp3', '.m4a', '.wav', '.ogg']);
 export const PESADO_BYTES = 2 * 1024 * 1024;
+
+// Arquivo pesado ligado ao antes fica só para leitura enquanto o antes está em aberto.
+export const SO_LEITURA = 0o444;
+const MODO_PADRAO = 0o644;
+
+// Erros do link fixo que querem dizer "este disco não faz link fixo aqui": outro disco (EXDEV),
+// sistema sem o recurso (EPERM, ENOTSUP) ou arquivo com links demais (EMLINK). Nesses, copia.
+// Qualquer outro erro (falta de espaço, arquivo sumido) sobe como veio.
+export const ERROS_SEM_LINK_FIXO = Object.freeze(['EXDEV', 'EPERM', 'ENOTSUP', 'EMLINK']);
+export const semLinkFixo = (erro) => Boolean(erro) && ERROS_SEM_LINK_FIXO.includes(erro.code);
+
+// Arquivo lido aos pedaços: vídeo de cena pode ter centenas de MB e não precisa caber na memória.
+const BLOCO = 1024 * 1024;
 
 // As três respostas do "Qual fica?".
 export const ESCOLHAS = Object.freeze(['depois', 'antes', 'outro']);
@@ -49,8 +64,47 @@ export function ehPesado(nome, bytes) {
   return bytes >= PESADO_BYTES || EXTENSOES_PESADAS.some((ext) => baixo.endsWith(ext));
 }
 
+function lerAosPedacos(arquivo, cada) {
+  const fd = fs.openSync(arquivo, 'r');
+  try {
+    const buf = Buffer.allocUnsafe(BLOCO);
+    for (let lidos = fs.readSync(fd, buf); lidos > 0; lidos = fs.readSync(fd, buf)) cada(buf.subarray(0, lidos));
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
 export function impressao(arquivo) {
-  return crypto.createHash('sha256').update(fs.readFileSync(arquivo)).digest('hex');
+  const hash = crypto.createHash('sha256');
+  lerAosPedacos(arquivo, (pedaco) => hash.update(pedaco));
+  return hash.digest('hex');
+}
+
+// Mesmo conteúdo, byte a byte, lendo os dois aos pedaços.
+function mesmoConteudo(x, y) {
+  const fx = fs.openSync(x, 'r');
+  const fy = fs.openSync(y, 'r');
+  try {
+    const bx = Buffer.allocUnsafe(BLOCO);
+    const by = Buffer.allocUnsafe(BLOCO);
+    for (;;) {
+      const lx = fs.readSync(fx, bx);
+      const ly = fs.readSync(fy, by);
+      if (lx !== ly) return false;
+      if (lx === 0) return true;
+      if (!bx.subarray(0, lx).equals(by.subarray(0, ly))) return false;
+    }
+  } finally {
+    fs.closeSync(fx);
+    fs.closeSync(fy);
+  }
+}
+
+// O mesmo arquivo no disco (link fixo)? Só quando o sistema dá um número de arquivo de verdade
+// (maior que zero) e o disco é o mesmo; sem isso, quem decide é o conteúdo. Recebe stat com bigint
+// (no Windows o número passa do que um Number guarda sem arredondar).
+export function mesmoArquivo(sx, sy) {
+  return sx.ino > 0n && sx.ino === sy.ino && sx.dev === sy.dev;
 }
 
 // Guarda um arquivo: pesado vira link fixo (sem duplicar); o resto, cópia (clonada se der).
@@ -61,8 +115,8 @@ function guardarArquivo(de, para, pesado) {
     try {
       fs.linkSync(de, para);
       return 'link';
-    } catch {
-      // outro disco ou sistema sem link fixo: cai na cópia
+    } catch (erro) {
+      if (!semLinkFixo(erro)) throw erro;
     }
   }
   fs.copyFileSync(de, para, fs.constants.COPYFILE_FICLONE);
@@ -71,7 +125,8 @@ function guardarArquivo(de, para, pesado) {
 
 // Copia uma pasta (ou um arquivo) com a regra acima. Link simbólico não é seguido: o próprio link é
 // recriado com o mesmo alvo (voltar ao antes devolve o link, sem copiar o que está do outro lado).
-// Acrescenta em "pesados" os pesados guardados ({ rel, sha256, bytes, modo }).
+// Acrescenta em "pesados" os pesados guardados ({ rel, sha256, bytes, modo, permissao }); o pesado
+// ligado fica só para leitura (permissao guarda o modo de antes, para devolver ao fechar).
 function guardarItem(origem, destino, rel, pesados) {
   const info = fs.lstatSync(origem);
   if (info.isSymbolicLink()) {
@@ -89,7 +144,30 @@ function guardarItem(origem, destino, rel, pesados) {
   if (!info.isFile()) return;
   const pesado = ehPesado(origem, info.size);
   const modo = guardarArquivo(origem, destino, pesado);
-  if (pesado && pesados) pesados.push({ rel, sha256: impressao(origem), bytes: info.size, modo });
+  if (!pesado || !pesados) return;
+  pesados.push({ rel, sha256: impressao(origem), bytes: info.size, modo, permissao: info.mode & 0o777 });
+  if (modo === 'link') fs.chmodSync(destino, SO_LEITURA);
+}
+
+// Os pesados ligados do antes, com o caminho de cada um.
+function pesadosLigados(antes, manifesto) {
+  const lista = Array.isArray(manifesto && manifesto.pesados) ? manifesto.pesados : [];
+  return lista.filter((p) => p.modo === 'link').map((p) => ({ ...p, arquivo: path.join(antes, ...String(p.rel).split('/')) }));
+}
+
+// Devolve aos pesados ligados o modo que tinham antes do "antes" (fechar, trocar ou apagar o antes).
+// O link fixo é o mesmo arquivo: o da apresentação volta junto.
+export function liberarPesados(antes, manifesto) {
+  for (const p of pesadosLigados(antes, manifesto)) {
+    if (fs.existsSync(p.arquivo)) fs.chmodSync(p.arquivo, Number.isInteger(p.permissao) ? p.permissao : MODO_PADRAO);
+  }
+}
+
+// Volta a deixar só para leitura (o antes continua em aberto depois de uma troca).
+export function protegerPesados(antes, manifesto) {
+  for (const p of pesadosLigados(antes, manifesto)) {
+    if (fs.existsSync(p.arquivo)) fs.chmodSync(p.arquivo, SO_LEITURA);
+  }
 }
 
 // Guarda os ITENS_GUARDADOS da apresentação em "antes". Devolve o manifesto.
@@ -120,8 +198,18 @@ export function pesadosAlterados(antes, manifesto) {
 
 // Devolve a apresentação ao que o antes guardou. Cada item é montado ao lado primeiro e só depois
 // trocado, para uma cópia que falhe no meio nunca deixar a apresentação pela metade. Item que não
-// existia no antes (uma cena criada na tentativa) sai.
+// existia no antes (uma cena criada na tentativa) sai. Os pesados ligados ficam graváveis só durante
+// a troca (no Windows, arquivo só para leitura não sai da pasta) e voltam a só leitura no fim.
 export function restaurarAntes(pastaDaApresentacao, antes, manifesto) {
+  liberarPesados(antes, manifesto);
+  try {
+    return trocarItens(pastaDaApresentacao, antes, manifesto);
+  } finally {
+    protegerPesados(antes, manifesto);
+  }
+}
+
+function trocarItens(pastaDaApresentacao, antes, manifesto) {
   const tinha = new Set(Array.isArray(manifesto && manifesto.itens) ? manifesto.itens : []);
   const restaurados = [];
   for (const item of ITENS_GUARDADOS) {
@@ -170,11 +258,11 @@ export function pastasIguais(a, b) {
     const ly = fs.lstatSync(y);
     // link simbólico: igual quando os dois são link para o mesmo alvo (o alvo não é lido)
     if (lx.isSymbolicLink() || ly.isSymbolicLink()) return lx.isSymbolicLink() && ly.isSymbolicLink() && fs.readlinkSync(x) === fs.readlinkSync(y);
-    const sx = fs.statSync(x);
-    const sy = fs.statSync(y);
+    const sx = fs.statSync(x, { bigint: true });
+    const sy = fs.statSync(y, { bigint: true });
     if (sx.size !== sy.size) return false;
-    if (sx.ino === sy.ino && sx.dev === sy.dev) return true;
-    return fs.readFileSync(x).equals(fs.readFileSync(y));
+    if (mesmoArquivo(sx, sy)) return true;
+    return mesmoConteudo(x, y);
   });
 }
 
@@ -182,7 +270,7 @@ export function pastasIguais(a, b) {
 function itemIgual(a, b) {
   if (ehPasta(a) || ehPasta(b)) return ehPasta(a) && ehPasta(b) && pastasIguais(a, b);
   if (!existe(a) || !existe(b)) return existe(a) === existe(b);
-  return fs.readFileSync(a).equals(fs.readFileSync(b));
+  return mesmoConteudo(a, b);
 }
 
 // A apresentação está igual ao que o antes guardou, em tudo o que uma mudança pode tocar? Item que
@@ -200,6 +288,7 @@ export function igualAoAntes(pastaDaApresentacao, antes, manifesto) {
 // o antes segurava não fica ocupando o disco. Ficam estado.json (para dizer que já foi resolvido) e
 // mudancas.json (o que foi pedido e mudado).
 export function fecharAntes(ad, escolha) {
+  liberarPesados(ad.antes, lerJson(ad.manifesto, { pesados: [] }));
   fs.rmSync(ad.antes, { recursive: true, force: true });
   fs.rmSync(ad.fotos, { recursive: true, force: true });
   fs.rmSync(ad.pagina, { force: true });

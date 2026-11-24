@@ -262,21 +262,38 @@ const existeSemSeguir = (caminho) => {
   }
 };
 
+// Os nomes ao lado que uma troca usa: o novo é montado em .trocando e o atual sai por .descartando.
+export const sobrasDaTroca = (atual) => ({ novo: `${atual}.trocando`, velho: `${atual}.descartando` });
+
+// Sobra de uma troca que parou no meio (o programa morreu entre os dois nomes): se o item sumiu e
+// o .descartando ficou, ele volta para o lugar. O .trocando é só uma cópia montada e sai.
+function recuperarSobra(atual, renomear) {
+  const { novo, velho } = sobrasDaTroca(atual);
+  if (!existeSemSeguir(atual) && existeSemSeguir(velho)) renomear(velho, atual);
+  fs.rmSync(novo, { recursive: true, force: true });
+}
+
+// Põe de volta no lugar todo item que uma troca parada no meio deixou fora (o deck sem index.html
+// não abre). Só devolve o .descartando quando o item sumiu; nada é apagado além do .trocando.
+export function recuperarSobras(pastaDaApresentacao, renomear = fs.renameSync) {
+  for (const item of ITENS_GUARDADOS) recuperarSobra(path.join(pastaDaApresentacao, item), renomear);
+}
+
 // Troca um item sem deixar a apresentação sem ele: o novo é montado ao lado (.trocando), o atual
 // vai para .descartando, o novo entra no lugar e só então o descartado sai. Se a entrada do novo
-// falhar, o atual volta. Uma sobra de troca anterior que falhou é apagada no começo: ela é a
-// versão que foi vista (guardada na tentativa) ou o próprio antes, nunca a única cópia.
+// falhar, o atual volta. Sobra de uma troca anterior: o item volta ao lugar primeiro
+// (recuperarSobra); um .descartando que sobra com o item no lugar é a versão vista (já guardada na
+// tentativa, que o "escolher" grava antes de qualquer troca) ou o antes, nunca a única cópia.
 function trocarItem(pasta, origem, item, existia, renomear) {
   const atual = path.join(pasta, item);
+  const { novo, velho } = sobrasDaTroca(atual);
+  recuperarSobra(atual, renomear);
+  fs.rmSync(velho, { recursive: true, force: true });
   if (!existia) {
     if (!existeSemSeguir(atual)) return null;
     fs.rmSync(atual, { recursive: true, force: true });
     return `-${item}`;
   }
-  const novo = `${atual}.trocando`;
-  const velho = `${atual}.descartando`;
-  fs.rmSync(novo, { recursive: true, force: true });
-  fs.rmSync(velho, { recursive: true, force: true });
   guardarItem(path.join(origem, item), novo, item);
   const tinhaAtual = existeSemSeguir(atual);
   if (tinhaAtual) renomear(atual, velho);
@@ -292,14 +309,18 @@ function trocarItem(pasta, origem, item, existia, renomear) {
 }
 
 // Guarda a versão que a pessoa viu (a tentativa) antes de voltar ao antes, em tentativa/, com o
-// vídeo ligado como no antes. Fica até o próximo "antes"; uma tentativa nova substitui a anterior.
-// Montada ao lado e trocada no fim. Devolve os itens guardados.
+// vídeo ligado como no antes. Fica até o próximo "antes" (ou o "depois"); uma tentativa nova
+// substitui a anterior. Montada ao lado e trocada no fim. Se uma troca parou no meio, a versão vista
+// de um item pode estar no .descartando (o item no lugar já é o antes, ou sumiu): é dele que a
+// tentativa copia. Nada da apresentação é apagado aqui. Devolve os itens guardados.
 export function guardarTentativa(pastaDaApresentacao, ad) {
   const montando = `${ad.tentativa}.guardando`;
   fs.rmSync(montando, { recursive: true, force: true });
   const itens = [];
   for (const item of ITENS_GUARDADOS) {
-    const de = path.join(pastaDaApresentacao, item);
+    const atual = path.join(pastaDaApresentacao, item);
+    const { velho } = sobrasDaTroca(atual);
+    const de = existeSemSeguir(velho) ? velho : atual;
     if (!existeSemSeguir(de)) continue;
     itens.push(item);
     guardarItem(de, path.join(montando, item), item);
@@ -375,12 +396,18 @@ export function igualAoAntes(pastaDaApresentacao, antes, manifesto) {
 // Depois do "Qual fica?" resolvido (depois ou antes), o antes e as fotos saem: o vídeo velho que só
 // o antes segurava não fica ocupando o disco. Ficam estado.json (para dizer que já foi resolvido),
 // mudancas.json (o que foi pedido e mudado) e tentativa/ (a versão vista, até o próximo "antes").
+// Com "depois", sai também a tentativa/ de um "outro" anterior: a pessoa ficou com a versão de agora.
+// Devolve se havia tentativa e ela saiu.
 export function fecharAntes(ad, escolha) {
+  const tentativaSaiu = escolha === 'depois' && existeSemSeguir(ad.tentativa);
+  if (tentativaSaiu) fs.rmSync(ad.tentativa, { recursive: true, force: true });
   fs.rmSync(ad.antes, { recursive: true, force: true });
   fs.rmSync(ad.fotos, { recursive: true, force: true });
   fs.rmSync(ad.pagina, { force: true });
   fs.rmSync(ad.manifesto, { force: true });
   escreverJson(ad.estado, { aberto: false, escolha });
+  return tentativaSaiu;
 }
 
 export const temAntes = (ad) => ehPasta(ad.antes);
+export const temTentativa = (ad) => ehPasta(ad.tentativa);

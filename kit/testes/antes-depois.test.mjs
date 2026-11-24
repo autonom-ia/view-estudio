@@ -18,6 +18,7 @@ import {
   ErroDeRestauracao,
 } from '../scripts/lib/antes-depois.mjs';
 import { renderizarSemPerderOAnterior } from '../scripts/lib/hyperframes.mjs';
+import escolherComando from '../scripts/comandos/escolher.mjs';
 import { telasMudadas, paginaDeComparacao, nomeDaFoto, fotosDiferentes, NOTA_SEM_MOVIMENTO } from '../scripts/lib/comparacao.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -194,6 +195,17 @@ test('antes-depois: a tentativa é guardada inteira, com o vídeo ligado, e uma 
   escrever(ad.manifesto, JSON.stringify(m));
   fecharAntes(ad, 'antes');
   assert.equal(fs.existsSync(path.join(ad.tentativa, 'deck', 'slides', 's01-capa.html')), true);
+});
+
+test('antes-depois: com uma troca parada no meio, a tentativa copia a versão vista do .descartando', () => {
+  const pasta = apresentacaoDeBrinquedo('tentativa-sobra');
+  const ad = caminhosDoAntesDepois({ revisao: path.join(pasta, 'revisao') });
+  guardarAntes(pasta, ad.antes);
+  // o deck de antes já entrou no lugar; a versão vista ficou no .descartando
+  escrever(path.join(pasta, 'deck.descartando', 'slides', 's01-capa.html'), '<h1>Vista</h1>');
+  guardarTentativa(pasta, ad);
+  assert.equal(fs.readFileSync(path.join(ad.tentativa, 'deck', 'slides', 's01-capa.html'), 'utf8'), '<h1>Vista</h1>');
+  assert.equal(fs.existsSync(path.join(pasta, 'deck.descartando')), true, 'a tentativa não apaga nada da apresentação');
 });
 
 test('antes-depois: "cena" troca pelo nome e o antes fica com o vídeo antigo inteiro', async () => {
@@ -386,7 +398,7 @@ const ambiente = (nome) => ({
 
 const semTrava = process.platform === 'win32' || ehRoot ? 'pasta só para leitura não impede gravar no Windows nem como root' : false;
 
-test('escolher: volta que falha vira RESTAURACAO_FALHOU, nada se perde e a segunda vez termina', { skip: semTrava }, () => {
+test('escolher: pasta só para leitura de verdade vira RESTAURACAO_FALHOU, nada se perde e a segunda vez termina', { skip: semTrava }, () => {
   const env = ambiente('volta-falha');
   assert.equal(estudio(env, 'nova', 'bolo').codigo, 0);
   const pasta = path.join(env.ESTUDIO_APRESENTACOES, 'bolo');
@@ -439,23 +451,101 @@ test('mensagens do antes e depois: não manda desfazer de memória e diz de onde
   assert.ok(m.NADA_MUDOU.texto.includes('Vídeo e movimento não entram'));
 });
 
-test('escolher: com a volta pendente, "depois" devolve a versão vista inteira', { skip: semTrava }, () => {
-  const env = ambiente('depois-pendente');
+// O "escolher" rodado aqui dentro, para injetar o "renomear" (falha e morte no meio da troca) em
+// qualquer sistema, Windows incluído. Devolve o JSON do comando ou { ok: false, codigo, dados }.
+async function escolherAqui(env, nome, escolha, pecas) {
+  const antigo = process.env.ESTUDIO_APRESENTACOES;
+  process.env.ESTUDIO_APRESENTACOES = env.ESTUDIO_APRESENTACOES;
+  try {
+    return await escolherComando({ posicionais: [nome, escolha], opcoes: {} }, pecas);
+  } catch (erro) {
+    if (!erro.codigo) throw erro;
+    return { ok: false, codigo: erro.codigo, dados: erro.dados };
+  } finally {
+    if (antigo === undefined) delete process.env.ESTUDIO_APRESENTACOES;
+    else process.env.ESTUDIO_APRESENTACOES = antigo;
+  }
+}
+
+function bolo(nome) {
+  const env = ambiente(nome);
   assert.equal(estudio(env, 'nova', 'bolo').codigo, 0);
   const pasta = path.join(env.ESTUDIO_APRESENTACOES, 'bolo');
-  const slide = path.join(pasta, 'deck', 'slides', 's02-numero.html');
+  const ad = path.join(pasta, 'revisao', 'antes-depois');
+  return { env, pasta, ad, slide: path.join(pasta, 'deck', 'slides', 's02-numero.html'), fala: path.join(pasta, 'roteiro', 'S03.json') };
+}
+
+const erroDeTroca = (mensagem, code) => Object.assign(new Error(mensagem), { code });
+
+test('escolher: troca que falha (falha injetada) vira RESTAURACAO_FALHOU e "depois" devolve a versão vista inteira', async () => {
+  const { env, slide, fala } = bolo('falha-injetada');
   assert.equal(estudio(env, 'antes', 'bolo').json.codigo, 'ANTES_GUARDADO');
   trocarNoArquivo(slide, 'A manhã já é nossa.', 'Versão que a pessoa viu.');
-  fs.chmodSync(pasta, 0o555);
-  try {
-    assert.equal(estudio(env, 'escolher', 'bolo', 'outro').json.codigo, 'RESTAURACAO_FALHOU');
-  } finally {
-    fs.chmodSync(pasta, 0o755);
-  }
-  trocarNoArquivo(slide, 'Versão que a pessoa viu.', 'Meio do caminho.');
-  const r = estudio(env, 'escolher', 'bolo', 'depois');
-  assert.equal(r.json.codigo, 'FICOU_O_DEPOIS', JSON.stringify(r.json));
+  trocarNoArquivo(fala, 'Primeiro, em março,', 'Fala que a pessoa viu,');
+  const roteiro = path.dirname(fala);
+  // o roteiro não entra no lugar (no Windows: arquivo aberto em outro programa); o deck já voltou
+  const renomear = (de, para) => {
+    if (para === roteiro && de === `${roteiro}.trocando`) throw erroDeTroca('arquivo em uso', 'EBUSY');
+    fs.renameSync(de, para);
+  };
+  const r = await escolherAqui(env, 'bolo', 'outro', { renomear });
+  assert.equal(r.codigo, 'RESTAURACAO_FALHOU');
+  assert.equal(r.dados.item, 'roteiro');
+  assert.ok(fs.readFileSync(slide, 'utf8').includes('A manhã já é nossa.'), 'o deck tinha voltado');
+  assert.ok(fs.readFileSync(fala, 'utf8').includes('Fala que a pessoa viu,'), 'o roteiro ficou inteiro');
+  const d = await escolherAqui(env, 'bolo', 'depois');
+  assert.equal(d.codigo, 'FICOU_O_DEPOIS', JSON.stringify(d));
   assert.ok(fs.readFileSync(slide, 'utf8').includes('Versão que a pessoa viu.'));
+  assert.ok(fs.readFileSync(fala, 'utf8').includes('Fala que a pessoa viu,'));
+});
+
+test('escolher: programa que morre entre os dois nomes não perde a versão vista e a segunda vez termina', async () => {
+  const { env, pasta, ad, slide } = bolo('morte');
+  assert.equal(estudio(env, 'antes', 'bolo').json.codigo, 'ANTES_GUARDADO');
+  trocarNoArquivo(slide, 'A manhã já é nossa.', 'Versão que a pessoa viu.');
+  let chamadas = 0;
+  let pendenteNaPrimeiraTroca = null;
+  // a primeira troca de nome (deck -> deck.descartando) acontece; depois o programa "morre":
+  // nenhuma outra troca, nem a que devolveria o deck
+  const morre = (de, para) => {
+    chamadas += 1;
+    if (chamadas > 1) throw erroDeTroca('o programa morreu', 'EMORTE');
+    pendenteNaPrimeiraTroca = JSON.parse(fs.readFileSync(path.join(ad, 'estado.json'), 'utf8')).restauracao_pendente;
+    fs.renameSync(de, para);
+  };
+  assert.equal((await escolherAqui(env, 'bolo', 'antes', { renomear: morre })).codigo, 'RESTAURACAO_FALHOU');
+  assert.equal(pendenteNaPrimeiraTroca, true, 'o estado pendente foi gravado antes da primeira troca');
+  assert.equal(fs.existsSync(path.join(pasta, 'deck')), false, 'morreu com o deck fora do lugar');
+  assert.ok(fs.readFileSync(path.join(pasta, 'deck.descartando', 'slides', 's02-numero.html'), 'utf8').includes('Versão que a pessoa viu.'));
+  // a segunda vez: o deck volta do .descartando, a tentativa não é regravada, e a volta termina
+  const volta = await escolherAqui(env, 'bolo', 'antes');
+  assert.equal(volta.codigo, 'VOLTOU_COMO_ESTAVA', JSON.stringify(volta));
+  assert.ok(fs.readFileSync(slide, 'utf8').includes('A manhã já é nossa.'));
+  assert.ok(fs.readFileSync(path.join(ad, 'tentativa', 'deck', 'slides', 's02-numero.html'), 'utf8').includes('Versão que a pessoa viu.'));
+  assert.deepEqual(fs.readdirSync(pasta).filter((n) => n.endsWith('.trocando') || n.endsWith('.descartando')), []);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(ad, 'estado.json'), 'utf8')).restauracao_pendente, undefined);
+});
+
+test('escolher: "outro" repetido diz que a versão vista antes foi substituída; "depois" apaga a tentativa', async () => {
+  const { env, ad, slide } = bolo('outro-repetido');
+  const tentativa = path.join(ad, 'tentativa', 'deck', 'slides', 's02-numero.html');
+  assert.equal(estudio(env, 'antes', 'bolo').json.codigo, 'ANTES_GUARDADO');
+  trocarNoArquivo(slide, 'A manhã já é nossa.', 'Primeira tentativa.');
+  const um = await escolherAqui(env, 'bolo', 'outro');
+  assert.equal(um.codigo, 'PRONTO_PARA_OUTRO_CAMINHO');
+  assert.equal(um.dados.tentativa_substituida, false);
+  assert.deepEqual(um.avisos, []);
+  trocarNoArquivo(slide, 'A manhã já é nossa.', 'Segunda tentativa.');
+  const dois = await escolherAqui(env, 'bolo', 'outro');
+  assert.equal(dois.dados.tentativa_substituida, true);
+  assert.deepEqual(dois.avisos.map((a) => a.codigo), ['TENTATIVA_SUBSTITUIDA']);
+  assert.ok(fs.readFileSync(tentativa, 'utf8').includes('Segunda tentativa.'));
+  trocarNoArquivo(slide, 'A manhã já é nossa.', 'Terceira, que fica.');
+  const fica = await escolherAqui(env, 'bolo', 'depois');
+  assert.equal(fica.codigo, 'FICOU_O_DEPOIS');
+  assert.equal(fica.dados.tentativa_apagada, true);
+  assert.equal(fs.existsSync(path.join(ad, 'tentativa')), false);
+  assert.ok(fs.readFileSync(slide, 'utf8').includes('Terceira, que fica.'));
 });
 
 function estudio(env, ...args) {

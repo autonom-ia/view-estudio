@@ -353,7 +353,7 @@
   },
   "FICOU_O_DEPOIS": {
     "texto": "Combinado, fica o depois.",
-    "acao": "Grave no andamento.md o pedido e as mudanças que ficaram. A cópia do antes foi apagada; o próximo pedido vago começa com ./estudio antes <nome>. Rode checar, fatos e acessibilidade antes de entregar."
+    "acao": "Grave no andamento.md o pedido e as mudanças que ficaram. A cópia do antes foi apagada e, se havia uma versão guardada de um \"Outro caminho\" anterior (dados.tentativa_apagada), ela também saiu: diga isso à pessoa em uma frase. O próximo pedido vago começa com ./estudio antes <nome>. Rode checar, fatos e acessibilidade antes de entregar."
   },
   "VOLTOU_COMO_ESTAVA": {
     "texto": "Voltei a apresentação para como estava antes. A versão que você viu fica guardada até a próxima mudança.",
@@ -361,7 +361,7 @@
   },
   "PRONTO_PARA_OUTRO_CAMINHO": {
     "texto": "Voltei para o ponto de partida. Vou tentar outro caminho. A versão que você viu fica guardada até a próxima mudança.",
-    "acao": "A apresentação voltou ao original e o antes continua guardado. A versão vista ficou em arquivos.tentativa até a próxima escolha (uma tentativa nova toma o lugar dela) ou o próximo ./estudio antes. Não rode ./estudio antes: faça 2 ou 3 mudanças diferentes, preencha arquivos.mudancas e rode ./estudio comparar <nome>."
+    "acao": "A apresentação voltou ao original e o antes continua guardado. A versão vista ficou em arquivos.tentativa até a próxima escolha ou o próximo ./estudio antes. Só uma fica guardada: com dados.tentativa_substituida (aviso TENTATIVA_SUBSTITUIDA), a versão vista na tentativa anterior foi trocada por esta. Não rode ./estudio antes: faça 2 ou 3 mudanças diferentes, preencha arquivos.mudancas e rode ./estudio comparar <nome>."
   },
   "RESTAURACAO_FALHOU": {
     "texto": "Não consegui voltar a apresentação agora. Nada se perdeu: a versão de antes e a que você viu continuam guardadas. Vou tentar de novo.",
@@ -370,5 +370,9 @@
   "ATALHO_VIROU_COPIA": {
     "texto": "Um atalho dentro da apresentação foi guardado como cópia, porque este computador não deixou criar atalho. A apresentação continua igual.",
     "acao": "No Windows sem modo de desenvolvedor, link simbólico de arquivo não pode ser criado. dados.arquivos foram guardados no antes como cópia do arquivo para onde apontavam (mesmo conteúdo). Se a pessoa voltar ao antes, eles voltam como cópia, não como atalho. dados.quebrados apontavam para um arquivo que não existe mais (já não abriam): ficaram fora do antes e, se a pessoa voltar ao antes, somem. Siga normalmente."
+  },
+  "TENTATIVA_SUBSTITUIDA": {
+    "texto": "Guardei a versão que você acabou de ver no lugar da que você tinha visto antes. Só a mais nova fica guardada.",
+    "acao": "Fica guardada uma versão vista só (dados.tentativa). A da tentativa anterior foi trocada pela desta. Diga isso à pessoa em uma frase junto com o texto da resposta."
   }
 }

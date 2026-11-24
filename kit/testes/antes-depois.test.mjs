@@ -59,7 +59,6 @@ test('antes-depois: vídeo e arquivo de 2 MB ou mais são pesados; o resto não'
 
 test('antes-depois: guarda deck, roteiro e brief; vídeo vira link fixo (sem duplicar), o resto é cópia', () => {
   const pasta = apresentacaoDeBrinquedo('guardar');
-  fs.symlinkSync(path.join(pasta, 'brief.md'), path.join(pasta, 'deck', 'atalho.md'));
   const antes = path.join(pasta, 'revisao', 'antes-depois', 'antes');
   const m = guardarAntes(pasta, antes);
   assert.deepEqual(m.itens, ['deck', 'roteiro', 'brief.md'], 'cenas/ não existia, não entra');
@@ -72,9 +71,41 @@ test('antes-depois: guarda deck, roteiro e brief; vídeo vira link fixo (sem dup
   assert.equal(gravavel(path.join(pasta, 'deck', 'assets', 'cena.mp4')), false, 'vídeo ligado ao antes fica só para leitura');
   assert.equal(gravavel(path.join(pasta, 'brief.md')), true, 'o que foi copiado continua gravável');
   assert.notEqual(fs.statSync(path.join(antes, 'deck', 'slides', 's01-capa.html')).ino, fs.statSync(path.join(pasta, 'deck', 'slides', 's01-capa.html')).ino);
-  assert.equal(fs.lstatSync(path.join(antes, 'deck', 'atalho.md')).isSymbolicLink(), true, 'link simbólico é recriado, não seguido');
+  assert.deepEqual(m.atalhos, []);
+  assert.equal(igualAoAntes(pasta, antes, m), true);
+});
+
+// Criar link simbólico de arquivo no Windows pede modo de desenvolvedor (EPERM sem ele): o teste
+// que precisa de um link de verdade pula lá. O caminho do EPERM é testado aqui embaixo, injetado.
+const semLinkSimbolico = process.platform === 'win32' ? 'link simbólico de arquivo no Windows pede modo de desenvolvedor' : false;
+
+test('antes-depois: link simbólico é recriado com o mesmo alvo, não seguido', { skip: semLinkSimbolico }, () => {
+  const pasta = apresentacaoDeBrinquedo('atalho');
+  fs.symlinkSync(path.join(pasta, 'brief.md'), path.join(pasta, 'deck', 'atalho.md'));
+  const antes = path.join(pasta, 'revisao', 'antes-depois', 'antes');
+  const m = guardarAntes(pasta, antes);
+  assert.equal(fs.lstatSync(path.join(antes, 'deck', 'atalho.md')).isSymbolicLink(), true);
   assert.equal(fs.readlinkSync(path.join(antes, 'deck', 'atalho.md')), path.join(pasta, 'brief.md'));
   assert.equal(igualAoAntes(pasta, antes, m), true);
+});
+
+test('antes-depois: sem licença para criar link (EPERM), o arquivo apontado vira cópia e entra no aviso', { skip: semLinkSimbolico }, () => {
+  const pasta = apresentacaoDeBrinquedo('atalho-sem-licenca');
+  fs.symlinkSync(path.join(pasta, 'brief.md'), path.join(pasta, 'deck', 'atalho.md'));
+  const antes = path.join(pasta, 'revisao', 'antes-depois', 'antes');
+  const criarLink = () => {
+    throw Object.assign(new Error('operation not permitted'), { code: 'EPERM' });
+  };
+  const m = guardarAntes(pasta, antes, { criarLink });
+  assert.deepEqual(m.atalhos, ['deck/atalho.md']);
+  const guardado = path.join(antes, 'deck', 'atalho.md');
+  assert.equal(fs.lstatSync(guardado).isFile(), true);
+  assert.equal(fs.readFileSync(guardado, 'utf8'), '# Brief');
+  // outro erro não vira cópia: sobe
+  const outro = () => {
+    throw Object.assign(new Error('sem espaço'), { code: 'ENOSPC' });
+  };
+  assert.throws(() => guardarAntes(pasta, antes, { criarLink: outro }), (e) => e.code === 'ENOSPC');
 });
 
 test('antes-depois: vídeo trocado pelo nome mantém o antes; gravado por cima do mesmo arquivo é pego', () => {

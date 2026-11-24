@@ -11,7 +11,7 @@ import { nomeDaApresentacao } from '../lib/args.mjs';
 import { abrirApresentacao } from '../lib/apresentacao.mjs';
 import { listarArquivos } from '../lib/caminhos.mjs';
 import { escreverJson, lerJson } from '../lib/json.mjs';
-import { reprovado } from '../lib/saida.mjs';
+import { aviso, reprovado } from '../lib/saida.mjs';
 import { caminhosDoAntesDepois, guardarAntes, liberarPesados, temAntes } from '../lib/antes-depois.mjs';
 
 export default async function antes(args) {
@@ -30,6 +30,7 @@ export default async function antes(args) {
   return {
     ok: true,
     codigo: 'ANTES_GUARDADO',
+    avisos: manifesto.atalhos.length ? [aviso('ATALHO_VIROU_COPIA', { arquivos: manifesto.atalhos })] : [],
     arquivos: { antes: c.rel('revisao', 'antes-depois', 'antes'), mudancas: c.rel('revisao', 'antes-depois', 'mudancas.json') },
     dados: {
       itens: manifesto.itens,

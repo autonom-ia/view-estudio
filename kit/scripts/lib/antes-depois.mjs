@@ -125,27 +125,42 @@ function guardarArquivo(de, para, pesado) {
   return 'copia';
 }
 
+// Recria o link simbólico. No Windows sem modo de desenvolvedor, criar link de arquivo dá EPERM:
+// aí o arquivo para onde ele aponta é copiado (o conteúdo fica igual; o atalho vira cópia) e entra
+// em "atalhos" para o aviso. Link de pasta vira junção, que não precisa de licença; outro erro sobe.
+function guardarLink(origem, destino, rel, ctx) {
+  fs.mkdirSync(path.dirname(destino), { recursive: true });
+  try {
+    (ctx.criarLink || recriarLink)(origem, destino);
+  } catch (erro) {
+    if (erro.code !== 'EPERM' || !fs.statSync(origem).isFile()) throw erro;
+    fs.copyFileSync(origem, destino);
+    if (ctx.atalhos) ctx.atalhos.push(rel);
+  }
+}
+
 // Copia uma pasta (ou um arquivo) com a regra acima. Link simbólico não é seguido: o próprio link é
 // recriado com o mesmo alvo (voltar ao antes devolve o link, sem copiar o que está do outro lado).
-// Acrescenta em "pesados" os pesados guardados ({ rel, sha256, bytes, modo, permissao }); o pesado
-// ligado fica só para leitura (permissao guarda o modo de antes, para devolver ao fechar).
-function guardarItem(origem, destino, rel, pesados) {
+// ctx.pesados recebe os pesados guardados ({ rel, sha256, bytes, modo, permissao }); o pesado ligado
+// fica só para leitura (permissao guarda o modo de antes, para devolver ao fechar). ctx.atalhos
+// recebe os links que viraram cópia; ctx.criarLink é injetável para os testes.
+function guardarItem(origem, destino, rel, ctx = {}) {
   const info = fs.lstatSync(origem);
   if (info.isSymbolicLink()) {
-    fs.mkdirSync(path.dirname(destino), { recursive: true });
-    recriarLink(origem, destino);
+    guardarLink(origem, destino, rel, ctx);
     return;
   }
   if (info.isDirectory()) {
     for (const nome of fs.readdirSync(origem).sort()) {
       if (nome === '.DS_Store' || nome === 'Thumbs.db') continue;
-      guardarItem(path.join(origem, nome), path.join(destino, nome), `${rel}/${nome}`, pesados);
+      guardarItem(path.join(origem, nome), path.join(destino, nome), `${rel}/${nome}`, ctx);
     }
     return;
   }
   if (!info.isFile()) return;
   const pesado = ehPesado(origem, info.size);
   const modo = guardarArquivo(origem, destino, pesado);
+  const { pesados } = ctx;
   if (!pesado || !pesados) return;
   pesados.push({ rel, sha256: impressao(origem), bytes: info.size, modo, permissao: info.mode & 0o777 });
   if (modo === 'link') fs.chmodSync(destino, SO_LEITURA);
@@ -172,19 +187,21 @@ export function protegerPesados(antes, manifesto) {
   }
 }
 
-// Guarda os ITENS_GUARDADOS da apresentação em "antes". Devolve o manifesto.
-export function guardarAntes(pastaDaApresentacao, antes) {
+// Guarda os ITENS_GUARDADOS da apresentação em "antes". Devolve o manifesto ({ itens, pesados,
+// atalhos }: atalhos são os links que viraram cópia).
+export function guardarAntes(pastaDaApresentacao, antes, { criarLink } = {}) {
   fs.rmSync(antes, { recursive: true, force: true });
   fs.mkdirSync(antes, { recursive: true });
   const itens = [];
   const pesados = [];
+  const atalhos = [];
   for (const item of ITENS_GUARDADOS) {
     const de = path.join(pastaDaApresentacao, item);
     if (!existe(de)) continue;
     itens.push(item);
-    guardarItem(de, path.join(antes, item), item, pesados);
+    guardarItem(de, path.join(antes, item), item, { pesados, atalhos, criarLink });
   }
-  return { itens, pesados };
+  return { itens, pesados, atalhos };
 }
 
 // Pesados do antes que mudaram desde o "antes" (alguém gravou por cima do mesmo arquivo).
@@ -263,7 +280,7 @@ function trocarItem(pasta, origem, item, existia, renomear) {
   const velho = `${atual}.descartando`;
   fs.rmSync(novo, { recursive: true, force: true });
   fs.rmSync(velho, { recursive: true, force: true });
-  guardarItem(path.join(origem, item), novo, item, null);
+  guardarItem(path.join(origem, item), novo, item);
   const tinhaAtual = existeSemSeguir(atual);
   if (tinhaAtual) renomear(atual, velho);
   try {
@@ -290,7 +307,7 @@ export function guardarTentativa(pastaDaApresentacao, ad, manifesto) {
       const de = path.join(pastaDaApresentacao, item);
       if (!existeSemSeguir(de)) continue;
       itens.push(item);
-      guardarItem(de, path.join(montando, item), item, null);
+      guardarItem(de, path.join(montando, item), item);
     }
     fs.mkdirSync(montando, { recursive: true });
     fs.rmSync(ad.tentativa, { recursive: true, force: true });

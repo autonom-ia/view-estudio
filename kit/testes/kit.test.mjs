@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { lerArgs } from '../scripts/lib/args.mjs';
 import { nomeValido, sugerirNome, nomeReservadoDoWindows } from '../scripts/lib/caminhos.mjs';
 import { sanear } from '../scripts/lib/executar.mjs';
-import { montarResultado } from '../scripts/lib/saida.mjs';
+import { montarResultado, resultadoDeErro, preencher, KitErro } from '../scripts/lib/saida.mjs';
 import { numeroDoNome, ehArquivoDeRoteiro, lerRoteiro } from '../scripts/lib/apresentacao.mjs';
 import { montarTeleprompter, jsonParaScript } from '../scripts/lib/teleprompter.mjs';
 import { conferirEspelhos, gerarEspelhos } from '../scripts/lib/espelho.mjs';
@@ -156,6 +156,53 @@ test('despachante: comando desconhecido sai 1 com JSON na última linha', () => 
   assert.ok(r.json.dados.disponiveis.includes('checar'));
 });
 
+// Os {{campos}} de cada texto de kit/mensagens.json e o que o comando manda em "dados".
+// Texto novo com {{campo}} entra aqui, com o campo que o comando de fato envia.
+const CAMPOS_ENVIADOS = Object.freeze({
+  VERSAO: ['versao'],
+  JA_ATUALIZADO: ['de'],
+  ESTUDIO_ATUALIZADO: ['de', 'para'],
+  PDF_PRONTO: ['paginas'],
+  APRESENTACAO_JA_EXISTE: ['nome'],
+});
+
+test('resumo: os {{campos}} do mensagens.json são os que o comando manda, e saem preenchidos', () => {
+  const mensagens = JSON.parse(fs.readFileSync(path.join(RAIZ, 'kit', 'mensagens.json'), 'utf8'));
+  const comCampos = Object.entries(mensagens).filter(([codigo, m]) => !codigo.startsWith('_') && m.texto.includes('{{'));
+  assert.deepEqual(comCampos.map(([codigo]) => codigo).sort(), Object.keys(CAMPOS_ENVIADOS).sort());
+  for (const [codigo, m] of comCampos) {
+    const campos = m.texto.split('{{').slice(1).map((pedaco) => pedaco.split('}}')[0]);
+    assert.deepEqual([...new Set(campos)].sort(), [...CAMPOS_ENVIADOS[codigo]].sort(), codigo);
+    const dados = Object.fromEntries(campos.map((campo) => [campo, `valor-${campo}`]));
+    for (const r of [montarResultado('x', { ok: true, codigo, dados }), resultadoDeErro(new KitErro(codigo, dados))]) {
+      assert.ok(!r.resumo.includes('{{') && !r.resumo.includes('}}'), `${codigo}: ${r.resumo}`);
+      for (const campo of campos) assert.ok(r.resumo.includes(`valor-${campo}`), `${codigo} sem ${campo}`);
+    }
+  }
+  // campo ausente ou que não é texto nem número some com o marcador
+  assert.equal(montarResultado('x', { ok: true, codigo: 'VERSAO', dados: {} }).resumo, 'Esta é a versão  do estúdio.');
+  assert.ok(!montarResultado('x', { ok: true, codigo: 'VERSAO', dados: { versao: { x: 1 } } }).resumo.includes('[object'));
+  assert.equal(preencher('a {{constructor}} b {{toString}}', {}), 'a  b ', 'campo herdado não entra');
+  assert.equal(preencher('sem fecho {{x', { x: 'y' }), 'sem fecho {{x');
+  assert.equal(preencher('{{n}} páginas', { n: 0 }), '0 páginas');
+});
+
+test('resumo de verdade: versao e nova repetida saem com o valor no lugar do {{campo}}', () => {
+  const v = rodarEstudio(['versao']);
+  const versao = fs.readFileSync(path.join(RAIZ, 'VERSAO'), 'utf8').trim();
+  assert.equal(v.json.resumo, `Esta é a versão ${versao} do estúdio.`);
+  const base = temporaria('estudio-resumo-');
+  try {
+    const env = { ESTUDIO_APRESENTACOES: base };
+    assert.equal(rodarEstudio(['nova', 'repetida'], env).codigo, 0);
+    const deNovo = rodarEstudio(['nova', 'repetida'], env);
+    assert.equal(deNovo.json.codigo, 'APRESENTACAO_JA_EXISTE');
+    assert.equal(deNovo.json.resumo, 'Já existe uma apresentação chamada repetida.');
+  } finally {
+    fs.rmSync(base, { recursive: true, force: true });
+  }
+});
+
 test('despachante: versao sai 0 e informa o HyperFrames fixo', () => {
   const r = rodarEstudio(['versao']);
   assert.equal(r.codigo, 0);
@@ -176,8 +223,8 @@ test('nova: nome inválido vira NOME_INVALIDO com sugestão; nome repetido não 
     const index = fs.readFileSync(path.join(base, 'teste', 'deck', 'index.html'), 'utf8');
     assert.ok(index.includes('<title>Título &lt;x&gt;</title>'));
     assert.ok(fs.existsSync(path.join(base, 'teste', 'deck', 'assets', 'marca', 'tokens.css')));
-    const de_novo = rodarEstudio(['nova', 'teste'], { ESTUDIO_APRESENTACOES: base });
-    assert.equal(de_novo.json.codigo, 'APRESENTACAO_JA_EXISTE');
+    const deNovo = rodarEstudio(['nova', 'teste'], { ESTUDIO_APRESENTACOES: base });
+    assert.equal(deNovo.json.codigo, 'APRESENTACAO_JA_EXISTE');
   } finally {
     fs.rmSync(base, { recursive: true, force: true });
   }

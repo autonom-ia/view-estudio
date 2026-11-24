@@ -14,7 +14,6 @@ export default async function versao() {
   return {
     ok: true,
     codigo: 'VERSAO',
-    resumo: `View Estúdio ${v || '(sem VERSAO)'}`,
     dados: { versao: v, pacote: pacote.version || null, hyperframes: VERSAO_HYPERFRAMES, node: process.versions.node, plataforma: `${process.platform}-${process.arch}` },
   };
 }

@@ -65,7 +65,7 @@ Rode tudo de dentro da pasta do estúdio.
 - Para mostrar a pasta de uma apresentação no Finder ou no Explorer, use `./estudio abrir <nome> --pasta`. Não chame `open` nem `explorer` direto.
 - **Leia só a última linha** de cada comando. Ela é um JSON numa linha só: `{"ok","comando","codigo","resumo","arquivos","avisos","dados"}`.
 - **Saída 0** é ok, **1** é erro de execução, **2** é reprovado na conferência (corrija pela causa e rode de novo).
-- **Traduza o código.** Os do instalador estão em `instalar/mensagens.json`; os dos comandos, em `kit/mensagens.json`. Diga à pessoa o `texto` (trocando os `{{ }}` pelos `dados`) e faça a `acao`. Cada aviso em `avisos` também tem `codigo`.
+- **Traduza o código.** Os do instalador estão em `instalar/mensagens.json`; os dos comandos, em `kit/mensagens.json`. Diga à pessoa o `texto` (trocando os `{{ }}` pelos `dados`) e faça a `acao`. O `resumo` do `./estudio` já vem com eles preenchidos. Cada aviso em `avisos` também tem `codigo`.
 - **Criar é livre; conferir é do comando.** Você escreve as telas (HTML, CSS, GSAP, `cena.js`), o brief e o roteiro. Estrutura, colisão, tamanho de letra, fotos, PDF e vídeo saem dos comandos. Nunca declare pronto sem o `checar` aprovado.
 - Comando que falha duas vezes: skill `consertar`.
 

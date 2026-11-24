@@ -405,11 +405,15 @@
   },
   "PACOTE_PRONTO": {
     "texto": "A apresentação está pronta para pôr no ar onde você quiser, guardada num arquivo só.",
-    "acao": "Diga onde ficou (arquivos.zip) e siga o caminho alternativo da skill por-no-ar (Netlify, Cloudflare Pages ou GitHub Pages, passo a passo, com a pessoa clicando na conta dela). Ficam fora do zip, de propósito: o teleprompter (leva a fala inteira), rascunho (_lab/, nome com _ na frente, composição *-hf/) e anotação (.md) — dados.fora_do_pacote. Tudo o que mora fora de deck/ (brief, roteiro, coleta, revisao, prints) nunca entra."
+    "acao": "Diga onde ficou (arquivos.zip) e siga o caminho alternativo da skill por-no-ar (Netlify, Cloudflare Pages ou GitHub Pages, passo a passo, com a pessoa clicando na conta dela). Ficam fora do zip, de propósito: o teleprompter (leva a fala inteira), rascunho (_lab/ e nome com _ na frente direto em deck/, composição *-hf/) e anotação (.md) — dados.fora_do_pacote. Tudo o que mora fora de deck/ (brief, roteiro, coleta, revisao, prints) nunca entra."
   },
   "PACOTE_ARQUIVO_PRIVADO": {
     "texto": "Ainda não preparei a apresentação para a internet: há nela arquivos que não podem ir para fora do computador (senha, chave, configuração, cópia de segurança, arquivo oculto ou atalho).",
-    "acao": "Mostre dados.arquivos à pessoa. Tire cada um de deck/ (guarde na pasta da apresentação, fora de deck/, se for dela) e rode de novo. Cópia de segurança é nome terminado em .old, .backup, .bak, .orig, .tmp, .swp ou ~, ou pasta backup, backups, old, _old ou tmp. Só dois ocultos passam, de propósito: o arquivo .nojekyll e a pasta .well-known/. Nunca apague sem perguntar e nunca contorne a conferência."
+    "acao": "Mostre dados.arquivos à pessoa. Tire cada um de deck/ (guarde na pasta da apresentação, fora de deck/, se for dela) e rode de novo. Cópia de segurança é nome terminado em .old, .backup, .bak, .orig, .tmp, .swp ou ~, ou pasta backup, backups, old, _old ou tmp. Só um oculto passa, de propósito: a pasta .well-known/ direto em deck/ (o serviço de publicação recusa qualquer outro, inclusive .nojekyll). Nunca apague sem perguntar e nunca contorne a conferência."
+  },
+  "PACOTE_CITA_ARQUIVO_FORA": {
+    "texto": "Uma tela usa um arquivo que não vai para o ar junto com a apresentação. No ar, essa tela quebraria.",
+    "acao": "Veja dados.arquivos (arquivo e citado_em). São arquivos que ficam de fora de propósito: rascunho (_lab/ e nome com _ na frente direto em deck/), composição *-hf/, anotação .md ou o teleprompter. Leve o arquivo para deck/assets/ (com outro nome, se for rascunho) e troque o caminho na tela, ou tire o uso dele. Depois rode as conferências de novo."
   },
   "ARQUIVO_NAO_USADO": {
     "texto": "Há arquivos na apresentação que nenhuma tela usa.",
@@ -422,6 +426,18 @@
   "PUBLICAR_TIPO_NAO_ACEITO": {
     "texto": "Há arquivos na apresentação de um tipo que o serviço de publicação não aceita.",
     "acao": "Veja dados.arquivos. O serviço aceita página, estilo, código de tela, imagem (png, jpg, gif, webp, avif, svg, ico), letra (woff2, woff, ttf, otf), vídeo mp4 ou webm, áudio mp3, ogg ou wav e pdf. Vídeo .mov ou .m4v: converta para mp4 (a skill cena-em-video sabe). Se o arquivo não é da apresentação, tire-o de deck/. Depois rode as conferências e pergunte de novo antes de publicar. Pelo caminho alternativo (./estudio pacote) o arquivo vai junto."
+  },
+  "PUBLICAR_NOME_DE_ARQUIVO_RECUSADO": {
+    "texto": "Há arquivos na apresentação com um nome que o serviço de publicação não aceita.",
+    "acao": "Veja dados.arquivos. O serviço recusa nome com barra invertida, dois-pontos, caractere invisível ou de direção de texto, nome escondido (começa com ponto) e nome comprido demais. Renomeie o arquivo (letras, números e hífen) e troque o nome também onde a tela o usa. Depois rode as conferências e pergunte de novo antes de publicar."
+  },
+  "PUBLICAR_NOMES_REPETIDOS": {
+    "texto": "Há dois arquivos na apresentação com o mesmo nome, mudando só maiúsculas e minúsculas. O serviço de publicação não aceita.",
+    "acao": "Veja dados.pares. Renomeie um de cada par e troque o nome também onde a tela o usa (no Windows e no Mac os dois podem até parecer o mesmo arquivo). Depois rode as conferências e pergunte de novo antes de publicar."
+  },
+  "PUBLICAR_ARQUIVOS_DEMAIS": {
+    "texto": "A apresentação tem arquivos demais para pôr no ar aqui.",
+    "acao": "Veja dados.arquivos e dados.maximo (10.000). Tire de deck/ o que nenhuma tela usa (o aviso ARQUIVO_NAO_USADO lista) e rode as conferências de novo. Pelo caminho alternativo (./estudio pacote) não há esse limite."
   },
   "PUBLICADO": {
     "texto": "Sua apresentação está no ar, com cadeado de site seguro, em {{endereco}}.",
@@ -480,8 +496,8 @@
     "acao": "Proponha à pessoa um nome curto, parecido e livre para o endereço (letras minúsculas, números e hífen). Com o sim dela, rode ./estudio publicar <nome> --no-ar <outro>: a apresentação continua a mesma, só o endereço muda, e o estúdio guarda o nome novo para as próximas vezes (inclusive para --voltar). O sim para o endereço novo vale como a confirmação desta publicação. Nunca tente publicar por cima do endereço de outra pessoa."
   },
   "PUBLICAR_ENDERECO_JA_EM_USO": {
-    "texto": "Você já tem outra coisa no ar com esse endereço, um site ou outra apresentação. Se eu puser esta apresentação ali, ela toma o lugar do que está no ar.",
-    "acao": "Veja dados.nome. Pergunte à pessoa, com duas opções: \"Usar outro endereço ★\" (proponha um nome curto e livre e, com o sim dela, rode ./estudio publicar <nome> --no-ar <outro>) ou \"Trocar o que está lá por esta apresentação\" (rode de novo com --por-cima; as versões de antes ficam guardadas por um tempo e dá para voltar com --voltar). Nunca use --por-cima sem esse sim, dado para este endereço."
+    "texto": "Nesse endereço está no ar algo que não foi esta apresentação que pôs ali daqui: um site seu, outra apresentação, ou uma versão publicada de outro computador. Se eu publicar, esta apresentação toma o lugar do que está no ar.",
+    "acao": "Veja dados.nome, dados.versao_no_ar e dados.versao_desta. Pergunte à pessoa, com duas opções: \"Usar outro endereço ★\" (proponha um nome curto e livre e, com o sim dela, rode ./estudio publicar <nome> --no-ar <outro>) ou \"Trocar o que está lá por esta apresentação\" (rode de novo com --por-cima; as versões de antes ficam guardadas por um tempo e dá para voltar com --voltar). Nunca use --por-cima sem esse sim, dado para este endereço."
   },
   "PUBLICAR_LIMITE_DE_SITES": {
     "texto": "Você chegou ao número máximo de endereços no ar (sites e apresentações contam juntos).",
@@ -546,6 +562,10 @@
   "PUBLICAR_ENVIO_EM_ANDAMENTO": {
     "texto": "Já tem um envio desta apresentação sendo concluído no serviço.",
     "acao": "Não mande de novo agora. Espere uns 3 minutos, abra o endereço e veja se a mudança já está no ar; só se não estiver, rode a publicação de novo."
+  },
+  "PUBLICAR_ESPERE_UM_POUCO": {
+    "texto": "O serviço de publicação pediu para esperar um pouco antes de tentar de novo.",
+    "acao": "Veja dados.detalhe. Espere uns 2 minutos e rode a mesma publicação de novo, sem perguntar outra vez à pessoa. Se repetir três vezes, diga a ela que o serviço está ocupado e tente mais tarde."
   },
   "PUBLICAR_VERSAO_RUIM": {
     "texto": "Essa versão guardada não tem uma tela inicial que funcione. Nada mudou no ar.",

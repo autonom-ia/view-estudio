@@ -12,13 +12,16 @@
 //   ./estudio publicar --sair                 esquece a chave e o pedido de acesso deste computador.
 // Vermelho não vai para o ar: sem o "checar", o "fatos" e o "acessibilidade" aprovados para a
 // apresentação como ela está agora (lib/conferencias.mjs), reprova com PUBLICAR_CONFERIR_ANTES antes de
-// falar com o serviço. Também reprova antes de enviar o que o painel recusaria de qualquer jeito: arquivo
-// de tipo que ele não aceita e pacote acima do teto.
-// Nada some por engano: o painel aceita uma versão nova em qualquer endereço da pessoa, então, se o
-// endereço já tem coisa dela no ar e esta apresentação nunca foi publicada nele (no-ar.json), reprova
-// com PUBLICAR_ENDERECO_JA_EM_USO até ela dizer --por-cima ou escolher --no-ar. O endereço é anotado
-// em no-ar.json antes do envio: se o processo cair no meio, a próxima vez já sabe que é desta
-// apresentação. Recusa do painel antes de publicar desfaz a anotação.
+// falar com o serviço. Também reprova antes de enviar o que o painel recusaria de qualquer jeito
+// (lib/regras-do-painel.mjs: tipo, nome, repetidos, quantidade, index, teto).
+// Nada some por engano: o painel aceita uma versão nova em qualquer endereço da pessoa. no-ar.json
+// guarda o endereço e a versão que esta apresentação pôs no ar; se o endereço já teve versão e a que
+// está no ar não é a anotada aqui (é um site dela, outra apresentação, ou alguém publicou por outro
+// computador ou por uma cópia da pasta), publicar e --voltar reprovam com PUBLICAR_ENDERECO_JA_EM_USO
+// até ela dizer --por-cima ou escolher --no-ar. Endereço só reservado por um envio que não publicou
+// (nenhuma versão) não conta. O endereço é anotado como "pendente" antes do envio: se o processo cair
+// no meio, a próxima vez sabe que o que apareceu ali pode ser desta apresentação. Recusa do painel
+// antes de publicar desfaz a anotação; --voltar anota a versão que ficou no ar.
 // Login, chave recusada, --voltar e --sair seguem o Site Estúdio, do qual este comando foi portado.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -31,25 +34,9 @@ import { escreverJson } from '../lib/json.mjs';
 import { aviso, falha, reprovado, KitErro } from '../lib/saida.mjs';
 import { configuracao } from '../lib/publicar-servico.mjs';
 import { entrar } from '../lib/publicar-login.mjs';
-import { enviarPacote, voltarVersao, esperarSiteNoAr, enderecoNaConta } from '../lib/publicar-envio.mjs';
+import { enviarPacote, voltarVersao, esperarSiteNoAr, situacaoDoEndereco } from '../lib/publicar-envio.mjs';
+import { conferirParaOPainel } from '../lib/regras-do-painel.mjs';
 import { apagar, arquivoChave, esquecerTudo, lerChave } from '../lib/publicar-guarda.mjs';
-
-// Teto do painel (SITES_LIMITE_MB): vale para o pacote enviado e para o conteúdo aberto.
-export const TETO_MB = 200;
-const MB = 1024 * 1024;
-// Tipos de arquivo que o painel aceita (framework/sites/painel/publicacao/pacote-regras.mjs).
-export const TIPOS_ACEITOS = Object.freeze([
-  'html', 'htm', 'css', 'js', 'mjs', 'json', 'txt', 'xml', 'csv', 'svg',
-  'png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'ico',
-  'woff', 'woff2', 'ttf', 'otf',
-  'mp4', 'webm', 'mp3', 'ogg', 'wav',
-  'pdf', 'webmanifest', 'map',
-]);
-
-export const tipoAceito = (rel) => {
-  const baixo = rel.split('/').pop().toLowerCase();
-  return TIPOS_ACEITOS.some((ext) => baixo.endsWith(`.${ext}`));
-};
 
 const arquivoNoAr = (c) => path.join(c.pasta, 'no-ar.json');
 
@@ -104,14 +91,6 @@ async function comAcesso(cfg, fazer) {
   return fazer(e.chave);
 }
 
-// O que o painel recusaria de qualquer jeito: melhor dizer antes de mandar duzentos megas.
-export function conferirParaOPainel(pacote) {
-  const recusados = pacote.nomes.filter((rel) => !tipoAceito(rel));
-  if (recusados.length) reprovado('PUBLICAR_TIPO_NAO_ACEITO', { arquivos: recusados.map((r) => `deck/${r}`) });
-  const maior = Math.max(pacote.zip.length, pacote.conteudoBytes);
-  if (maior > TETO_MB * MB) reprovado('PUBLICAR_SITE_GRANDE_DEMAIS', { mb: Math.ceil(maior / MB), mb_max: TETO_MB });
-}
-
 // Erros depois dos quais a apresentação pode já estar no ar: a anotação do endereço fica.
 const TALVEZ_NO_AR = Object.freeze(['PUBLICAR_CONCLUSAO_INCERTA', 'PUBLICAR_NO_AR_AJUSTANDO', 'PUBLICAR_ENVIO_EM_ANDAMENTO']);
 
@@ -123,7 +102,7 @@ function anotarNoAr(c, dados) {
 // Envia com o endereço anotado antes; desfaz a anotação se o painel recusou antes de publicar.
 async function enviarAnotando(cfg, chave, c, noAr, pacote) {
   const antes = fs.existsSync(arquivoNoAr(c)) ? lerNoAr(c) : null;
-  anotarNoAr(c, { ...(antes && antes.nome === noAr ? antes : {}), nome: noAr, em: new Date().toISOString() });
+  anotarNoAr(c, { ...(antes && antes.nome === noAr ? antes : {}), nome: noAr, pendente: true, em: new Date().toISOString() });
   try {
     return await enviarPacote(cfg, chave, noAr, pacote);
   } catch (erro) {
@@ -132,11 +111,21 @@ async function enviarAnotando(cfg, chave, c, noAr, pacote) {
   }
 }
 
-// O endereço tem outra coisa da pessoa no ar (e esta apresentação nunca foi publicada nele)? Vale
-// para publicar e para --voltar: voltar versão ali mexeria no site ou na outra apresentação dela.
+// O que está no ar nesse endereço foi esta apresentação que pôs? Vale para publicar e para --voltar:
+// voltar versão ali mexeria no site ou na outra apresentação dela. Fora do ar (versão null), quem
+// responde é o painel (PUBLICAR_SITE_TIRADO_DO_AR).
 async function conferirDono(cfg, chave, c, noAr, porCima) {
-  if (porCima || lerNoAr(c).nome === noAr) return;
-  if (await enderecoNaConta(cfg, chave, noAr)) reprovado('PUBLICAR_ENDERECO_JA_EM_USO', { nome: noAr });
+  if (porCima) return;
+  const situacao = await situacaoDoEndereco(cfg, chave, noAr);
+  if (!situacao.teveVersao) return;
+  const anotado = lerNoAr(c);
+  const desta = anotado.nome === noAr;
+  if (desta && (anotado.pendente === true || situacao.versao === null || anotado.versao === situacao.versao)) return;
+  reprovado('PUBLICAR_ENDERECO_JA_EM_USO', {
+    nome: noAr,
+    versao_no_ar: situacao.versao,
+    versao_desta: desta && Number.isInteger(anotado.versao) ? anotado.versao : null,
+  });
 }
 
 async function publicarApresentacao(cfg, c, noAr, porCima) {
@@ -183,6 +172,8 @@ export default async function publicar(args) {
   return comAcesso(cfg, async (chave) => {
     await conferirDono(cfg, chave, c, noAr, porCima);
     const r = await voltarVersao(cfg, chave, noAr, v.versao);
+    const anotado = lerNoAr(c);
+    anotarNoAr(c, { ...(anotado.nome === noAr ? anotado : {}), nome: noAr, versao: r.versao, pendente: undefined, em: new Date().toISOString() });
     return { ok: true, codigo: 'PUBLICAR_VERSAO_VOLTOU', dados: { nome: noAr, versao: r.versao } };
   });
 }

@@ -5,7 +5,7 @@ description: Põe a apresentação pronta no ar com um link para mandar. Quem te
 
 # Pôr no ar
 
-O que vai para o ar é a apresentação pronta para abrir em qualquer navegador: a tela inicial, as telas, as letras, as fotos e os vídeos das cenas. Nunca vão o brief, o roteiro, a coleta, a revisão, as fotos de conferência, os rascunhos (`_lab/`, nome com `_` na frente) nem as composições de cena (`*-hf/`). Quem monta o que sobe é o comando, nunca você.
+O que vai para o ar é a apresentação pronta para abrir em qualquer navegador: a tela inicial, as telas, as letras, as fotos e os vídeos das cenas. Nunca vão o brief, o roteiro, a coleta, a revisão, as fotos de conferência, os rascunhos (`_lab/` e nome com `_` na frente direto em `deck/`) nem as composições de cena (`*-hf/`). Quem monta o que sobe é o comando, nunca você.
 
 **O teleprompter não vai para o ar.** Ele leva a fala inteira e as anotações de quem apresenta, e o link vai para a plateia. Quem apresenta usa o teleprompter no próprio computador, com `./estudio abrir <nome>`.
 
@@ -40,9 +40,11 @@ Diga, com estas palavras ou parecidas: "Eu ponho no ar só com a sua confirmaç�
 
 **Endereço de outra pessoa ou nome recusado** (`PUBLICAR_SITE_DE_OUTRA_PESSOA`, `PUBLICAR_NOME_RECUSADO`): o endereço sai do nome da apresentação. Proponha um nome curto, parecido e livre (letras minúsculas, números e hífen, de 2 a 40). Com o sim dela para o endereço novo, rode `./estudio publicar <nome> --no-ar <outro>`. A apresentação continua a mesma, sem cópia; só o endereço muda, e o estúdio guarda o nome novo em `apresentacoes/<nome>/no-ar.json` para as próximas vezes e para voltar versão. O sim para o endereço novo vale como a confirmação desta publicação. Nunca tente publicar por cima do endereço de outra pessoa.
 
-**Endereço que já tem outra coisa dela no ar** (`PUBLICAR_ENDERECO_JA_EM_USO`): ela já tem nesse endereço um site ou outra apresentação, e publicar ali tira aquilo do ar. Pergunte: "Usar outro endereço ★" ou "Trocar o que está lá por esta apresentação". Outro endereço: `--no-ar <outro>`, como acima. Trocar: só com esse sim, rode `./estudio publicar <nome> --por-cima`. Nunca use `--por-cima` por conta própria.
+**Endereço com algo no ar que não foi esta apresentação que pôs** (`PUBLICAR_ENDERECO_JA_EM_USO`): é um site dela, outra apresentação, ou uma versão publicada de outro computador ou de uma cópia da apresentação; publicar ali (ou voltar versão) tira aquilo do ar. Pergunte: "Usar outro endereço ★" ou "Trocar o que está lá por esta apresentação". Outro endereço: `--no-ar <outro>`, como acima. Trocar: só com esse sim, rode `./estudio publicar <nome> --por-cima`. Nunca use `--por-cima` por conta própria.
 
-**Grande demais ou arquivo que o serviço não aceita** (`PUBLICAR_SITE_GRANDE_DEMAIS`, `PUBLICAR_TIPO_NAO_ACEITO`, `PUBLICAR_PACOTE_RECUSADO`): o teto é 200 MB, e o que mais pesa costuma ser vídeo de cena. Vídeo `.mov` ou `.m4v` vira `.mp4` (skill `cena-em-video`). Depois de corrigir, rode as três conferências e pergunte de novo antes de publicar.
+**Tela que usa um arquivo que fica fora** (`PACOTE_CITA_ARQUIVO_FORA`): leve o arquivo para `deck/assets/` e troque o caminho na tela. **Esperar** (`PUBLICAR_ESPERE_UM_POUCO`): espere uns 2 minutos e rode de novo, sem perguntar outra vez.
+
+**Grande demais ou arquivo que o serviço não aceita** (`PUBLICAR_SITE_GRANDE_DEMAIS`, `PUBLICAR_TIPO_NAO_ACEITO`, `PUBLICAR_NOME_DE_ARQUIVO_RECUSADO`, `PUBLICAR_NOMES_REPETIDOS`, `PUBLICAR_ARQUIVOS_DEMAIS`, `PUBLICAR_PACOTE_RECUSADO`): o teto é 200 MB, e o que mais pesa costuma ser vídeo de cena. Vídeo `.mov` ou `.m4v` vira `.mp4` (skill `cena-em-video`). Depois de corrigir, rode as três conferências e pergunte de novo antes de publicar.
 
 **Atualizar depois:** depois de mudar a apresentação e com as três conferências aprovadas de novo, pergunte de novo e rode `./estudio publicar <nome>`. Cada publicação vira uma versão nova; as anteriores ficam guardadas por um tempo. O link continua o mesmo.
 
@@ -84,6 +86,8 @@ Os serviços pedem, às vezes, o conteúdo solto em vez do arquivo. Para isso, d
 **Atualizar depois:** "No projeto, crie uma nova publicação (Create deployment) e envie o arquivo novo."
 
 **GitHub Pages**
+
+O GitHub Pages esconde arquivo e pasta cujo nome começa com `_` (por exemplo `assets/_logo.png`). Se a apresentação tiver algum, prefira Netlify ou Cloudflare Pages.
 
 1. "Abra github.com e crie uma conta grátis, se ainda não tiver."
 2. "Crie um repositório novo (o botão New). Dê um nome curto e deixe como público. No plano grátis, a página só sai de repositório público, e qualquer pessoa vê os arquivos."

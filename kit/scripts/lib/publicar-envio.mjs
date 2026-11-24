@@ -42,15 +42,27 @@ async function lerSite(cfg, chave, nome) {
   const site = c.sites.find((s) => s && s.slug === nome);
   // O endereço vai para a frase que o assistente repete à pessoa: só https (ou o local de teste).
   const endereco = site ? enderecoSeguro(site.endereco, cfg) : null;
-  if (!site || !Number.isInteger(site.versao) || !endereco) return { versao: null, endereco: '' };
-  return { versao: site.versao, endereco };
+  if (!site || !Number.isInteger(site.versao) || !endereco) return { versao: null, endereco: '', bytes: null };
+  // Tamanho do pacote da versão no ar, quando a lista diz (o painel guarda o tamanho de cada envio).
+  const daVersao = Array.isArray(site.versoes) ? site.versoes.find((v) => v && v.versao === site.versao) : null;
+  const bytes = daVersao && Number.isInteger(daVersao.bytes) ? daVersao.bytes : null;
+  return { versao: site.versao, endereco, bytes };
 }
 
-// O endereço <nome> já está na lista da pessoa, em qualquer estado (no ar, fora do ar, sem versão)?
-export async function enderecoNaConta(cfg, chave, nome) {
+// A versão nova no ar pode ser deste pacote? Se a lista diz o tamanho e ele é outro, não é.
+const podeSerDeste = (site, bytes) => site.bytes === null || site.bytes === bytes;
+
+// O endereço <nome> na lista da pessoa: { teveVersao, versao }. teveVersao é false quando o endereço
+// não existe ou só ficou reservado por um envio que não chegou a publicar (nenhuma versão guardada);
+// versao é a que está no ar agora (null se fora do ar).
+export async function situacaoDoEndereco(cfg, chave, nome) {
   const c = exigir(await semFalhaDeRede(() => chamar(cfg, 'GET', '/api/estudio/sites', { chave })), 200);
   if (!Array.isArray(c.sites)) throw new KitErro('PUBLICAR_RESPOSTA_ESTRANHA', { etapa: 'listar sites' });
-  return c.sites.some((s) => s && s.slug === nome);
+  const site = c.sites.find((s) => s && s.slug === nome);
+  if (!site) return { teveVersao: false, versao: null };
+  const versao = Number.isInteger(site.versao) ? site.versao : null;
+  const guardadas = Array.isArray(site.versoes) ? site.versoes.length : 0;
+  return { teveVersao: versao !== null || guardadas > 0, versao };
 }
 
 const versaoNova = (site, antes) => site.versao !== null && site.versao !== antes;
@@ -63,7 +75,8 @@ function conferirAbertura(corpo, bytes) {
   return { id, max, partes };
 }
 
-// Manda uma parte. Reenvia em falha de rede, em erro do servidor (5xx) e em parte corrompida.
+// Manda uma parte. Reenvia em falha de rede, em erro do servidor (5xx), em parte corrompida e em parte
+// ainda chegando por um pedido anterior (PARTE_EM_ANDAMENTO).
 async function mandarParte(cfg, chave, envio, n, pedaco) {
   const caminho = `/api/estudio/envios/${encodeURIComponent(envio.id)}/partes/${n}`;
   const cabecalhos = { 'x-parte-sha256': sha256(pedaco) };
@@ -79,7 +92,9 @@ async function mandarParte(cfg, chave, envio, n, pedaco) {
       continue;
     }
     const corrompida = r.status === 400 && r.corpo && r.corpo.codigo === 'PARTE_CORROMPIDA';
-    if (r.status >= 500 || corrompida) {
+    // A mesma parte ainda chegando por um pedido anterior (o que caiu pela rede): espera e manda de novo.
+    const emAndamento = r.status === 409 && r.corpo && r.corpo.codigo === 'PARTE_EM_ANDAMENTO';
+    if (r.status >= 500 || corrompida || emAndamento) {
       ultimo = erroDoServico(r);
       continue;
     }
@@ -104,13 +119,13 @@ async function concluir(cfg, chave, envio) {
 
 // Depois de um concluir sem resposta: guarda a versão de antes (qualquer erro daqui em diante deixa a
 // conferência para a próxima chamada) e procura a versão nova na lista até o prazo que sobra.
-async function confirmarOuGuardar(cfg, chave, nome, versaoAntes, ferr) {
-  gravarConferir(cfg.base, nome, versaoAntes, ferr);
+async function confirmarOuGuardar(cfg, chave, nome, versaoAntes, pacote, ferr) {
+  gravarConferir(cfg.base, nome, versaoAntes, pacote.sha256, ferr);
   const limite = Date.now() + prazoDaEspera(cfg);
   for (;;) {
     try {
       const site = await lerSite(cfg, chave, nome);
-      if (versaoNova(site, versaoAntes)) {
+      if (versaoNova(site, versaoAntes) && podeSerDeste(site, pacote.zip.length)) {
         apagar(arquivoConferir(nome, ferr));
         return { slug: nome, versao: site.versao, endereco: site.endereco };
       }
@@ -125,10 +140,13 @@ async function confirmarOuGuardar(cfg, chave, nome, versaoAntes, ferr) {
 // Publica o pacote montado (lib/pacote.mjs). Devolve { slug, versao, endereco, partes }.
 export async function enviarPacote(cfg, chave, nome, pacote, ferr = FERR) {
   const antes = await semFalhaDeRede(() => lerSite(cfg, chave, nome));
+  // Só pula o envio se a versão nova que apareceu é deste mesmo pacote: a apresentação pode ter mudado
+  // entre o envio sem resposta e agora, e aí o que está no ar não é o que a pessoa quer publicar.
   const pendente = lerConferir(cfg.base, nome, ferr);
   if (pendente) {
     apagar(arquivoConferir(nome, ferr));
-    if (versaoNova(antes, pendente.versao_antes)) return { slug: nome, versao: antes.versao, endereco: antes.endereco, partes: 0 };
+    const mesmoPacote = pendente.sha256 === pacote.sha256;
+    if (mesmoPacote && versaoNova(antes, pendente.versao_antes) && podeSerDeste(antes, pacote.zip.length)) return { slug: nome, versao: antes.versao, endereco: antes.endereco, partes: 0 };
   }
   const bytes = pacote.zip.length;
   const aberto = await semFalhaDeRede(() =>
@@ -141,7 +159,7 @@ export async function enviarPacote(cfg, chave, nome, pacote, ferr = FERR) {
     await mandarParte(cfg, chave, envio, n, pacote.zip.subarray(n * envio.max, Math.min(bytes, (n + 1) * envio.max)));
   }
   const c = await concluir(cfg, chave, envio);
-  if (!c) return { ...(await confirmarOuGuardar(cfg, chave, nome, antes.versao, ferr)), partes: envio.partes };
+  if (!c) return { ...(await confirmarOuGuardar(cfg, chave, nome, antes.versao, pacote, ferr)), partes: envio.partes };
   const endereco = enderecoSeguro(c.endereco, cfg);
   if (!Number.isInteger(c.versao) || !endereco) throw new KitErro('PUBLICAR_RESPOSTA_ESTRANHA', { etapa: 'concluir' });
   return { slug: typeof c.slug === 'string' ? c.slug : nome, versao: c.versao, endereco, partes: envio.partes };

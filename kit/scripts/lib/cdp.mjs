@@ -44,6 +44,12 @@ export async function launch({ largura = 1920, altura = 1080 } = {}) {
     '--mute-audio',
     '--disable-extensions',
     '--disable-background-networking',
+    // Aba que não está na frente (o teleprompter ao lado do deck, nos testes e na conferência) não
+    // vira processo de segundo plano: no Mac carregado, o sistema a deixava sem CPU e o DevTools
+    // parava de responder.
+    '--disable-renderer-backgrounding',
+    '--disable-background-timer-throttling',
+    '--disable-backgrounding-occluded-windows',
     '--autoplay-policy=no-user-gesture-required',
     '--force-device-scale-factor=1',
     `--window-size=${largura},${altura}`,

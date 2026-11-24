@@ -15,7 +15,7 @@ import { lerZip } from '../scripts/lib/zip.mjs';
 import { montarPacote, foraDoPacote } from '../scripts/lib/pacote.mjs';
 import { conferenciasQueFaltam, anotarConferencia, impressaoDaApresentacao, CONFERENCIAS } from '../scripts/lib/conferencias.mjs';
 import { caminhosDe } from '../scripts/lib/apresentacao.mjs';
-import { conferirParaOPainel, tipoAceito, TETO_MB } from '../scripts/comandos/publicar.mjs';
+import { conferirParaOPainel, tipoAceito, nomeAceito, nomesRepetidos, TETO_MB, MAX_ARQUIVOS } from '../scripts/lib/regras-do-painel.mjs';
 import { acharNavegador } from '../scripts/lib/chrome.mjs';
 import { KitErro } from '../scripts/lib/saida.mjs';
 
@@ -94,8 +94,8 @@ test('o que sobe: deck pronto, sem teleprompter, rascunho, brief nem roteiro; v�
   assert.ok(mp4.dados.equals(video));
   assert.deepEqual(r.json.dados.fora_do_pacote.sort(), ['deck/_lab/rascunho.html', 'deck/notas.md', 'deck/slides/s02-hf/index.html', 'deck/teleprompter.html']);
   assert.deepEqual([r.json.dados.telas, r.json.dados.videos], [2, 1]);
-  for (const rel of ['teleprompter.html', '_lab/x.html', 'a/_rascunho.html', 'slides/s02-hf/i.html', 'notas.md', 'arte.psd']) assert.equal(foraDoPacote(rel), true, rel);
-  for (const rel of ['index.html', 'slides/teleprompter.html', 'assets/_headers', 'assets/cena.mp4']) assert.equal(foraDoPacote(rel), false, rel);
+  for (const rel of ['teleprompter.html', '_lab/x.html', '_rascunho.html', 'slides/s02-hf/i.html', 'notas.md', 'arte.psd']) assert.equal(foraDoPacote(rel), true, rel);
+  for (const rel of ['index.html', 'slides/teleprompter.html', '_headers', 'assets/_logo.png', 'slides/_fundo.html', 'assets/cena.mp4', 'assets/x-hf']) assert.equal(foraDoPacote(rel), false, rel);
   // o endereço publicado fica guardado na apresentação
   const noAr = JSON.parse(fs.readFileSync(path.join(c.pasta, 'no-ar.json'), 'utf8'));
   assert.deepEqual([noAr.nome, noAr.endereco, noAr.versao], [NOME, `${ctx.servico.base}/no-ar/${NOME}/`, 1]);

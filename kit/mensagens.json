@@ -250,5 +250,13 @@
   "ANDAMENTO_PRONTO": {
     "texto": "Terminei de conferir. Recarregue a apresentação para ver como ficou.",
     "acao": "Diga quando a revisão passou, antes da entrega."
+  },
+  "REVISAO_PRONTA": {
+    "texto": "Preparei o que os olhares independentes vão ler antes de ver a apresentação.",
+    "acao": "Não diga este texto à pessoa: durante a revisão, só as frases ANDAMENTO_* vão a ela. Inclua arquivos.contexto no pacote de cada revisor, como primeira leitura (no diretor geral, logo depois do teste da plateia). dados.notas mostra cada rodada (alertas incluídos). dados.metas é indicador interno do estúdio: \"em_ate_2_rodadas\" mede se passou em até 2 rodadas e \"estabilidade\" se a reavaliação ficou estável (null = não medida). A regra da revisão continua sendo até 3 rodadas: não pare nem entregue antes por causa desse indicador."
+  },
+  "RODADA_ILEGIVEL": {
+    "texto": "Não consegui ler as anotações da conferência anterior. Vou arrumar antes de seguir.",
+    "acao": "Leia dados.erro, corrija dados.arquivo no formato da skill revisar (rodada-N.json) e rode revisao de novo antes de chamar os revisores."
   }
 }

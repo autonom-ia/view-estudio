@@ -61,11 +61,11 @@ Rode tudo de dentro da pasta do estúdio.
 | Windows, Git Bash | `./estudio <comando>` | o mesmo instalador do Windows, com barra normal |
 
 - As skills escrevem `./estudio`. No PowerShell, troque por `.\estudio.cmd`.
-- Comandos: `nova`, `checar`, `prints`, `pdf`, `teleprompter`, `cena`, `abrir`, `verificar`, `espelhar`, `versao`, `atualizar`.
+- Comandos: `nova`, `checar`, `prints`, `revisao` (prepara a rodada da revisão), `pdf`, `teleprompter`, `cena`, `abrir`, `verificar`, `espelhar`, `versao`, `atualizar`.
 - Para mostrar a pasta de uma apresentação no Finder ou no Explorer, use `./estudio abrir <nome> --pasta`. Não chame `open` nem `explorer` direto.
 - **Leia só a última linha** de cada comando. Ela é um JSON numa linha só: `{"ok","comando","codigo","resumo","arquivos","avisos","dados"}`.
 - **Saída 0** é ok, **1** é erro de execução, **2** é reprovado na conferência (corrija pela causa e rode de novo).
-- **Traduza o código.** Os do instalador estão em `instalar/mensagens.json`; os dos comandos, em `kit/mensagens.json`. Diga à pessoa o `texto` (trocando os `{{ }}` pelos `dados`) e faça a `acao`. O `resumo` do `./estudio` já vem com eles preenchidos. Cada aviso em `avisos` também tem `codigo`.
+- **Traduza o código.** Os do instalador estão em `instalar/mensagens.json`; os dos comandos, em `kit/mensagens.json`. Diga à pessoa o `texto` (trocando os `{{ }}` pelos `dados`) e faça a `acao`. O `resumo` do `./estudio` já vem com eles preenchidos. Exceção: durante a revisão, só as frases `ANDAMENTO_*` vão à pessoa; o `texto` de `REVISAO_PRONTA` é interno. Cada aviso em `avisos` também tem `codigo`.
 - **Criar é livre; conferir é do comando.** Você escreve as telas (HTML, CSS, GSAP, `cena.js`), o brief e o roteiro. Estrutura, colisão, tamanho de letra, fotos, PDF e vídeo saem dos comandos. Nunca declare pronto sem o `checar` aprovado.
 - Comando que falha duas vezes: skill `consertar`.
 
@@ -76,7 +76,7 @@ Rode tudo de dentro da pasta do estúdio.
 - **Brief antes do pixel.** Nenhuma tela é desenhada antes de a pessoa aprovar o brief (promessa e sequência de telas).
 - **Piloto antes da leva.** Três telas (capa, uma tela comum e o pico) aprovadas pela pessoa antes de fazer as outras.
 - **Fato com fonte.** Todo número, data, nome ou citação que vai para a tela está no `brief.md`, na tabela de fatos, com a fonte. Sem fonte, não entra. Nunca invente dado, cliente, depoimento ou resultado.
-- **Autor nunca é o revisor.** Quem fez a apresentação não dá a nota. A skill `revisar` chama 4 revisores independentes; meta 8,5 em até 3 rodadas.
+- **Autor nunca é o revisor.** Quem fez a apresentação não dá a nota. A skill `revisar` chama 4 revisores independentes, que dão a nota pela régua de `kit/regua-revisao.md` e recebem o que a rodada anterior aceitou e recusou; meta 8,5 em até 3 rodadas.
 - **Use as skills de design.** Antes de desenhar qualquer tela, se estiverem instaladas, carregue `frontend-design` e `ui-ux-pro-max`. A skill `instalar-estudio` sugere instalá-las.
 - **Sem caixa genérica.** Nada de grade de cartões com borda e fundo. Hierarquia por tipografia, foto, luz, cor e movimento. Teste: "trocando o nome da empresa, esta tela serve para outra?" Se serve, está genérica.
 - **Sem `<select>` nativo** em nenhuma tela. Escolha usa componente próprio acessível.

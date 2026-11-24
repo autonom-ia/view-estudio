@@ -11,7 +11,8 @@ Comandos: `./estudio <comando>` (no PowerShell, `.\estudio.cmd <comando>`). Leia
 
 ## 1. Conferir antes de entregar
 1. Leia `apresentacoes/<nome>/andamento.md`. A revisão precisa ter passado (nota 8,5 ou mais) ou a pessoa ter escolhido "Entregar assim" na terceira rodada. Se não, volte à skill `revisar`.
-2. `./estudio checar <nome>`: precisa de `ok:true` e nenhum amarelo de roteiro. Se algo mudou desde a revisão e veio vermelho, corrija antes.
+2. Se `andamento.md` > Pendências tiver algum item, pergunte à pessoa, um por vez, antes de gerar o PDF. O que ela resolver sai da lista; fato confirmado vai para a tabela de fatos do `brief.md`, com a fonte "a própria pessoa disse em <data>".
+3. `./estudio checar <nome>`: precisa de `ok:true` e nenhum amarelo de roteiro. Se algo mudou desde a revisão e veio vermelho, corrija antes.
 
 ## 2. Gerar
 1. `./estudio pdf <nome>`: uma página 16:9 por tela, no estado final de cada uma. Código `PDF_PRONTO`: o arquivo está em `arquivos.pdf` (`apresentacoes/<nome>/<nome>.pdf`), e `dados.paginas` precisa ser igual a `dados.telas`. `PDF_REPROVADO` (saída 2): leia `dados`, corrija a tela e rode de novo.

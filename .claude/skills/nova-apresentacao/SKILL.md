@@ -20,6 +20,9 @@ brief aprovado: <data e as palavras da pessoa, ou "não">
 piloto aprovado: <data e as palavras da pessoa, ou "não">
 revisão: <rodada N, nota>
 próximo passo: <uma frase>
+
+## Pendências
+- <o que só a pessoa resolve, como confirmar um número ou autorizar uma foto; apague quando ela resolver>
 ```
 
 Se a sessão cair, você volta daqui. Aprovação só vale com as palavras da pessoa, copiadas sem resumir. "Pode seguir", "faz tudo", "capricha" ditos antes de ver o brief ou o piloto não aprovam nada: mostre e espere.

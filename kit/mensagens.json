@@ -362,5 +362,45 @@
   "PRONTO_PARA_OUTRO_CAMINHO": {
     "texto": "Voltei para o ponto de partida. Vou tentar outro caminho.",
     "acao": "A apresentação voltou ao original e o antes continua guardado. Não rode ./estudio antes: faça 2 ou 3 mudanças diferentes, preencha arquivos.mudancas e rode ./estudio comparar <nome>."
+  },
+  "LER_OK": {
+    "texto": "Li o perfil do Google e o site atual do negócio. Cada informação ficou anotada com de onde veio e quando.",
+    "acao": "Leia arquivos.coleta (google/lugar.json, site/texto.md) e a parte \"Lido pelo estúdio\" da tabela de fatos do brief.md. Não pergunte nada agora: o que for para a apresentação (endereço, horário, telefone, nota, avaliação) a pessoa confirma no portão 1 da skill nova-apresentacao (o brief), na mesma pergunta. Foto lida (coleta/site/fotos/) só vai para deck/assets/ com o sim dela ali."
+  },
+  "LER_COM_AVISOS": {
+    "texto": "Li o que deu. Uma parte faltou, e eu explico qual.",
+    "acao": "Traduza cada aviso pelo código dele. O que foi lido está em arquivos.coleta e na parte \"Lido pelo estúdio\" da tabela de fatos do brief.md."
+  },
+  "LER_NADA": {
+    "texto": "Não consegui ler nenhuma página do negócio agora.",
+    "acao": "Traduza os avisos. Confira com a pessoa o nome do negócio com a cidade (ou o endereço do site) e rode de novo. Sem leitura, siga com o que a pessoa contar e anote a fonte \"a própria pessoa disse em <data>\"."
+  },
+  "LER_SEM_ENDERECO": {
+    "texto": "Preciso do nome do negócio com a cidade, ou do endereço do site, para começar a ler.",
+    "acao": "Pergunte o nome como aparece no Google e a cidade, e rode ./estudio ler <nome> --negocio \"Nome, cidade\" (some --site <endereço> se a pessoa passou)."
+  },
+  "LER_GOOGLE_NAO_ACHOU": {
+    "texto": "Não achei o negócio no Google pelo nome.",
+    "acao": "Se dados.motivo for \"bloqueado\", o Google pediu para confirmar que é uma pessoa: peça o link de compartilhar do perfil no Google Maps e rode de novo com --google <link>. Se for \"nao-achou\", pergunte o nome como aparece no Google e a cidade, e rode de novo com --negocio."
+  },
+  "LER_GOOGLE_PRIMEIRO_DA_LISTA": {
+    "texto": "Achei mais de um lugar com esse nome no Google e fiquei com {{escolhido}}. É esse mesmo?",
+    "acao": "Confirme com a pessoa (os outros nomes estão em dados.outros). Se for outro, rode de novo com --google e o link certo do Google Maps, ou com --negocio e a cidade."
+  },
+  "LER_GOOGLE_SEM_HORARIO": {
+    "texto": "O perfil do Google não mostra o horário de funcionamento.",
+    "acao": "Se o horário for para a apresentação, pergunte à pessoa e anote na tabela de fatos do brief.md com a fonte \"a própria pessoa disse em <data>\". Nunca use horário de trecho de resultado de busca."
+  },
+  "LER_GOOGLE_FALHOU": {
+    "texto": "Não consegui abrir o perfil do Google agora.",
+    "acao": "Leia dados.detalhe. Rode de novo uma vez; se repetir, peça à pessoa o link do perfil no Google Maps e rode com --google <link>."
+  },
+  "LER_SITE_OUTRO_ENDERECO": {
+    "texto": "O endereço do site leva para outra página, que não parece ser do negócio. Não li essa página.",
+    "acao": "Confira com a pessoa se dados.final é o site do próprio negócio. Se for, rode de novo com --site <dados.final>. Se não for (loja de pedidos, link curto, página de links ou rede social), siga sem o site e não use nada dessa página."
+  },
+  "LER_SITE_FALHOU": {
+    "texto": "Não consegui abrir o site atual.",
+    "acao": "Confira o endereço com a pessoa (dados.endereco) e rode de novo com --site. Se o site não existe mais, siga sem ele."
   }
 }

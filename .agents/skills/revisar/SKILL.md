@@ -12,9 +12,9 @@ Comandos: `./estudio <comando>` (no PowerShell, `.\estudio.cmd <comando>`). Leia
 ## 1. Antes de chamar os revisores
 
 A checagem mecânica vem antes do julgamento. A pessoa acompanha com a apresentação aberta: rode `./estudio abrir <nome>` antes de tudo e diga uma frase de andamento antes de cada passo (`ANDAMENTO_*` em `kit/mensagens.json`; a skill `nova-apresentacao`, etapa 8, diz qual em cada passo). Rode e leia (N = número da rodada):
-1. `./estudio checar <nome>`: precisa de `ok:true`. Vermelho não vai para revisor: corrija antes.
+1. `./estudio checar <nome>`, `./estudio fatos <nome>` e `./estudio acessibilidade <nome>`: os três precisam de `ok:true`. Vermelho não vai para revisor: corrija antes.
 2. `./estudio prints <nome>`: fotos novas de todas as telas e passos, em `prints/` (`<tela>-b<passo>.jpg`).
-3. Guarde a última linha do `checar` em `apresentacoes/<nome>/revisao/checar-rN.json`.
+3. Guarde a última linha de cada um em `apresentacoes/<nome>/revisao/`: `checar-rN.json`, `fatos-rN.json` e `acessibilidade-rN.json`.
 4. `./estudio revisao <nome> --rodada N` (código `REVISAO_PRONTA`): escreve `apresentacoes/<nome>/revisao/contexto-rN.md`, com a régua das notas (`kit/regua-revisao.md`) e o que as rodadas anteriores aceitaram e recusaram. Aviso `RODADA_ILEGIVEL`: corrija o `rodada-K.json` indicado antes de seguir.
 
 ## 2. O pacote
@@ -27,7 +27,7 @@ Cada revisor recebe só caminhos de arquivos, nunca a sua opinião:
 - `apresentacoes/<nome>/deck/` (o código das telas);
 - `minha-marca/marca.md`, se existir;
 - `referencias/` (as fontes dos fatos);
-- `apresentacoes/<nome>/revisao/checar-rN.json` (relatório mecânico).
+- `apresentacoes/<nome>/revisao/checar-rN.json`, `fatos-rN.json` e `acessibilidade-rN.json` (relatórios mecânicos).
 
 O que **nunca** entra no pedido ao revisor: a nota esperada ou a meta, a nota de rodada anterior, o que é ruído entre notas, qual versão é a nova, o problema que você acha que existe, "justifique por que não deu mais", nem qualquer parte desta conversa.
 
@@ -39,9 +39,9 @@ O pedido do diretor de arte, do revisor de fatos e do QA começa com: "Leia prim
 
 **Diretor geral.** Começa pelo **teste da plateia**, dentro desta lente (não é um quinto revisor): "Antes de ler qualquer outro arquivo, abra só as fotos em <prints> do último passo de cada tela (o maior número depois de -b), na ordem, olhando cada uma por uns 5 segundos, como alguém da plateia que nunca ouviu falar do assunto e não está ouvindo quem apresenta. Responda em uma linha cada: 1) o que esta apresentação promete; 2) o que ela pede para a plateia fazer no fim; 3) só pelas telas, sem ouvir quem apresenta, dá para saber o que fazer no fim (sim ou não, e por quê). Escreva as 3 respostas antes de abrir qualquer outro arquivo e não as mude depois." E então: "Agora leia <contexto-rN.md>: dê a nota pela régua dele e não reabra o que está em Recusados sem fato novo. Você dirige a apresentação. Leia <brief.md>, depois veja <prints> na ordem e leia <roteiro>. Avalie: cumpre a promessa do brief para essa plateia? Em 5 segundos de cada tela dá para saber a mensagem dela? Existe história (contexto, conflito, resolução) e os picos chegam na hora certa? O tom combina com <marca.md>? O texto soa como gente falando, sem jargão e sem frase de efeito vazia? O fecho diz o que fazer? Compare suas 3 respostas do teste da plateia com a promessa e o pedido final do brief: se não batem, ou se a 3 é não, esse é o problema mais grave da sua lista."
 
-**Revisor de fatos.** "Você confere fatos. Liste todo número, data, nome, citação e afirmação de fato que aparece em <prints> e em <roteiro>. Para cada um, procure a fonte na tabela de fatos de <brief.md> e nos arquivos de <referencias>. Marque: confere, diverge (diga o certo), sem fonte. Marque também afirmação absoluta que a fonte não sustenta. Não use conhecimento de fora como fonte."
+**Revisor de fatos.** "Você confere fatos. Liste todo número, data, nome, citação e afirmação de fato que aparece em <prints> e em <roteiro>. Para cada um, procure a fonte na tabela de fatos de <brief.md> e nos arquivos de <referencias>. O relatório <fatos-rN.json> já conferiu número de 3 ou mais dígitos, número com % ou com mil, milhão ou bilhão, contato e @: confira se a fonte da linha diz mesmo o que a tela diz, e tudo o que ele não pega (número pequeno solto, nome, citação, data por extenso, afirmação). Marque: confere, diverge (diga o certo), sem fonte. Marque também afirmação absoluta que a fonte não sustenta. Não use conhecimento de fora como fonte."
 
-**QA.** "Você testa qualidade. Leia <checar-rN.json> inteiro (vermelhos e amarelos) e explique cada amarelo em uma linha. Abra o código em <deck>: o index tem `lang`, as telas têm título, imagens têm texto alternativo, vídeo é mudo e sem autoplay, nenhum `<select>`, nenhum endereço da internet, as telas usam `cena.js` (que respeita movimento reduzido e o teclado: setas para baixo e espaço avançam, para cima volta, para os lados troca de tela). Veja <prints> procurando texto cortado, sobreposto, pequeno ou com contraste fraco. Confira se cada tela tem roteiro com o mesmo número de passos."
+**QA.** "Você testa qualidade. Leia <checar-rN.json> e <acessibilidade-rN.json> inteiros (vermelhos e amarelos) e explique cada amarelo em uma linha. Abra o código em <deck>: o index tem `lang`, as telas têm título, imagens têm texto alternativo, vídeo é mudo e sem autoplay, nenhum `<select>`, nenhum endereço da internet, as telas usam `cena.js` (que respeita movimento reduzido e o teclado: setas para baixo e espaço avançam, para cima volta, para os lados troca de tela). Veja <prints> procurando texto cortado, sobreposto, pequeno ou com contraste fraco. Confira se cada tela tem roteiro com o mesmo número de passos."
 
 ## 4. Como abrir os revisores
 

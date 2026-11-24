@@ -1,12 +1,17 @@
 // Confere o deck no Chrome: estrutura (vendor local, nenhum endereço externo, fontes que carregam,
 // links e mídia), e em cada tela × beat assentado: colisão de texto, texto < 18 px a 1920, texto fora
-// da tela. RED reprova (saída 2). WARN avisa. Também confere roteiro × beats e <select> nativo.
+// da tela e contraste do texto contra o fundo de verdade (foto da tela sem a letra, lib/contraste.mjs).
+// RED reprova (saída 2). WARN avisa. Também confere roteiro × beats, <select> nativo e as letras do
+// deck (cada família com a sua licença; .woff2 leve).
 import fs from 'node:fs';
 import path from 'node:path';
 import { nomeDaApresentacao } from '../lib/args.mjs';
 import { abrirApresentacao, lerRoteiro, numeroDoNome } from '../lib/apresentacao.mjs';
-import { abrirSessao, telasDoIndex } from '../lib/sessao.mjs';
-import { ESPERAR_PRONTA, ASSENTAR, ESTATICO, MEDIR } from '../lib/pagina.mjs';
+import { abrirSessao, telasDoIndex, LARGURA, ALTURA } from '../lib/sessao.mjs';
+import { ESPERAR_PRONTA, ASSENTAR, ESTATICO, MEDIR, ESCONDER_TEXTO, MOSTRAR_TEXTO } from '../lib/pagina.mjs';
+import { medirNaFoto, anotarContraste } from '../lib/contraste.mjs';
+import { anotarLetras } from '../lib/letras.mjs';
+import { decodePng } from '../lib/png.mjs';
 import { progresso } from '../lib/executar.mjs';
 import { esperar } from '../lib/cdp.mjs';
 
@@ -16,7 +21,30 @@ export const LIMITES = Object.freeze({
   vazamento: 4, // px além da tela ou do recorte
   respiro_titulo: 16, // px entre título e o texto logo abaixo
   maximo: 15, // achados por tela e beat
+  contraste_maximo: 60, // textos medidos contra a foto por tela e beat
 });
+
+// A foto do fundo sai na metade do tamanho: fundo de tela (degradê, luz, foto) não muda em 2 px, e a
+// leitura fica 4 vezes mais rápida.
+export const ESCALA_DA_FOTO = 0.5;
+
+// Mede o contraste dos textos deste beat contra a foto da tela sem a letra (o mesmo passeio).
+async function medirContraste(tab, itens, red, warn) {
+  if (!itens.length) return;
+  await tab.evaluate(ESCONDER_TEXTO);
+  let img;
+  try {
+    const r = await tab.send('Page.captureScreenshot', {
+      format: 'png',
+      fromSurface: true,
+      clip: { x: 0, y: 0, width: LARGURA, height: ALTURA, scale: ESCALA_DA_FOTO },
+    });
+    img = decodePng(Buffer.from(r.data, 'base64'));
+  } finally {
+    await tab.evaluate(MOSTRAR_TEXTO);
+  }
+  for (const it of itens) anotarContraste(it, medirNaFoto(img, it, ESCALA_DA_FOTO), red, warn);
+}
 
 const VENDOR_OBRIGATORIO = [['assets', 'vendor', 'palco', 'palco.js']];
 
@@ -60,7 +88,9 @@ export default async function checar(args) {
   const red = [];
   const warn = [];
   const telasMedidas = [];
+  let contrasteMedido = 0;
   conferirArquivos(c, red);
+  const letras = anotarLetras(c.deck, red, warn);
 
   const sessao = await abrirSessao(c.deck);
   try {
@@ -87,9 +117,13 @@ export default async function checar(args) {
       const beats = pronta.contrato ? pronta.last : 0;
       for (let n = 0; n <= beats; n += 1) {
         await sessao.tab.evaluate(ASSENTAR(n));
-        const m = await sessao.tab.evaluate(MEDIR(LIMITES));
-        for (const r of m.red) red.push({ tela: rotulo, beat: n, ...r });
-        for (const w of m.warn) warn.push({ tela: rotulo, beat: n, ...w });
+        const m = await sessao.tab.evaluate(MEDIR(LIMITES, n));
+        const r1 = [...m.red];
+        const w1 = [...m.warn];
+        await medirContraste(sessao.tab, m.contraste, r1, w1);
+        contrasteMedido += m.contraste.length;
+        for (const r of r1.slice(0, LIMITES.maximo)) red.push({ tela: rotulo, beat: n, ...r });
+        for (const w of w1.slice(0, LIMITES.maximo)) warn.push({ tela: rotulo, beat: n, ...w });
       }
       await esperar(50);
       anotarEstatico(rotulo, est, sessao.rede(), red);
@@ -127,6 +161,8 @@ export default async function checar(args) {
       warn: warn.length,
       vermelhos: red,
       amarelos: warn,
+      contraste_medido: contrasteMedido,
+      letras_kb: letras.kb,
       limites: LIMITES,
     },
   };

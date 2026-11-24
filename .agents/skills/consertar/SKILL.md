@@ -48,6 +48,8 @@ Siga a `acao` do código em `kit/mensagens.json`. Em geral:
 - `CHROME_NAO_ACHADO` ou `CHROME_NAO_ABRIU`: rode `passo navegador` do instalador. No Codex, rode o comando de novo fora da área protegida antes.
 - `HYPERFRAMES_FALTANDO`, `HYPERFRAMES_SO_PELA_INTERNET` ou aviso `DEPENDENCIAS_MUDARAM`: rode `passo pacotes` do instalador.
 - `FFMPEG_FALTANDO`: rode `passo ffmpeg` do instalador. As outras telas não dependem dele.
+- `AXE_AUSENTE` (no `acessibilidade`) ou `axe` em `dados.faltando` do `verificar`: a peça de acessibilidade vem com o estúdio; rode `./estudio atualizar`.
+- `FONTE_DOWNLOAD_FALHOU` (no `fonte`): sem internet agora, ou no Codex dentro da área protegida. Rode de novo fora dela; sem internet, siga com a letra que a marca já tem e tente depois.
 - `SERVIDOR_NAO_SUBIU` (no `abrir`): feche outras janelas do estúdio e rode de novo.
 - `ESPELHO_DIFERENTE` (o `espelhar --conferir` reprovou): algum arquivo de instruções do estúdio foi mexido. Não edite à mão: rode `./estudio espelhar` para refazer as cópias a partir das fontes e `./estudio espelhar --conferir` para confirmar.
 

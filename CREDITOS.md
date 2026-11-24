@@ -15,8 +15,11 @@ Ele usa peças de outras pessoas. Cada uma segue a própria licença.
 | Lenis 1.3.11 | Rolagem suave, em `kit/molde/deck/assets/vendor/lenis/` | MIT, © darkroom.engineering | https://github.com/darkroomengineering/lenis |
 | Fraunces | Fonte de título da marca de exemplo (`kit/marca-exemplo/fontes/`) | SIL OFL 1.1 | https://github.com/google/fonts/tree/main/ofl/fraunces (texto em `kit/marca-exemplo/fontes/OFL-Fraunces.txt`) |
 | DM Sans | Fonte de texto da marca de exemplo (`kit/marca-exemplo/fontes/`) | SIL OFL 1.1 | https://github.com/google/fonts/tree/main/ofl/dmsans (texto em `kit/marca-exemplo/fontes/OFL-DMSans.txt`) |
+| axe-core 4.14.0 | Regras de acessibilidade (WCAG) que o comando `acessibilidade` roda dentro de cada tela, em `kit/vendor/axe/`. Arquivo sem modificação, o mesmo do Site Estúdio; o texto da licença está em `kit/vendor/axe/LICENSE` | MPL-2.0, © Deque Systems | https://github.com/dequelabs/axe-core |
 
-As fontes foram copiadas sem modificação.
+As fontes e o axe-core foram copiados sem modificação. Quem mudar o `axe.min.js` precisa publicar o arquivo mudado sob a MPL-2.0, como a licença pede; o resto do estúdio continua MIT.
+
+As letras que o comando `fonte` baixa do catálogo do Google Fonts (só no computador da pessoa, quando ela pede) ficam com a licença de cada uma ao lado, com o nome da família (`OFL-<Família>.txt`).
 
 ## Peças baixadas no computador da pessoa
 

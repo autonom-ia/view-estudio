@@ -14,7 +14,7 @@ Comandos: `./estudio <comando>` (no PowerShell, `.\estudio.cmd <comando>`). Leia
 ```
 minha-marca/
   tokens.css     as variáveis do tema (mesmos nomes de kit/marca-exemplo/tokens.css)
-  fontes/        arquivos .woff2 (ou .ttf) e a licença de cada fonte
+  fontes/        arquivos .woff2 e a licença de cada fonte (OFL-<Família>.txt)
   logo.svg       ou logo.png (se a pessoa tiver)
   marca.md       tom de voz, palavras que usa e que evita, regras de imagem
 ```
@@ -33,9 +33,11 @@ Não pergunte o que dá para ver nas peças. Não pergunte código de cor. Vindo
 
 ### 2. Escolher as letras
 - Duas famílias no máximo: uma para título, uma para texto.
-- Só fontes de licença livre (SIL Open Font License), com o arquivo da fonte guardado em `minha-marca/fontes/` junto com o texto da licença. Nada carregado da internet na hora da apresentação.
-- Se a pessoa já usa uma fonte livre (Google Fonts), baixe os arquivos dela do repositório oficial (`github.com/google/fonts`) para `minha-marca/fontes/`, avisando antes ("Vou baixar a letra da sua marca. O {{agente}} vai pedir licença. Pode aprovar."). Fonte paga ou sem licença clara: use uma livre parecida e diga isso em uma frase.
-- Sem fonte definida: comece pelas fontes de `kit/marca-exemplo/fontes/` (Fraunces e DM Sans) e copie-as com as licenças.
+- Só fontes de licença livre (SIL Open Font License), guardadas em `minha-marca/fontes/` com a licença ao lado, **com o nome da família** (`OFL-<Família>.txt`): duas licenças chamadas `OFL.txt` na mesma pasta se sobrescrevem, e o `checar` reprova letra sem a sua licença (`fonte-sem-licenca`). Nada carregado da internet na hora da apresentação.
+- Letra do Google Fonts (a que a pessoa já usa, ou a que você escolheu): avise antes ("Vou baixar a letra da sua marca. O {{agente}} vai pedir licença. Pode aprovar.") e rode `./estudio fonte "<Família>"` (o nome exato do catálogo, como "Big Shoulders Display"; no Codex, fora da área protegida, porque baixa da internet). Opções: `--pesos 300..800` (só os pesos que as telas usam), `--italico` (só se as telas usam itálico), `--larguras` (só se a marca usa larguras diferentes; pesa mais). Ele baixa o `.woff2` já recortado no alfabeto latino (cobre o português) e a licença com o nome da família, tudo ou nada. Em `FONTE_BAIXADA`, cole `dados.css` no topo do `tokens.css`, no lugar das linhas `@font-face` antigas daquela família. `dados.letras_kb_na_pasta` é o peso das letras: acima de 300 KB o `checar` avisa `fonte-pesada`.
+- Para trocar a letra de uma apresentação que já existe, rode `./estudio fonte "<Família>" --apresentacao <nome>`: a letra vai para `apresentacoes/<nome>/deck/assets/marca/fontes/`, e o `dados.css` vai no `tokens.css` ao lado dela (`deck/assets/marca/tokens.css`). Rode o `checar` dela depois.
+- Fonte livre que não está no Google (a pessoa mandou o arquivo e a licença): use-a e guarde a licença como `OFL-<Família>.txt`. Fonte paga ou sem licença clara: use uma livre parecida e diga isso em uma frase.
+- Sem fonte definida: a letra sai da direção da marca. Escolha pelo assunto, pela plateia e pelas três palavras da etapa 1 e baixe com `./estudio fonte`. As letras de `kit/marca-exemplo/fontes/` (Fraunces e DM Sans) foram escolhidas para um negócio de exemplo: use-as só sem internet para baixar, copiando-as com as licenças, e diga isso à pessoa em uma frase.
 
 ### 3. Escrever `minha-marca/tokens.css`
 Copie a estrutura de `kit/marca-exemplo/tokens.css` e troque os valores. Mantenha **todos** os nomes de variável, porque o molde e as telas usam esses nomes:
@@ -52,7 +54,7 @@ Copie a estrutura de `kit/marca-exemplo/tokens.css` e troque os valores. Mantenh
 | `--fonte-titulo` e `--fonte-texto` | as duas famílias, com reserva do sistema |
 | `--palco-fundo` | a cor em volta da tela 16:9 |
 
-Os `@font-face` apontam para `fontes/<arquivo>` (caminho relativo), com `font-display:block`. Escreva um comentário curto no topo dizendo de onde veio cada cor.
+Os `@font-face` apontam para `fontes/<arquivo>` (caminho relativo), com `font-display:block` (o `./estudio fonte` já entrega assim). Escreva um comentário curto no topo dizendo de onde veio cada cor.
 
 ### 4. Conferir o contraste
 Calcule a razão de contraste (fórmula WCAG de luminância relativa) destes pares e escreva o resultado no `marca.md`:

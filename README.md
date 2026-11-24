@@ -48,7 +48,7 @@ O caminho é sempre o mesmo:
 3. **Piloto**: capa, uma tela comum e o momento mais forte. Você aprova o visual.
 4. **O resto das telas**, no mesmo visual.
 5. **Roteiro** do que falar em cada clique, e o teleprompter.
-6. **Conferência** automática e fotos de cada tela, lidas uma a uma.
+6. **Conferência** automática (tamanho e contraste das letras em cada clique, todo número com fonte, acessibilidade) e fotos de cada tela, lidas uma a uma.
 7. **Revisão** por quatro revisores independentes, até nota 8,5.
 8. **Entrega**: a apresentação, o teleprompter e o PDF.
 
@@ -72,7 +72,7 @@ Essas pastas são suas: a atualização do estúdio nunca mexe nelas.
 - Comandos: `./estudio <comando>` (no Windows, `.\estudio.cmd`). A última linha de cada comando é um JSON numa linha só: `{"ok","comando","codigo","resumo","arquivos","avisos","dados"}`. Saída 0 é ok, 1 é erro, 2 é reprovado na conferência.
 - Testes: `npm test` (Node 22 ou mais novo). Os testes que precisam de navegador são pulados quando não há Chrome.
 - Instruções do assistente: a fonte é o `AGENTS.md` e `.claude/skills/`. O `CLAUDE.md` e `.agents/skills/` são gerados por `./estudio espelhar`; `./estudio espelhar --conferir` reprova se estiverem diferentes.
-- Regras do código: Node sem dependência em tempo de execução (só o motor de cena, `hyperframes@0.8.181`, fixado), versões fixas em `instalar/versoes.env`, sem expressão regular.
+- Regras do código: Node sem dependência em tempo de execução (só o motor de cena, `hyperframes@0.8.181`, fixado), versões fixas em `instalar/versoes.env`, sem expressão regular. Peças de terceiros copiadas sem alteração: GSAP e Lenis no molde, axe-core em `kit/vendor/axe/` (veja `CREDITOS.md`).
 
 ## Licença
 

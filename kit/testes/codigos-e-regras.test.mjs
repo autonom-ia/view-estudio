@@ -14,7 +14,7 @@ const RAIZ = path.join(KIT, '..');
 // Pastas que não são nossas ou não são código versionado.
 const IGNORAR = new Set(['.git', 'node_modules', '.ferramentas', 'apresentacoes', 'referencias', 'minha-marca']);
 // Bibliotecas de terceiros copiadas sem alteração.
-const TERCEIROS = [['vendor', 'gsap'], ['vendor', 'lenis']].map((p) => p.join(path.sep));
+const TERCEIROS = [['vendor', 'gsap'], ['vendor', 'lenis'], ['vendor', 'axe']].map((p) => p.join(path.sep));
 
 function arquivos(pasta, fins) {
   const lista = [];

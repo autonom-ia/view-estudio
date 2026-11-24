@@ -54,8 +54,19 @@ export const ASSENTAR = (n) => `(async () => {
     if (v.readyState < 2 && v.readyState > 0) await Promise.race([new Promise((r) => v.addEventListener('loadeddata', r, { once: true })), dormir(3000)]);
   }
   for (const el of document.querySelectorAll('[data-controle], .dica')) el.style.visibility = 'hidden';
+  // transição e animação de CSS (uma cor que muda no clique, por exemplo) terminam agora: sem isso a
+  // foto e as medidas pegam o meio do caminho. A infinita (um pulso) só para onde está.
+  try {
+    for (const a of document.getAnimations()) {
+      try {
+        const vezes = a.effect && a.effect.getComputedTiming ? a.effect.getComputedTiming().iterations : 1;
+        if (vezes === Infinity) a.pause(); else a.finish();
+      } catch (e) {}
+    }
+  } catch (e) {}
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
   await dormir(60);
+  await new Promise((r) => requestAnimationFrame(r));
   return { beat: alvo, last };
 })()`;
 
@@ -126,9 +137,14 @@ export const ESTATICO = `(async () => {
 })()`;
 
 // Medidas do quadro assentado: colisão de texto, texto pequeno, texto fora da tela,
-// título colado no próximo elemento e texto vazando de um recorte.
-export const MEDIR = (limites) => `(() => {
+// título colado no próximo elemento e texto vazando de um recorte. Devolve também, em "contraste",
+// os textos que o checar mede contra a foto da tela (lib/contraste.mjs): cor, opacidade, caixas
+// das linhas, tamanho e peso. Fica fora da medida de contraste: texto decorativo
+// (aria-hidden="true", como uma marca d'água) e texto recuado de propósito (data-recua já
+// alcançado neste beat: foi medido nos beats em que estava em foco).
+export const MEDIR = (limites, beat = 0) => `(() => {
   const L = ${JSON.stringify(limites)};
+  const BEAT = ${Number.isInteger(beat) ? beat : 0};
   const palco = document.querySelector('.palco-tela') || document.body;
   const pr = palco.getBoundingClientRect();
   const escala = pr.width > 0 ? pr.width / 1920 : 1;
@@ -245,5 +261,178 @@ export const MEDIR = (limites) => `(() => {
       anc = anc.parentElement;
     }
   }
-  return { red: red.slice(0, L.maximo), warn: warn.slice(0, L.maximo), medidos: itens.length };
+  // contraste: o que vai para a foto. A cor do texto passa por um canvas (oklch, color-mix…).
+  const tinta = document.createElement('canvas');
+  tinta.width = 1;
+  tinta.height = 1;
+  const ctx = tinta.getContext('2d', { willReadFrequently: true });
+  const cor = (c) => {
+    const s = String(c || '').trim();
+    if (!s || s === 'transparent') return { r: 0, g: 0, b: 0, a: 0 };
+    ctx.clearRect(0, 0, 1, 1);
+    ctx.fillStyle = 'rgba(0,0,0,0)';
+    ctx.fillStyle = s;
+    ctx.fillRect(0, 0, 1, 1);
+    const d = ctx.getImageData(0, 0, 1, 1).data;
+    if (d[3] === 0) return { r: 0, g: 0, b: 0, a: 0 };
+    return { r: d[0], g: d[1], b: d[2], a: d[3] / 255 };
+  };
+  const recuado = (el) => {
+    for (let e = el; e && e !== document.body; e = e.parentElement) {
+      const v = e.getAttribute('data-recua');
+      if (v !== null && v.trim() !== '' && Number(v) <= BEAT) return true;
+    }
+    return false;
+  };
+  const temFundo = (e) => {
+    const cs = getComputedStyle(e);
+    if (cor(cs.backgroundColor).a > 0.05) return true;
+    if (cs.backgroundImage && cs.backgroundImage !== 'none') return true;
+    return ['IMG', 'VIDEO', 'CANVAS', 'PICTURE', 'IFRAME', 'svg', 'OBJECT', 'EMBED'].includes(e.tagName);
+  };
+  const contraste = [];
+  let decorativos = 0;
+  let recuados = 0;
+  for (const it of itens) {
+    if (!it.vis || it.op < 0.05) continue;
+    if (it.el.closest('[aria-hidden="true"]')) { decorativos += 1; continue; }
+    if (recuado(it.el)) { recuados += 1; continue; }
+    // texto de SVG é pintado pelo fill, não pelo color
+    const ehSvg = typeof SVGElement !== 'undefined' && it.el instanceof SVGElement;
+    const tinta = ehSvg ? it.cs.fill : (it.cs.webkitTextFillColor || it.cs.color);
+    if (ehSvg && String(tinta).startsWith('url')) {
+      warn.push({ tipo: 'contraste-nao-medido', detalhe: 'texto de SVG pintado com degradê ou padrão: ' + nomeDe(it) });
+      continue;
+    }
+    const preenchimento = cor(tinta === 'none' ? 'transparent' : tinta);
+    if (preenchimento.a < 0.05) {
+      warn.push({ tipo: 'contraste-nao-medido', detalhe: 'texto pintado com o fundo (transparente): ' + nomeDe(it) });
+      continue;
+    }
+    const caixas = [];
+    for (const n of it.el.childNodes) {
+      if (n.nodeType !== 3 || !n.textContent.trim()) continue;
+      const rg = document.createRange();
+      rg.selectNodeContents(n);
+      for (const q of rg.getClientRects()) {
+        const x0 = Math.max(q.left, pr.left); const y0 = Math.max(q.top, pr.top);
+        const x1 = Math.min(q.right, pr.right); const y1 = Math.min(q.bottom, pr.bottom);
+        if (x1 - x0 > 1 && y1 - y0 > 1) caixas.push({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
+      }
+    }
+    if (!caixas.length) {
+      // texto que o navegador não mede pela linha (alguns SVG): usa a caixa do elemento
+      const x0 = Math.max(it.r.left, pr.left); const y0 = Math.max(it.r.top, pr.top);
+      const x1 = Math.min(it.r.right, pr.right); const y1 = Math.min(it.r.bottom, pr.bottom);
+      if (x1 - x0 > 1 && y1 - y0 > 1) caixas.push({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
+    }
+    if (!caixas.length) continue;
+    const q = caixas[0];
+    let pilha = [];
+    try { pilha = document.elementsFromPoint(q.x + q.w / 2, q.y + q.h / 2); } catch (e) {}
+    const k = pilha.findIndex((e) => e === it.el || it.el.contains(e));
+    let tampado = k < 0;
+    for (let j = 0; !tampado && j < k; j += 1) if (temFundo(pilha[j])) tampado = true;
+    if (tampado) {
+      warn.push({ tipo: 'contraste-nao-medido', detalhe: 'outro elemento por cima do texto: ' + nomeDe(it) });
+      continue;
+    }
+    contraste.push({
+      nome: nomeDe(it),
+      cor: preenchimento,
+      op: it.op,
+      caixas,
+      px: parseFloat(it.cs.fontSize) * escala,
+      peso: parseInt(it.cs.fontWeight, 10) || 400,
+    });
+  }
+  // o que fica fora da medida de propósito é dito, com o motivo e quantos (só texto visível conta)
+  if (decorativos || recuados) {
+    const partes = [];
+    if (decorativos) partes.push(decorativos + (decorativos === 1 ? ' texto decorativo (aria-hidden)' : ' textos decorativos (aria-hidden)'));
+    if (recuados) partes.push(recuados + (recuados === 1 ? ' texto recuado de propósito (data-recua)' : ' textos recuados de propósito (data-recua)'));
+    warn.push({ tipo: 'contraste-fora-da-medida', detalhe: partes.join(' e ') + ' fora da medida de contraste' });
+  }
+  const teto = L.contraste_maximo || 60;
+  if (contraste.length > teto) {
+    warn.unshift({ tipo: 'contraste-nao-medido', detalhe: contraste.length + ' textos neste clique; só os ' + teto + ' primeiros foram medidos (' + (contraste.length - teto) + ' sem medir)' });
+  }
+  return { red: red.slice(0, L.maximo), warn: warn.slice(0, L.maximo), medidos: itens.length, contraste: contraste.slice(0, teto) };
+})()`;
+
+// Esconde a letra de todo texto da tela (a sombra fica: ela é parte do fundo que dá leitura) para a
+// foto do fundo. Sem transição, para a cor não voltar aos poucos quando o estilo sai.
+export const ESCONDER_TEXTO = `(async () => {
+  let s = document.getElementById('__estudio_sem_texto');
+  if (!s) { s = document.createElement('style'); s.id = '__estudio_sem_texto'; (document.head || document.documentElement).appendChild(s); }
+  s.textContent = '*,*::before,*::after{color:transparent!important;-webkit-text-fill-color:transparent!important;'
+    + '-webkit-text-stroke-color:transparent!important;text-decoration-color:transparent!important;'
+    + 'caret-color:transparent!important;transition:none!important}'
+    + 'text,tspan,textPath{fill:transparent!important;stroke:transparent!important}';
+  void document.documentElement.offsetWidth;
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  return true;
+})()`;
+
+// Devolve a letra sem disparar transição de cor: primeiro tira as cores mantendo "sem transição",
+// força o cálculo do estilo e só então remove o estilo.
+export const MOSTRAR_TEXTO = `(async () => {
+  const s = document.getElementById('__estudio_sem_texto');
+  if (s) {
+    s.textContent = '*,*::before,*::after{transition:none!important}';
+    void document.documentElement.offsetWidth;
+    s.remove();
+    void document.documentElement.offsetWidth;
+  }
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  return true;
+})()`;
+
+// O texto que a plateia lê numa tela assentada, para a conferência de fatos: só os nós de texto
+// visíveis (checkVisibility com opacidade e visibilidade: texto com opacity 0 não conta, o innerText
+// contaria), o que o CSS escreve com content: nos elementos visíveis e os endereços tel: e mailto:
+// dos links. Texto de blocos diferentes vai em linhas diferentes (como o innerText faz). A dica de
+// teclado ([data-controle]) fica de fora.
+export const TEXTO_PARA_FATOS = `(() => {
+  const raiz = document.querySelector('.palco-tela') || document.body;
+  const visivel = (el) => {
+    try { if (el.checkVisibility) return el.checkVisibility({ opacityProperty: true, visibilityProperty: true }); } catch (e) {}
+    const cs = getComputedStyle(el);
+    return cs.visibility !== 'hidden' && cs.display !== 'none' && parseFloat(cs.opacity) > 0;
+  };
+  const blocoDe = (el) => {
+    let e = el;
+    while (e && e !== raiz && getComputedStyle(e).display.startsWith('inline')) e = e.parentElement;
+    return e;
+  };
+  const pedacos = [];
+  let bloco = null;
+  let linha = '';
+  const andar = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT);
+  for (let n = andar.nextNode(); n; n = andar.nextNode()) {
+    const el = n.parentElement;
+    if (!el || el.closest('script, style, template, noscript, [data-controle]')) continue;
+    // espaço entre palavras (inclusive entre os spans de data-entra="palavras") separa números
+    if (!n.textContent.trim()) { if (linha) linha += ' '; continue; }
+    if (!visivel(el)) continue;
+    const b = blocoDe(el);
+    if (b !== bloco && linha) { pedacos.push(linha); linha = ''; }
+    bloco = b;
+    linha += n.textContent;
+  }
+  if (linha) pedacos.push(linha);
+  for (const el of raiz.querySelectorAll('*')) {
+    if (el.closest('[data-controle]') || !visivel(el)) continue;
+    for (const pseudo of ['::before', '::after']) {
+      const c = getComputedStyle(el, pseudo).content;
+      if (c && c !== 'none' && c !== 'normal' && c.length > 2 && c.startsWith('"')) pedacos.push(c.slice(1, -1));
+    }
+  }
+  const enderecos = [];
+  for (const a of raiz.querySelectorAll('a[href]')) {
+    const h = (a.getAttribute('href') || '').trim();
+    const baixo = h.toLowerCase();
+    if (baixo.startsWith('tel:') || baixo.startsWith('mailto:')) enderecos.push(h);
+  }
+  return { texto: pedacos.join('\\n'), enderecos };
 })()`;

@@ -7,12 +7,12 @@ description: Fecha uma apresentação do View Estúdio - confere que a checagem 
 
 A entrega é a pasta da apresentação mais o PDF. A pasta abre em qualquer computador com navegador, sem internet. O PDF vai por e-mail ou mensagem. Nada é publicado em lugar nenhum: quem envia é a pessoa.
 
-Comandos: `./estudio <comando>` (no PowerShell, `.\estudio.cmd <comando>`). Leia só a última linha (JSON) e traduza o `codigo` por `kit/mensagens.json`. No Codex, `checar`, `prints`, `pdf` e `abrir` rodam fora da área protegida.
+Comandos: `./estudio <comando>` (no PowerShell, `.\estudio.cmd <comando>`). Leia só a última linha (JSON) e traduza o `codigo` por `kit/mensagens.json`. No Codex, `checar`, `fatos`, `acessibilidade`, `prints`, `pdf` e `abrir` rodam fora da área protegida.
 
 ## 1. Conferir antes de entregar
 1. Leia `apresentacoes/<nome>/andamento.md`. A revisão precisa ter passado (nota 8,5 ou mais) ou a pessoa ter escolhido "Entregar assim" na terceira rodada. Se não, volte à skill `revisar`.
 2. Se `andamento.md` > Pendências tiver algum item, pergunte à pessoa, um por vez, antes de gerar o PDF. O que ela resolver sai da lista; fato confirmado vai para a tabela de fatos do `brief.md`, com a fonte "a própria pessoa disse em <data>".
-3. `./estudio checar <nome>`: precisa de `ok:true` e nenhum amarelo de roteiro. Se algo mudou desde a revisão e veio vermelho, corrija antes.
+3. `./estudio checar <nome>`: precisa de `ok:true` e nenhum amarelo de roteiro. `./estudio fatos <nome>` e `./estudio acessibilidade <nome>`: precisam de `ok:true`. Se algo mudou desde a revisão e veio vermelho, corrija antes.
 
 ## 2. Gerar
 1. `./estudio pdf <nome>`: uma página 16:9 por tela, no estado final de cada uma. Código `PDF_PRONTO`: o arquivo está em `arquivos.pdf` (`apresentacoes/<nome>/<nome>.pdf`), e `dados.paginas` precisa ser igual a `dados.telas`. `PDF_REPROVADO` (saída 2): leia `dados`, corrija a tela e rode de novo.
@@ -36,5 +36,5 @@ Pergunte uma vez: "Quer guardar algo desta apresentação como regra para as pr�
 ## Regras
 
 - Nunca publique, envie ou suba nada. Quem envia é a pessoa.
-- Nunca entregue com o `checar` vermelho.
+- Nunca entregue com `checar`, `fatos` ou `acessibilidade` vermelhos.
 - Nunca entregue abaixo de 8,5 sem a escolha da pessoa ("Entregar assim").

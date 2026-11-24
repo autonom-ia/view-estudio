@@ -1,8 +1,10 @@
 // Confere se o estúdio está pronto: Node, navegador (Chrome, Edge, Chromium ou o do instalador),
-// HyperFrames (só para cena em vídeo) e ffmpeg (idem). Navegador e Node são obrigatórios.
+// a peça de acessibilidade (axe, vem no kit), HyperFrames (só para cena em vídeo) e ffmpeg (idem).
+// Navegador, Node e axe são obrigatórios.
 import fs from 'node:fs';
 import path from 'node:path';
-import { RAIZ, FERR, EH_WINDOWS } from '../lib/caminhos.mjs';
+import { RAIZ, KIT, FERR, EH_WINDOWS } from '../lib/caminhos.mjs';
+import { versaoDoAxe } from './acessibilidade.mjs';
 import { acharNavegador } from '../lib/chrome.mjs';
 import { comoChamar, VERSAO_HYPERFRAMES } from '../lib/hyperframes.mjs';
 import { lerVersao } from '../lib/atualizacao.mjs';
@@ -34,6 +36,10 @@ export default async function verificar({ opcoes }) {
       faltando.push('navegador');
     }
   }
+
+  const axe = path.join(KIT, 'vendor', 'axe', 'axe.min.js');
+  itens.axe = { ok: fs.existsSync(axe), versao: versaoDoAxe() };
+  if (!itens.axe.ok) faltando.push('axe');
 
   const hf = comoChamar();
   itens.hyperframes = { ok: !!hf, versao: VERSAO_HYPERFRAMES, origem: hf ? hf.origem : null };

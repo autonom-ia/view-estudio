@@ -57,7 +57,7 @@ Um arquivo por tela: `apresentacoes/<nome>/roteiro/SNN.json` (NN = número da te
 
 1. `./estudio teleprompter <nome>`: código `TELEPROMPTER_PRONTO`, arquivo em `arquivos.teleprompter` (`deck/teleprompter.html`, junto do deck). `ROTEIRO_INVALIDO` ou `ROTEIRO_VAZIO`: corrija os `SNN.json` pela `acao` do código.
 2. Para ensaiar: `./estudio abrir <nome>` (no Codex, fora da área protegida). O endereço do deck vem em `dados.endereco` e o do teleprompter em `dados.teleprompter`. Diga à pessoa: "Abri a apresentação. Abra também o teleprompter, no mesmo navegador, em outra janela ou no segundo monitor: ele acompanha sozinho cada clique." e passe o endereço do teleprompter. O deck avisa o teleprompter pelo canal `estudio-roteiro`; os dois precisam estar abertos pelo mesmo endereço.
-3. O botão "Seguir o deck" do teleprompter liga e desliga o acompanhamento.
+3. O botão "Seguir a apresentação" do teleprompter liga e desliga o acompanhamento.
 
 ## Quando uma tela muda
 

@@ -51,7 +51,7 @@ footer b{font-weight:600;color:var(--texto)}
 <body>
 <header>
   <span class="tela" id="tTela"></span><span id="tTitulo"></span><span id="tBeat"></span>
-  <button class="seguir" id="seguir" type="button" aria-pressed="true">Seguir o deck</button>
+  <button class="seguir" id="seguir" type="button" aria-pressed="true">Seguir a apresentação</button>
 </header>
 <main aria-live="polite">
   <div id="rotulo"></div>
@@ -103,7 +103,7 @@ function desenhar() {
   } else rodape.textContent = 'Fim do roteiro.';
   const botao = document.getElementById('seguir');
   botao.setAttribute('aria-pressed', String(seguir));
-  botao.textContent = seguir ? 'Seguindo o deck' : 'Seguir o deck';
+  botao.textContent = seguir ? 'Seguindo a apresentação' : 'Seguir a apresentação';
 }
 function ir(i) { if (i >= 0 && i < LISTA.length) { atual = i; desenhar(); } }
 function mover(d) { seguir = false; ir(atual + d); }

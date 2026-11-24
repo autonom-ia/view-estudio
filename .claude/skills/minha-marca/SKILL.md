@@ -1,6 +1,6 @@
 ---
 name: minha-marca
-description: Registra a marca da pessoa no View Estúdio (cores, letras, logo e tom) em minha-marca/tokens.css e minha-marca/marca.md, confere o contraste e mostra uma amostra com a marca aplicada para aprovação. Use logo depois da instalação, quando faltar minha-marca/tokens.css, ou quando a pessoa quiser mudar cores, letras, logo ou o jeito de falar das apresentações.
+description: Registra a marca da pessoa no View Estúdio (cores, letras, logo e tom) em minha-marca/tokens.css e minha-marca/marca.md, confere o contraste e, quando usada sozinha, mostra uma amostra com a marca aplicada para aprovação (vinda da nova-apresentacao, não pergunta nada: quem mostra a marca é o piloto). Use quando faltar minha-marca/tokens.css antes da primeira apresentação, ou quando a pessoa quiser criar ou mudar cores, letras, logo ou o jeito de falar das apresentações.
 ---
 
 # Minha marca
@@ -21,13 +21,15 @@ minha-marca/
 
 ## Passo a passo
 
+**Vinda da skill `nova-apresentacao` (a primeira apresentação), não pergunte nada.** Nem as perguntas do passo 1, nem as 3 direções, nem a aprovação da amostra do passo 6: a marca nasce junto com a primeira apresentação. O nome e a frase saem da coleta (de quem é a apresentação, sobre o quê), a cor sai do material que a pessoa mandou (logo, peças, apresentação antiga); sem nada para olhar, você escolhe a direção pelo assunto, pela plateia e pelo que ela contou, e anota no `marca.md` de onde veio cada escolha. Faça os passos 1 a 5 sem perguntas e pule o passo 6: quem mostra a marca à pessoa é o piloto da `nova-apresentacao` (portão 2), e o que ela pedir ali muda a marca também. Usada sozinha (a pessoa pediu para criar ou mudar a marca), siga o passo a passo inteiro, com as perguntas e a amostra.
+
 ### 1. Juntar o que já existe (uma pergunta por vez)
 1. "Qual é o nome do seu negócio ou projeto, e o que ele faz, em uma frase?"
-2. "Você tem logo, site ou alguma peça pronta (cartão, post, cardápio) que eu possa olhar? Pode pôr os arquivos na pasta referencias." Se tiver, abra e leia as imagens. Tire as cores reais delas (hex), não as que você imagina.
-3. "Que três palavras descrevem como a sua marca fala?" (exemplo: acolhedora, direta, curiosa).
+2. "Você tem logo, site ou alguma peça pronta (cartão, post, cardápio) que eu possa olhar? Se tiver arquivos, pode me mandar aqui mesmo." Se a pessoa mandar arquivos, guarde em `referencias/`. Se tiver, abra e leia as imagens. Tire as cores reais delas (hex), não as que você imagina.
+3. Opcional: "Quer me dar três palavras do jeito que a sua marca fala? Se preferir, eu decido pelo que vi." (exemplo: acolhedora, direta, curiosa). Se a pessoa delegar, tire o tom das peças e do que ela já escreve.
 4. Só se não houver nada para olhar: proponha 3 direções de cor e letra, cada uma com um nome e uma frase do porquê, e deixe a pessoa escolher. A recomendada primeiro, com ★.
 
-Não pergunte o que dá para ver nas peças. Não pergunte código de cor.
+Não pergunte o que dá para ver nas peças. Não pergunte código de cor. Vindo da skill `nova-apresentacao`, a coleta já respondeu o que importa aqui: não repita, use as respostas.
 
 ### 2. Escolher as letras
 - Duas famílias no máximo: uma para título, uma para texto.
@@ -74,7 +76,7 @@ Se algum par não passar, ajuste a cor (mais escura ou mais clara, mesmo tom) e 
 2. Rode `./estudio abrir <dados.nome>` (no Codex, fora da área protegida). Diga: "Abri um exemplo com a sua marca. Passe as telas com as setas."
 3. Pergunte: "Ficou com a cara da sua marca?" com "Ficou ★", "Mudar as cores" e "Mudar as letras".
 4. Para ajustar: mude `minha-marca/` e **copie de novo `tokens.css`, o logo e `fontes/` por cima de `apresentacoes/<dados.nome>/deck/assets/marca/`** (o `nova` só copia a marca na hora de criar; sem essa cópia a amostra continua com a marca antiga). O `marca.md` não vai para o deck. Rode `./estudio abrir <dados.nome>` de novo e peça para a pessoa recarregar a página. Repita até ela aprovar.
-5. A amostra fica em `apresentacoes/<dados.nome>/`. Não apague você mesmo (o estúdio bloqueia remoção de pasta). Se a pessoa quiser tirar, diga: "Se quiser, apague a pasta `<dados.nome>` dentro de `apresentacoes`. Ela é só um exemplo." e, se ajudar, rode `./estudio abrir <dados.nome> --pasta` para mostrar onde ela está.
+5. A amostra fica em `apresentacoes/<dados.nome>/`. Não apague você mesmo (o estúdio bloqueia remoção de pasta). Se a pessoa quiser tirar, diga: "É só um exemplo. Se quiser, eu mostro onde ele está guardado e você apaga." e, se ela quiser, rode `./estudio abrir <dados.nome> --pasta` para mostrar onde ele está.
 
 ## Regras
 

@@ -16,7 +16,7 @@
     "acao": "Leia dados.detalhe. Se for defeito do kit, diga à pessoa que achou um erro do estúdio e mostre o comando que falhou. Não tente contornar editando o kit."
   },
   "COMANDO_DESCONHECIDO": {
-    "texto": "Esse comando não existe no estúdio.",
+    "texto": "Pedi ao estúdio algo que ele não sabe fazer. Vou corrigir.",
     "acao": "Veja dados.disponiveis e use um deles."
   },
   "NODE_ANTIGO": {
@@ -28,11 +28,11 @@
     "acao": "Rode a skill instalar-estudio."
   },
   "ARGUMENTO_FALTANDO": {
-    "texto": "Faltou uma informação no comando. Vou completar.",
+    "texto": "Faltou uma informação no meu pedido ao estúdio. Vou completar.",
     "acao": "Veja dados.argumento e rode o comando de novo com ele."
   },
   "ARGUMENTO_INVALIDO": {
-    "texto": "Passei uma informação errada no comando. Vou corrigir.",
+    "texto": "Passei uma informação errada ao estúdio. Vou corrigir.",
     "acao": "Veja dados.argumento, dados.valor e dados.opcoes e rode de novo."
   },
   "NOME_INVALIDO": {
@@ -64,23 +64,23 @@
     "acao": "Pergunte se a pessoa quer continuar a existente ou começar outra com um nome novo. Nunca apague a existente."
   },
   "APRESENTACAO_CRIADA": {
-    "texto": "Criei a pasta da apresentação com o molde de três telas.",
+    "texto": "Criei a apresentação com um molde de três telas.",
     "acao": "Escreva o brief.md com a pessoa e peça aprovação antes de desenhar. As três telas do molde são exemplo: troque o conteúdo."
   },
   "MARCA_DE_EXEMPLO": {
-    "texto": "Usei a marca de exemplo, porque a sua ainda não está em minha-marca/.",
-    "acao": "Ofereça a skill minha-marca. Depois de criar minha-marca/tokens.css, copie a pasta minha-marca/ para deck/assets/marca/."
+    "texto": "Usei a marca de exemplo, porque a sua ainda não está guardada.",
+    "acao": "Na nova-apresentacao, faça a marca com a skill minha-marca, sem perguntas. Depois de criar minha-marca/tokens.css, copie tokens.css, o logo e fontes/ de minha-marca/ para deck/assets/marca/ da apresentação (o marca.md fica)."
   },
   "DECK_SEM_INDEX": {
-    "texto": "A apresentação está sem o arquivo principal do deck.",
+    "texto": "A apresentação está sem o arquivo principal.",
     "acao": "Veja dados.arquivo. Recrie deck/index.html a partir de kit/molde/deck/index.html."
   },
   "DECK_SEM_TELAS": {
-    "texto": "O deck não lista nenhuma tela.",
+    "texto": "A apresentação ainda não tem nenhuma tela.",
     "acao": "Em deck/index.html, ponha uma <section class=\"slide\"> com <iframe data-src=\"slides/sNN-nome.html\"> por tela."
   },
   "CHECAGEM_OK": {
-    "texto": "Conferi todas as telas, beat por beat: nada fora do lugar.",
+    "texto": "Conferi todas as telas, clique por clique: nada fora do lugar.",
     "acao": "Siga para os prints e leia cada um."
   },
   "CHECAGEM_COM_AVISOS": {
@@ -92,7 +92,7 @@
     "acao": "Leia dados.vermelhos (tela, beat, tipo, detalhe). Corrija pela causa e rode checar de novo. Não mostre à pessoa um deck reprovado."
   },
   "PRINTS_PRONTOS": {
-    "texto": "Fotografei todas as telas, em cada beat.",
+    "texto": "Fotografei todas as telas, a cada clique.",
     "acao": "Abra e olhe cada arquivo de dados.fotos, um por um, antes de dizer que está bom."
   },
   "TELA_LISA": {
@@ -108,7 +108,7 @@
     "acao": "Leia dados.erros (tela e motivo), corrija e rode pdf de novo."
   },
   "TELEPROMPTER_PRONTO": {
-    "texto": "O teleprompter está pronto e acompanha o deck sozinho.",
+    "texto": "O teleprompter está pronto e acompanha a apresentação sozinho.",
     "acao": "Para usar, rode ./estudio abrir <nome>: o deck e o teleprompter abrem pelo mesmo endereço."
   },
   "ROTEIRO_INVALIDO": {
@@ -120,15 +120,15 @@
     "acao": "Escreva roteiro/SNN.json, um por tela, com um item em beats para cada beat da tela (skill roteiro-e-teleprompter)."
   },
   "PASTA_ABERTA": {
-    "texto": "Abri a pasta da apresentação no seu computador.",
-    "acao": "Diga onde ela fica (arquivos.pasta) e o que tem dentro que importa para a pessoa: o PDF, os prints e o deck."
+    "texto": "Abri no seu computador o lugar onde a apresentação está guardada.",
+    "acao": "Diga onde ela fica (arquivos.pasta), do jeito que a pessoa vê, e o que tem dentro que importa para ela: o PDF, as fotos e a apresentação."
   },
   "DECK_ABERTO": {
-    "texto": "Abri o deck no seu navegador.",
-    "acao": "Diga dados.endereco e, se houver, dados.teleprompter. Explique: setas para os lados trocam de tela, espaço ou seta para baixo avança."
+    "texto": "Abri a apresentação no seu navegador.",
+    "acao": "Diga dados.endereco e, se houver, dados.teleprompter. Explique: setas para os lados trocam de tela, espaço ou seta para baixo avança o clique."
   },
   "SERVIDOR_NAO_SUBIU": {
-    "texto": "Não consegui abrir o deck no navegador.",
+    "texto": "Não consegui abrir a apresentação no navegador.",
     "acao": "Rode de novo fora da área protegida do assistente. Se continuar, rode ./estudio verificar."
   },
   "CENA_CRIADA": {
@@ -144,7 +144,7 @@
     "acao": "Veja dados.pasta. Crie com ./estudio cena <nome> <composicao> --criar."
   },
   "CENA_PRONTA": {
-    "texto": "O vídeo da cena está pronto dentro do deck.",
+    "texto": "O vídeo da cena está pronto dentro da apresentação.",
     "acao": "Use o arquivo de arquivos.video numa tela com <video> (caminho relativo ../assets/<composicao>.mp4). Rode checar e prints depois."
   },
   "HYPERFRAMES_FALTANDO": {
@@ -160,8 +160,8 @@
     "acao": "Só importa para cena em vídeo. A skill instalar-estudio põe o ffmpeg em .ferramentas/bin."
   },
   "RENDER_FALHOU": {
-    "texto": "O vídeo da cena não saiu. Se já havia um vídeo dessa cena, ele ficou como estava (dados.video_anterior_mantido).",
-    "acao": "Leia dados.detalhe. Erro de composição (CDN, timeline não registrada, arquivo ausente): corrija o index.html da cena. Erro de navegador: rode fora da área protegida."
+    "texto": "O vídeo da cena não saiu. Se já havia um vídeo dessa cena, ele ficou como estava.",
+    "acao": "dados.video_anterior_mantido diz se o vídeo anterior ficou. Leia dados.detalhe. Erro de composição (CDN, timeline não registrada, arquivo ausente): corrija o index.html da cena. Erro de navegador: rode fora da área protegida."
   },
   "ESPELHO_OK": {
     "texto": "As instruções do Claude Code e do Codex estão iguais.",
@@ -196,8 +196,8 @@
     "acao": "Diga de dados.de para dados.para. A versão anterior fica em dados.copia_anterior."
   },
   "DEPENDENCIAS_MUDARAM": {
-    "texto": "A versão nova trocou peças do estúdio (pacotes, ou a versão do Node, do navegador ou do FFmpeg). Em dados.quais: pacotes, versoes.",
-    "acao": "Rode o instalador de novo (skill instalar-estudio, a entrada única tudo) antes de continuar. Ele só refaz o que mudou."
+    "texto": "A versão nova trocou algumas peças do estúdio. Vou instalar o que mudou.",
+    "acao": "dados.quais diz o que mudou: pacotes, versoes (Node, navegador ou FFmpeg). Rode o instalador de novo (skill instalar-estudio, a entrada única tudo) antes de continuar. Ele só refaz o que mudou."
   },
   "ATUALIZACAO_DOWNLOAD_FALHOU": {
     "texto": "Não consegui baixar a versão nova.",
@@ -226,5 +226,29 @@
   "ATUALIZACAO_EM_ANDAMENTO": {
     "texto": "Já tem uma atualização do estúdio rodando agora. Não comecei outra por cima.",
     "acao": "Espere a outra terminar (dados.pid é o processo dela) e rode atualizar de novo só se ela não tiver atualizado. Não apague a trava em .ferramentas/atualizando.trava."
+  },
+  "ANDAMENTO_ABRI": {
+    "texto": "Abri a apresentação para você olhar. Enquanto você passa as telas, eu confiro cada detalhe e vou te contando.",
+    "acao": "Diga logo depois do abrir que começa a revisão (antes do checar). Não espere resposta."
+  },
+  "ANDAMENTO_CONFERENCIA": {
+    "texto": "Conferindo se nada sai da tela, se nenhum texto encosta em outro, se as letras estão grandes o bastante e se tudo carregou.",
+    "acao": "Diga antes do checar da revisão."
+  },
+  "ANDAMENTO_FOTOS": {
+    "texto": "Fotografando cada tela, clique por clique, do jeito que a plateia vai ver.",
+    "acao": "Diga antes do prints da revisão."
+  },
+  "ANDAMENTO_OLHARES": {
+    "texto": "Quatro olhares independentes estão avaliando a apresentação: a arte, a história, os fatos e o funcionamento.",
+    "acao": "Diga quando abrir as 4 lentes da skill revisar, a partir da segunda vez. Na primeira, não diga este texto: o aviso da skill revisar (seção 4, com os quatro olhares, o tempo e o consumo) vai no lugar dele, para a pessoa não ouvir a mesma coisa duas vezes."
+  },
+  "ANDAMENTO_AJUSTES": {
+    "texto": "Eles acharam pontos para melhorar. Estou ajustando e já confiro de novo.",
+    "acao": "Diga quando a revisão não bateu a meta e você vai corrigir. Não fale número nem quantas vezes."
+  },
+  "ANDAMENTO_PRONTO": {
+    "texto": "Terminei de conferir. Recarregue a apresentação para ver como ficou.",
+    "acao": "Diga quando a revisão passou, antes da entrega."
   }
 }

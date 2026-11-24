@@ -43,7 +43,7 @@ Escreva do seu jeito. Por exemplo:
 
 O caminho é sempre o mesmo:
 
-1. **Conversa rápida**: para quem, para quê, quanto tempo, de onde vêm os números.
+1. **Conversa rápida**: duas perguntas, sobre o que é e para quem, e o que a plateia faz depois. Tempo, material e gosto são opcionais: se preferir, diga "pode decidir por mim".
 2. **Brief**: a promessa da apresentação e a lista de telas. Você aprova.
 3. **Piloto**: capa, uma tela comum e o momento mais forte. Você aprova o visual.
 4. **O resto das telas**, no mesmo visual.

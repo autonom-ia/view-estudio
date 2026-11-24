@@ -11,7 +11,7 @@ Comandos: `./estudio <comando>` (no PowerShell, `.\estudio.cmd <comando>`). Leia
 
 ## 1. Antes de chamar os revisores
 
-A checagem mecânica vem antes do julgamento. Rode e leia:
+A checagem mecânica vem antes do julgamento. A pessoa acompanha com a apresentação aberta: rode `./estudio abrir <nome>` antes de tudo e diga uma frase de andamento antes de cada passo (`ANDAMENTO_*` em `kit/mensagens.json`; a skill `nova-apresentacao`, etapa 8, diz qual em cada passo). Rode e leia:
 1. `./estudio checar <nome>`: precisa de `ok:true`. Vermelho não vai para revisor: corrija antes.
 2. `./estudio prints <nome>`: fotos novas de todas as telas e passos.
 3. Guarde a última linha do `checar` em `apresentacoes/<nome>/revisao/checar-rN.json` (N = número da rodada).
@@ -43,10 +43,10 @@ Peça a cada revisor: nota de 0 a 10 (uma casa decimal), os problemas do mais gr
 
 ## 4. Como abrir os revisores
 
-**Antes da primeira rodada**, avise a pessoa em uma frase do tempo e do consumo, sem pedir licença: "Vou chamar 4 revisores independentes; cada rodada leva alguns minutos e gasta mais do seu plano do que uma resposta comum, e podem ser até 3 rodadas." Nas rodadas seguintes não repita o aviso.
+Antes da primeira rodada, no lugar do texto de `ANDAMENTO_OLHARES` (não diga os dois), avise a pessoa em uma frase do tempo e do consumo: "Agora quatro olhares independentes conferem a apresentação, cada um de um jeito. Leva alguns minutos; se eles pedirem ajustes, eu arrumo e eles olham de novo, até 3 vezes. Isso gasta uma parte maior do seu plano do que uma conversa comum. Enquanto isso, a apresentação fica aberta para você olhar." Não pergunte; só avise e siga. Daí em diante, use o `ANDAMENTO_OLHARES`.
 
 - **Claude Code:** use a ferramenta de subagente (Agent ou Task), **um subagente novo por lente**, os quatro em paralelo. Passe o texto da lente com os caminhos completos.
-- **Codex:** use subagente, se existir. Se não, e o comando `codex` existir no computador (confira com `command -v codex` no Mac ou `Get-Command codex` no Windows), rode um processo novo, só leitura, por lente: `codex exec --sandbox read-only --cd "<pasta do estúdio>" "<texto da lente>"`. Avise antes, em uma frase: "Vou chamar revisores separados para conferir. O Codex vai pedir licença. Pode aprovar."
+- **Codex:** use subagente, se existir. Se não, e o comando `codex` existir no computador (confira com `command -v codex` no Mac ou `Get-Command codex` no Windows), rode um processo novo, só leitura, por lente: `codex exec --sandbox read-only --cd "<pasta do estúdio>" "<texto da lente>"`. Avise antes, em uma frase: "Vou chamar ajudantes separados para conferir. O Codex vai pedir licença. Pode aprovar."
 - **Sem subagente e sem o comando `codex`** (ou se ele falhar): não tente instalar nada nem procurar outro jeito. Vá direto para as 4 lentes em sequência, cada uma começando do zero: releia só o pacote, escreva a avaliação sem consultar o que você pensou como autor, e só depois passe à próxima lente.
 
 Cada rodada usa revisores novos. Nunca reaproveite o da rodada anterior.
@@ -62,10 +62,10 @@ Cada rodada usa revisores novos. Nunca reaproveite o da rodada anterior.
 
 - **Passou:** volte para a skill que chamou (normalmente `nova-apresentacao`, etapa de entrega).
 - **Não passou e N < 3:** corrija os problemas aceitos, do mais grave ao menos grave. Rode `checar`, `prints` (leia as telas mexidas) e uma nova rodada com revisores novos.
-- **Não passou na rodada 3:** pare. Diga à pessoa, em até 4 frases, a nota, o que melhorou e os 2 ou 3 problemas que faltam, com a tela de cada um. Pergunte: "Como você prefere seguir?" com "Corrigir esses pontos e revisar de novo ★", "Entregar assim" e "Eu mesmo vou ajustar".
+- **Não passou na rodada 3:** pare. Diga à pessoa, em até 4 frases, o que melhorou e o que falta para ficar pronta: os 2 ou 3 problemas, com a tela de cada um, em palavras do dia a dia. Sem número, sem contar vezes. Pergunte: "Como você prefere seguir?" com "Corrigir esses pontos e revisar de novo ★", "Entregar assim" e "Eu mesmo vou ajustar".
 
 Diferença de até 0,1 entre rodadas é ruído, não progresso.
 
 ## Quando a pessoa pede só uma nota
 
-Rode uma rodada, conte em até 3 frases a nota, o que está melhor e o maior problema (com a tela), e pergunte se ela quer que você corrija.
+Rode uma rodada. Conte à pessoa, em até 3 frases, como a apresentação está em palavras do dia a dia ("está quase pronta", "falta pouco", "ainda precisa de ajustes"), o que está melhor e o maior problema (com a tela), sem dizer o número. Pergunte se ela quer que você corrija.

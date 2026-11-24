@@ -24,20 +24,23 @@ próximo passo: <uma frase>
 
 Se a sessão cair, você volta daqui. Aprovação só vale com as palavras da pessoa, copiadas sem resumir. "Pode seguir", "faz tudo", "capricha" ditos antes de ver o brief ou o piloto não aprovam nada: mostre e espere.
 
-## Etapa 1. Coleta (com fonte)
+## Etapa 1. Coleta (duas perguntas, o resto com fonte)
 
-Uma pergunta por mensagem, no máximo 5, e só as que faltam:
-1. Para quem é a apresentação (quem senta na cadeira, o que já sabe, o que desconfia)?
-2. O que essa plateia precisa fazer depois (comprar, aprovar, aprender, mudar algo)?
-3. Quanto tempo, e é ao vivo, gravada ou enviada como PDF?
-4. Que números, fatos e casos reais você quer usar, e de onde eles vêm? (Peça os arquivos na pasta `referencias/`.)
-5. Tem fotos, logo, vídeos, uma apresentação antiga? (Também em `referencias/`.)
+**Perguntas obrigatórias (só estas duas)**, uma por mensagem, e só a que a pessoa ainda não respondeu:
+1. "Sobre o que é a apresentação, e para quem você vai apresentar? Conte do seu jeito, em uma ou duas frases."
+2. "O que você quer que essa plateia faça depois de ver? Por exemplo: comprar, aprovar, aprender ou mudar alguma coisa."
 
-Leia tudo o que a pessoa puser em `referencias/`. Todo fato que for para a tela precisa de fonte: documento, site, planilha ou "a própria pessoa disse em <data>". Sem fonte, o fato fica fora ou vira pergunta para a plateia.
+Todo o resto você deduz e propõe no brief em vez de perguntar: o que a plateia já sabe e do que desconfia, a história, a sequência de telas, o tom. Não pergunte o que dá para tirar das duas respostas e do material.
+
+Depois das duas, uma mensagem só, opcional: "Quer me contar mais alguma coisa? Quanto tempo você vai ter, se é ao vivo, gravada ou só para enviar, os números e documentos que quer usar, uma apresentação de que você gosta. Se tiver arquivos, pode me mandar aqui mesmo. Se preferir, eu decido." com "Pode decidir por mim ★" e "Quero contar". Tempo, formato, material e gosto visual são sempre opcionais: se a pessoa delegar, siga sem perguntar de novo, com uns 10 minutos ao vivo (e o PDF para enviar depois) e só os fatos que ela já contou. No brief, em **Insumos faltando**, diga o que melhora se ela mandar material.
+
+Arquivo que a pessoa mandar vai para `referencias/`. Leia tudo o que estiver lá. Todo fato que for para a tela precisa de fonte: documento, site, planilha ou "a própria pessoa disse em <data>". Sem fonte, o fato fica fora ou vira pergunta para a plateia. Nunca invente número, cliente ou resultado para preencher a falta de material.
+
+Sem marca guardada (`minha-marca/tokens.css`), faça a marca agora, antes do `nova`, com a skill `minha-marca`, sem nenhuma pergunta e sem amostra para aprovar: ela usa as duas respostas e o material que a pessoa mandou, e quem mostra a marca à pessoa é o piloto (portão 2). O `nova` já copia a marca para a apresentação.
 
 Escolha um nome curto (letras minúsculas, números e hífen) e rode:
 `./estudio nova <nome> --titulo "<título da apresentação>"`
-- `APRESENTACAO_CRIADA`: a pasta está em `arquivos.pasta`. Aviso `MARCA_DE_EXEMPLO`: diga em uma frase que está usando a marca de exemplo e ofereça a skill `minha-marca` depois.
+- `APRESENTACAO_CRIADA`: a pasta está em `arquivos.pasta`. Aviso `MARCA_DE_EXEMPLO` (a marca não foi feita antes): faça a marca agora, sem perguntas, e copie para a apresentação como diz o aviso.
 - `APRESENTACAO_JA_EXISTE`: pergunte se é para continuar aquela ou criar com outro nome.
 
 ## Etapa 2. Brief (portão 1)
@@ -106,6 +109,8 @@ Skill `roteiro-e-teleprompter`. Ela escreve `roteiro/SNN.json` para cada tela, c
 
 ## Etapa 8. Revisão
 
+A pessoa não espera de tela vazia. Antes de começar, rode `./estudio abrir <nome>` e diga o texto de `ANDAMENTO_ABRI`. Depois, antes de cada passo, uma frase de andamento de `kit/mensagens.json`: `ANDAMENTO_CONFERENCIA` (checar), `ANDAMENTO_FOTOS` (prints), `ANDAMENTO_OLHARES` (as 4 lentes; na primeira vez, o aviso da skill `revisar` vai no lugar dele), `ANDAMENTO_AJUSTES` (correções) e `ANDAMENTO_PRONTO` (passou). Nunca diga nota, número de vezes nem nome de etapa técnica.
+
 Skill `revisar`. Ela chama 4 revisores independentes e devolve nota e problemas. Meta 8,5, até 3 rodadas. Não bateu na terceira: mostre à pessoa o que falta e deixe ela decidir.
 
 ## Etapa 9. Entrega
@@ -120,4 +125,4 @@ Skill `entregar`: PDF, teleprompter, pasta pronta e como apresentar. Marque `eta
 
 ## Onde você para e pergunta
 
-Na coleta (só o que falta), no brief (portão 1), no piloto (portão 2), quando aparece fato novo sem fonte, e quando a revisão não bate a meta na terceira rodada. Nada mais: o resto é com você.
+Na coleta (só as duas perguntas e a opcional), no brief (portão 1), no piloto (portão 2), quando aparece fato novo sem fonte, e quando a revisão não bate a meta na terceira rodada. Nada mais: o resto é com você.

@@ -23,8 +23,8 @@ Comandos: `./estudio <comando>` (no PowerShell, `.\estudio.cmd <comando>`). Leia
 2. Explique em poucas linhas, sem nada técnico:
    - **Para apresentar:** abra a apresentação com `./estudio abrir <nome>` (eu faço por você, é só pedir "abre a apresentação"). Seta para baixo ou espaço avança, seta para cima volta, setas para os lados trocam de tela. Para tela cheia, aperte F11 no Windows ou Control+Command+F no Mac.
    - **Teleprompter:** abra também o teleprompter no mesmo navegador, em outra janela ou no segundo monitor. Ele acompanha cada clique sozinho.
-   - **Para mandar para alguém:** o PDF. Ele está na pasta da apresentação, dentro de `apresentacoes`.
-   - **Para apresentar em outro computador:** copie a pasta `deck` inteira (pen drive ou nuvem da própria pessoa) e abra o `index.html` com o Chrome ou o Edge. Se o navegador abrir as telas em branco, use o `./estudio abrir` neste computador.
+   - **Para mandar para alguém:** o PDF. Ele fica guardado junto com a apresentação, no seu computador; eu mostro onde.
+   - **Para apresentar em outro computador:** copie a apresentação inteira para um pen drive ou para a sua nuvem (para você: é a pasta `deck`) e abra o arquivo principal dela (`index.html`) com o Chrome ou o Edge. Se o navegador abrir as telas em branco, apresente por este computador, que eu abro para você.
 3. Abra a pasta da apresentação para a pessoa ver onde está tudo: `./estudio abrir <nome> --pasta` (Windows: `estudio abrir <nome> --pasta`). Não use `open` nem `explorer` direto.
 
 ## 4. Fechar

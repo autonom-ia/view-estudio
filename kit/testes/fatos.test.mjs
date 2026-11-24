@@ -8,7 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { acharNavegador } from '../scripts/lib/chrome.mjs';
+import { opcoesDoNavegador } from './fixtures/navegador.mjs';
 import {
   sequenciasNumericas, palavrasComArroba, lerTabelaDeFatos, montarLastro, conferirTexto, FONTE_DE_EXEMPLO,
   numerosMarcados, numerosDaLinha, celulasDaLinha, tabelaDeFatosIlegivel,
@@ -17,7 +17,7 @@ import {
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const KIT = path.join(RAIZ, 'kit');
 const DESPACHANTE = path.join(KIT, 'scripts', 'estudio.mjs');
-const opcoes = { skip: acharNavegador() ? false : 'sem Chrome, Edge ou Chromium nesta máquina', timeout: 240000 };
+const opcoes = opcoesDoNavegador(240000);
 
 let base;
 let env;

@@ -10,7 +10,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { acharNavegador } from '../scripts/lib/chrome.mjs';
+import { opcoesDoNavegador } from './fixtures/navegador.mjs';
 import {
   guardarAntes, pesadosAlterados, restaurarAntes, igualAoAntes, lerMudancas, ehPesado, PESADO_BYTES,
   caminhosDoAntesDepois, fecharAntes, impressao, mesmoArquivo, pastasIguais, semLinkFixo,
@@ -20,7 +20,7 @@ import { telasMudadas, paginaDeComparacao, nomeDaFoto } from '../scripts/lib/com
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const DESPACHANTE = path.join(RAIZ, 'kit', 'scripts', 'estudio.mjs');
-const opcoes = { skip: acharNavegador() ? false : 'sem Chrome, Edge ou Chromium nesta máquina', timeout: 300000 };
+const opcoes = opcoesDoNavegador(300000);
 
 let base;
 before(() => {

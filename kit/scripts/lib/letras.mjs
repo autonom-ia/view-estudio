@@ -18,11 +18,16 @@ const chave = (texto) => [...String(texto).toLowerCase()].filter(ehLetraOuNumero
 
 export const ehArquivoDeLetra = (nome) => EXTENSOES_DE_FONTE.some((ext) => nome.toLowerCase().endsWith(ext));
 
-// "BigShouldersDisplay-latin.woff2" → "bigshouldersdisplay"; "Figtree.ttf" → "figtree".
+// "BigShouldersDisplay-latin.woff2" → "bigshouldersdisplay"; "Figtree.ttf" → "figtree";
+// "Inter[opsz,wght].ttf" (nome do repositório oficial) → "inter". A família vai até o primeiro
+// hífen, colchete ou ponto.
 export function familiaDoArquivo(nome) {
-  const hifen = nome.indexOf('-');
-  const ponto = nome.lastIndexOf('.');
-  return chave(nome.slice(0, hifen > 0 ? hifen : ponto > 0 ? ponto : nome.length));
+  let fim = nome.length;
+  for (const marca of ['-', '[', '.']) {
+    const k = nome.indexOf(marca);
+    if (k > 0 && k < fim) fim = k;
+  }
+  return chave(nome.slice(0, fim));
 }
 
 // "OFL-BigShouldersDisplay.txt" → "bigshouldersdisplay"; "OFL.txt" → "" (licença sem nome próprio).
@@ -32,7 +37,9 @@ export function familiaDaLicenca(nome) {
   return hifen === -1 ? '' : chave(semTxt.slice(hifen + 1));
 }
 
-const casa = (familia, licenca) => licenca && (familia.startsWith(licenca) || licenca.startsWith(familia));
+// Família e licença por igualdade exata: OFL-RobotoMono.txt não cobre Roboto, nem OFL-Inter.txt
+// cobre InterTight (prefixo deixava uma família passar com a licença de outra).
+const casa = (familia, licenca) => Boolean(licenca) && familia === licenca;
 
 // Lê todas as letras dentro de "raiz" (recursivo). Licença vale para as letras da mesma pasta.
 // Licença sem nome próprio (OFL.txt) só vale quando a pasta tem uma família só.

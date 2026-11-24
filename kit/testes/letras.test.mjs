@@ -198,6 +198,30 @@ test('fonte: tudo ou nada; sem licença, fora do catálogo ou com endereço estr
   }
 });
 
+test('letras: a licença vale só para a família com o mesmo nome (sem prefixo)', () => {
+  assert.equal(familiaDoArquivo('Inter[opsz,wght].ttf'), 'inter');
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'estudio-letras-nome-'));
+  const por = (nome) => fs.writeFileSync(path.join(base, nome), Buffer.alloc(10));
+  try {
+    // a licença do Roboto Mono não cobre o Roboto, nem a do Inter cobre o Inter Tight
+    por('Roboto-latin.woff2');
+    por('OFL-RobotoMono.txt');
+    por('InterTight-latin.woff2');
+    por('OFL-Inter.txt');
+    assert.deepEqual(conferirLetras(base).semLicenca.map((s) => s.familia).sort(), ['intertight', 'roboto']);
+    // e ao contrário: a do Roboto não cobre o Roboto Mono
+    por('RobotoMono-latin.woff2');
+    por('OFL-Roboto.txt');
+    por('OFL-InterTight.txt');
+    por('Inter-latin.woff2');
+    assert.deepEqual(conferirLetras(base).semLicenca, []);
+    fs.rmSync(path.join(base, 'OFL-RobotoMono.txt'));
+    assert.deepEqual(conferirLetras(base).semLicenca.map((s) => s.familia), ['robotomono']);
+  } finally {
+    fs.rmSync(base, { recursive: true, force: true });
+  }
+});
+
 test('letras do deck: licença com nome próprio por família, OFL.txt só vale para uma família, peso e formato', () => {
   assert.equal(familiaDoArquivo('BigShouldersDisplay-latin.woff2'), 'bigshouldersdisplay');
   assert.equal(familiaDoArquivo('Figtree.ttf'), 'figtree');

@@ -177,7 +177,11 @@
   },
   "VERSAO": {
     "texto": "Esta é a versão {{versao}} do estúdio.",
-    "acao": "Diga o texto. dados.versao vazio quer dizer que falta o arquivo VERSAO: chame a skill consertar."
+    "acao": "Diga o texto. Com o aviso VERSAO_NAO_ACHADA, siga a ação dele."
+  },
+  "VERSAO_NAO_ACHADA": {
+    "texto": "Não achei o número da versão do estúdio. O resto funciona; vou conferir a instalação.",
+    "acao": "Falta o arquivo VERSAO na raiz do estúdio (dados.versao é null). Chame a skill consertar; se a instalação estiver incompleta, a skill atualizar-estudio traz a versão oficial de volta. Nunca escreva o arquivo VERSAO à mão."
   },
   "ESTUDIO_PRONTO": {
     "texto": "O estúdio está pronto para usar.",

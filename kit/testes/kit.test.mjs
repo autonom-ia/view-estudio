@@ -10,6 +10,7 @@ import { lerArgs } from '../scripts/lib/args.mjs';
 import { nomeValido, sugerirNome, nomeReservadoDoWindows } from '../scripts/lib/caminhos.mjs';
 import { sanear } from '../scripts/lib/executar.mjs';
 import { montarResultado, resultadoDeErro, preencher, textoDoCodigo, KitErro } from '../scripts/lib/saida.mjs';
+import { resultadoDaVersao } from '../scripts/comandos/versao.mjs';
 import { numeroDoNome, ehArquivoDeRoteiro, lerRoteiro } from '../scripts/lib/apresentacao.mjs';
 import { montarTeleprompter, jsonParaScript } from '../scripts/lib/teleprompter.mjs';
 import { conferirEspelhos, gerarEspelhos } from '../scripts/lib/espelho.mjs';
@@ -197,6 +198,16 @@ test('textoDoCodigo: código herdado (constructor, __proto__) não acha nada e n
   assert.equal(preencher(undefined, {}), '');
   assert.equal(preencher(42, {}), '');
   assert.equal(textoDoCodigo('OK'), 'Pronto.');
+});
+
+test('versao sem o arquivo VERSAO: avisa VERSAO_NAO_ACHADA e o resumo diz isso, sem buraco na frase', () => {
+  const sem = montarResultado('versao', resultadoDaVersao(null));
+  assert.deepEqual(sem.avisos.map((a) => a.codigo), ['VERSAO_NAO_ACHADA']);
+  assert.equal(sem.resumo, textoDoCodigo('VERSAO_NAO_ACHADA'));
+  assert.ok(sem.resumo.length > 0 && !sem.resumo.includes('versão  do'), sem.resumo);
+  assert.equal(sem.dados.versao, null);
+  const com = montarResultado('versao', resultadoDaVersao('1.1.0', { version: '1.1.0' }));
+  assert.deepEqual([com.avisos, com.resumo, com.dados.pacote], [[], 'Esta é a versão 1.1.0 do estúdio.', '1.1.0']);
 });
 
 test('resumo de verdade: versao e nova repetida saem com o valor no lugar do {{campo}}', () => {

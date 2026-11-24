@@ -21,6 +21,11 @@ const CAMPOS = ['id', 'nome', 'link', 'ondeVer', 'formato', 'plateia', 'duvida',
 // Texto que termina em ponto final; a dúvida termina em interrogação.
 const FRASES = ['ondeVer', 'formato', 'plateia', 'estrutura', 'abertura', 'ancora', 'revelacao', 'fecho', 'naoCopiar'];
 const TEXTO_MAXIMO = 240;
+// Opcional: o trecho exato da fonte (transcrição, em inglês) que sustenta o número da ficha.
+const CAMPO_DO_TRECHO = 'trechoConferido';
+const TRECHO_MAXIMO = 400;
+// Fichas cujo número foi conferido palavra por palavra na transcrição: o trecho é obrigatório.
+const COM_TRECHO = ['semler-sem-regras', 'dalio-meritocracia', 'pink-motivacao', 'treasure-falar'];
 const FICHAS_POR_ACAO = 4;
 const EXTENSOES_DE_IMAGEM = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg', '.avif', '.heic', '.bmp', '.tif', '.tiff', '.ico'];
 const PERMITIDOS_NO_ID = 'abcdefghijklmnopqrstuvwxyz0123456789-';
@@ -68,9 +73,18 @@ function dataValida(v) {
   return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v && v <= HOJE;
 }
 
+function problemasDoTrecho(t) {
+  if (!mesmasChaves(t, ['transcricao', 'trecho'])) return [`${CAMPO_DO_TRECHO} sem transcricao e trecho`];
+  const p = problemasDoLink(t.transcricao).map((x) => `${CAMPO_DO_TRECHO}: ${x}`);
+  if (typeof t.trecho !== 'string' || t.trecho.trim() !== t.trecho || t.trecho.length < 10 || t.trecho.length > TRECHO_MAXIMO) p.push(`${CAMPO_DO_TRECHO}: trecho vazio ou longo demais`);
+  return p;
+}
+
 function problemasDaFicha(f) {
-  if (!mesmasChaves(f, CAMPOS)) return [`campos diferentes de: ${CAMPOS.join(', ')}`];
-  const p = [];
+  const comTrecho = f !== null && typeof f === 'object' && Object.hasOwn(f, CAMPO_DO_TRECHO);
+  if (!mesmasChaves(f, comTrecho ? [...CAMPOS, CAMPO_DO_TRECHO] : CAMPOS)) return [`campos diferentes de: ${CAMPOS.join(', ')} (e, opcional, ${CAMPO_DO_TRECHO})`];
+  const p = comTrecho ? problemasDoTrecho(f[CAMPO_DO_TRECHO]) : [];
+  if (!comTrecho && COM_TRECHO.includes(f.id)) p.push(`${CAMPO_DO_TRECHO} obrigatório nesta ficha`);
   if (!dataValida(f.conferidaEm)) p.push('conferidaEm fora do formato AAAA-MM-DD ou no futuro');
   const idOk = typeof f.id === 'string' && f.id.length >= 2 && !f.id.startsWith('-') && !f.id.endsWith('-')
     && [...f.id].every((c) => PERMITIDOS_NO_ID.includes(c));

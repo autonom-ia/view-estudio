@@ -48,7 +48,11 @@
       "revelacao": "Abre uma reunião de verdade e mostra as notas que cada pessoa dá às outras, ao vivo.",
       "fecho": "Volta à frase do começo: essa transparência vai chegar, e para ele vai ser maravilhosa.",
       "naoCopiar": "O tom de certeza absoluta; o que vale é mostrar a instituição errando e o que mudou por causa disso.",
-      "conferidaEm": "2026-11-24"
+      "conferidaEm": "2026-11-24",
+      "trechoConferido": {
+        "transcricao": "https://www.ted.com/talks/ray_dalio_how_to_build_a_company_where_the_best_ideas_win/transcript",
+        "trecho": "I had to let almost everybody go. And these were like extended family, I was heartbroken. And I had lost so much money that I had to borrow 4,000 dollars from my dad to help to pay my family bills."
+      }
     },
     {
       "id": "semler-sem-regras",
@@ -64,7 +68,11 @@
       "revelacao": "Uma regra comum por vez, e o que aconteceu quando a empresa deixou de seguir.",
       "fecho": "Pede que cada um pare e pergunte para que está fazendo o que faz.",
       "naoCopiar": "As práticas da empresa dele; o que vale é começar pela pergunta humana e só depois mostrar a instituição.",
-      "conferidaEm": "2026-11-24"
+      "conferidaEm": "2026-11-24",
+      "trechoConferido": {
+        "transcricao": "https://www.ted.com/talks/ricardo_semler_how_to_run_a_company_with_almost_no_rules/transcript",
+        "trecho": "And we'll do it like this, we'll sell you back your Wednesdays for 10 percent of your salary."
+      }
     }
   ]
 }

@@ -51,6 +51,7 @@ O estúdio guarda de cada apresentação só o endereço público e o que aprend
 | `fecho` | como termina e o que pede |
 | `naoCopiar` | o que é da pessoa ou da marca deles e não serve para outra apresentação |
 | `conferidaEm` | o dia (AAAA-MM-DD) em que a ficha foi conferida no próprio link |
+| `trechoConferido` (opcional) | `transcricao` (o endereço da transcrição) e `trecho` (as palavras exatas, na língua original, que sustentam o número da ficha). Obrigatório quando o número foi conferido na transcrição. |
 
 ## Como escolher (etapa 2 da skill `nova-apresentacao`)
 

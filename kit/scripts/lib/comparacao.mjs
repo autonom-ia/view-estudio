@@ -29,8 +29,8 @@ export const FRACAO_MUDADA = 0.0003;
 
 // O estilo que se vê, elemento por elemento, no clique assentado: [tag e propriedades], na ordem do
 // documento. Endereço de imagem perde a origem (o antes e o depois são servidos em portas
-// diferentes). Elemento com animação sem fim (CSS ou GSAP) fica de fora: ele parou onde estava, e
-// isso não é mudança. Escondido também fica de fora.
+// diferentes). Animação sem fim (CSS ou GSAP) entra: o ASSENTAR leva todas ao instante zero, então
+// o mesmo elemento dá o mesmo estilo nos dois lados. Escondido fica de fora.
 const PROPRIEDADES_DE_ESTILO = Object.freeze([
   'color', 'background-color', 'background-image', 'border-top-color', 'border-right-color', 'border-bottom-color',
   'border-left-color', 'border-top-width', 'border-radius', 'outline-color', 'box-shadow', 'text-shadow',
@@ -42,20 +42,6 @@ export const ESTILO_VISIVEL = `(() => {
   const props = ${JSON.stringify(PROPRIEDADES_DE_ESTILO)};
   const origem = location.origin;
   const semOrigem = (v) => String(v).split(origem).join('');
-  const animados = [];
-  try {
-    for (const a of document.getAnimations()) {
-      const vezes = a.effect && a.effect.getComputedTiming ? a.effect.getComputedTiming().iterations : 1;
-      if (vezes === Infinity && a.effect.target) animados.push(a.effect.target);
-    }
-  } catch (e) {}
-  try {
-    if (window.gsap) for (const t of window.gsap.globalTimeline.getChildren(true, true, false)) {
-      let sempre = false;
-      for (let p = t; p; p = p.parent) if (p.repeat && p.repeat() === -1) sempre = true;
-      if (sempre && t.targets) for (const alvo of t.targets()) if (alvo instanceof Element) animados.push(alvo);
-    }
-  } catch (e) {}
   const visivel = (el) => {
     try { if (el.checkVisibility) return el.checkVisibility({ opacityProperty: true, visibilityProperty: true }); } catch (e) {}
     const cs = getComputedStyle(el);
@@ -64,7 +50,6 @@ export const ESTILO_VISIVEL = `(() => {
   const linhas = [];
   for (const el of [raiz, ...raiz.querySelectorAll('*')]) {
     if (el.closest('script, style, template, noscript, [data-controle]')) continue;
-    if (animados.some((a) => a === el || a.contains(el))) continue;
     if (!visivel(el)) continue;
     const cs = getComputedStyle(el);
     const src = el.getAttribute('src');

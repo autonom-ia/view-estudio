@@ -42,9 +42,24 @@ export const ASSENTAR = (n) => `(async () => {
     const atual = st && Number.isInteger(st.beat) ? st.beat : 0;
     for (let k = atual; k < alvo; k += 1) s.advance();
   }
+  // GSAP: o que tem fim termina; o que repete sem fim (repeat -1, ou dentro de uma linha do tempo
+  // assim) vai ao instante zero e para ali. Parar "onde está" dependeria do relógio, e duas fotos
+  // da mesma tela sairiam diferentes (falso "mudou" no comparar, contraste medido em outra fase).
   try {
-    if (window.gsap) for (const t of window.gsap.globalTimeline.getChildren(true, true, true)) {
-      try { if (t.repeat && t.repeat() === -1) t.pause(); else t.progress(1); } catch (e) {}
+    if (window.gsap) {
+      const raiz = window.gsap.globalTimeline;
+      const semFim = (t) => Boolean(t && t.repeat && t.repeat() === -1);
+      const dentroDeSemFim = (t) => {
+        for (let p = t; p && p !== raiz; p = p.parent) if (semFim(p)) return true;
+        return false;
+      };
+      const todas = raiz.getChildren(true, true, true);
+      for (const t of todas) {
+        try { if (!dentroDeSemFim(t)) t.progress(1); } catch (e) {}
+      }
+      for (const t of todas) {
+        try { if (semFim(t)) t.pause(0); } catch (e) {}
+      }
     }
   } catch (e) {}
   // vídeo: pausa e espera o quadro escolhido pelo assentar ser desenhado
@@ -55,12 +70,16 @@ export const ASSENTAR = (n) => `(async () => {
   }
   for (const el of document.querySelectorAll('[data-controle], .dica')) el.style.visibility = 'hidden';
   // transição e animação de CSS (uma cor que muda no clique, por exemplo) terminam agora: sem isso a
-  // foto e as medidas pegam o meio do caminho. A infinita (um pulso) só para onde está.
+  // foto e as medidas pegam o meio do caminho. A infinita (um pulso) vai ao instante zero e para:
+  // assim toda foto da mesma tela pega o mesmo quadro, em qualquer hora.
   try {
     for (const a of document.getAnimations()) {
       try {
         const vezes = a.effect && a.effect.getComputedTiming ? a.effect.getComputedTiming().iterations : 1;
-        if (vezes === Infinity) a.pause(); else a.finish();
+        if (vezes === Infinity) {
+          a.pause();
+          a.currentTime = 0;
+        } else a.finish();
       } catch (e) {}
     }
   } catch (e) {}

@@ -548,6 +548,41 @@ test('escolher: "outro" repetido diz que a versão vista antes foi substituída;
   assert.ok(fs.readFileSync(slide, 'utf8').includes('Terceira, que fica.'));
 });
 
+// Animação sem fim (pulso de CSS e brilho de GSAP) é levada ao mesmo instante antes da foto: sem
+// isso, cada foto pega uma fase e toda tela com pulso sai "mudou" sem mudar nada.
+const PULSO = '<div class="pulso" style="position:absolute;left:1500px;top:640px;width:200px;height:200px;border-radius:50%;'
+  + 'background:#FFB86E;animation:pulso 1.1s ease-in-out infinite alternate"></div>\n'
+  + '<div class="brilho" style="position:absolute;left:1300px;top:900px;width:240px;height:44px;background:#FFE2B8"></div>\n'
+  + '<style>@keyframes pulso{from{transform:scale(1);opacity:1}to{transform:scale(1.6);opacity:.35}}</style>\n'
+  + '  <div class="dica" data-controle>';
+const BRILHO = '<script>gsap.to(".brilho", { x: 300, opacity: 0.2, duration: 0.9, repeat: -1, yoyo: true, ease: "none" });</script>\n</body>';
+
+test('comparar: tela com pulso sem fim igual fica fora; com a cor do pulso trocada, entra', opcoes, async () => {
+  const env = ambiente('pulso');
+  const estadoServidor = path.join(env.ESTUDIO_FERRAMENTAS, 'servidores', 'comparar-pulso.json');
+  try {
+    assert.equal(estudio(env, 'nova', 'pulso').codigo, 0);
+    const pasta = path.join(env.ESTUDIO_APRESENTACOES, 'pulso');
+    const capa = path.join(pasta, 'deck', 'slides', 's01-capa.html');
+    trocarNoArquivo(capa, '  <div class="dica" data-controle>', PULSO);
+    trocarNoArquivo(capa, '</body>', BRILHO);
+    assert.equal(estudio(env, 'antes', 'pulso').json.codigo, 'ANTES_GUARDADO');
+    fs.writeFileSync(path.join(pasta, 'revisao', 'antes-depois', 'mudancas.json'), JSON.stringify({ pedido: 'x', mudancas: [{ titulo: 'um', telas: [2] }, { titulo: 'dois', telas: [1] }] }));
+    trocarNoArquivo(path.join(pasta, 'deck', 'slides', 's02-numero.html'), 'A manhã já é nossa.', 'A manhã é toda nossa.');
+    const igual = estudio(env, 'comparar', 'pulso', '--sem-navegador');
+    assert.equal(igual.json.codigo, 'COMPARACAO_PRONTA', JSON.stringify(igual.json) + igual.erro);
+    assert.deepEqual(igual.json.dados.telas.map((t) => t.tela), [2], 'a capa com pulso não mudou');
+    trocarNoArquivo(capa, 'background:#FFB86E;animation:pulso', 'background:#FF8C00;animation:pulso');
+    const cor = estudio(env, 'comparar', 'pulso', '--sem-navegador');
+    assert.equal(cor.json.codigo, 'COMPARACAO_PRONTA', JSON.stringify(cor.json) + cor.erro);
+    assert.deepEqual(cor.json.dados.telas.map((t) => [t.tela, t.cliques_mudados]), [[1, [0, 1]], [2, [2]]]);
+  } finally {
+    try {
+      process.kill(JSON.parse(fs.readFileSync(estadoServidor, 'utf8')).pid);
+    } catch {}
+  }
+});
+
 function estudio(env, ...args) {
   const r = spawnSync(process.execPath, [DESPACHANTE, ...args], { encoding: 'utf8', env, timeout: 280000 });
   const linhas = (r.stdout || '').trim().split('\n');

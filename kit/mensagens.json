@@ -369,10 +369,18 @@
   },
   "ATALHO_VIROU_COPIA": {
     "texto": "Um atalho dentro da apresentação foi guardado como cópia, porque este computador não deixou criar atalho. A apresentação continua igual.",
-    "acao": "No Windows sem modo de desenvolvedor, link simbólico de arquivo não pode ser criado. dados.arquivos foram guardados no antes como cópia do arquivo para onde apontavam (mesmo conteúdo). Se a pessoa voltar ao antes, eles voltam como cópia, não como atalho. dados.quebrados apontavam para um arquivo que não existe mais (já não abriam): ficaram fora do antes e, se a pessoa voltar ao antes, somem. Siga normalmente."
+    "acao": "No Windows sem modo de desenvolvedor, link simbólico de arquivo não pode ser criado. dados.arquivos foram guardados no antes como cópia do arquivo para onde apontavam (mesmo conteúdo). Se a pessoa voltar ao antes, eles voltam como cópia, não como atalho. Siga normalmente."
   },
   "TENTATIVA_SUBSTITUIDA": {
     "texto": "Guardei a versão que você acabou de ver no lugar da que você tinha visto antes. Só a mais nova fica guardada.",
     "acao": "Fica guardada uma versão vista só (dados.tentativa). A da tentativa anterior foi trocada pela desta. Diga isso à pessoa em uma frase junto com o texto da resposta."
+  },
+  "ATALHO_QUEBRADO_FORA": {
+    "texto": "Um atalho que já não apontava para nada ficou de fora. A apresentação continua igual.",
+    "acao": "No Windows sem modo de desenvolvedor, link simbólico não pode ser criado, e dados.arquivos apontavam para um arquivo que não existe mais (já não abriam). Ficaram fora do antes: se a pessoa voltar ao antes, eles somem. Siga normalmente."
+  },
+  "APRESENTACAO_POSTA_DE_VOLTA": {
+    "texto": "Uma troca anterior tinha parado no meio. Pus a apresentação de volta inteira antes de continuar.",
+    "acao": "dados.itens estavam fora do lugar (uma volta do antes e depois parou entre os dois passos) e voltaram como estavam antes dela. Se o antes e depois ainda está em aberto, rode o mesmo ./estudio escolher <nome> de novo para terminar a volta; nada se perdeu."
   }
 }

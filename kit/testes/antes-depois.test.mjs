@@ -19,6 +19,7 @@ import {
 } from '../scripts/lib/antes-depois.mjs';
 import { renderizarSemPerderOAnterior } from '../scripts/lib/hyperframes.mjs';
 import escolherComando from '../scripts/comandos/escolher.mjs';
+import { avisosDosAtalhos } from '../scripts/comandos/antes.mjs';
 import { telasMudadas, paginaDeComparacao, nomeDaFoto, fotosDiferentes, NOTA_SEM_MOVIMENTO } from '../scripts/lib/comparacao.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -113,6 +114,12 @@ test('antes-depois: sem licença para criar link (EPERM), o arquivo apontado vir
   assert.deepEqual(q.quebrados, ['deck/quebrado.md']);
   assert.deepEqual(q.atalhos, ['deck/atalho.md']);
   assert.equal(fs.existsSync(path.join(antes, 'deck', 'quebrado.md')), false);
+  // cada um com o seu aviso: atalho que virou cópia e atalho quebrado que ficou de fora
+  assert.deepEqual(avisosDosAtalhos(q).map((a) => [a.codigo, a.dados.arquivos]), [
+    ['ATALHO_VIROU_COPIA', ['deck/atalho.md']],
+    ['ATALHO_QUEBRADO_FORA', ['deck/quebrado.md']],
+  ]);
+  assert.deepEqual(avisosDosAtalhos({ atalhos: [], quebrados: [] }), []);
 });
 
 test('antes-depois: vídeo trocado pelo nome mantém o antes; gravado por cima do mesmo arquivo é pego', () => {
@@ -379,6 +386,7 @@ test('comparação: a página numera as mudanças, marca as telas, não tem <sel
   assert.ok(html.includes('fala velha') && html.includes('fala nova'));
   assert.ok(!html.includes('<select'));
   assert.ok(html.includes(NOTA_SEM_MOVIMENTO), 'a página diz que vídeo e movimento não entram');
+  for (const limite of ['Movimento', 'pulso', 'vídeo', 'desenhada à mão']) assert.ok(NOTA_SEM_MOVIMENTO.includes(limite), limite);
   assert.equal(nomeDaFoto('antes', 's02-numero.html', 1), 'antes-s02-numero-b1.jpg');
   // nome de arquivo com espaço, # ou acento vai codificado no endereço da foto
   const estranha = paginaDeComparacao({ pedido: '', mudancas: [], telas: [{ ...telas[0], arquivo: 's02 número#1.html' }] });
@@ -524,6 +532,24 @@ test('escolher: programa que morre entre os dois nomes não perde a versão vist
   assert.ok(fs.readFileSync(path.join(ad, 'tentativa', 'deck', 'slides', 's02-numero.html'), 'utf8').includes('Versão que a pessoa viu.'));
   assert.deepEqual(fs.readdirSync(pasta).filter((n) => n.endsWith('.trocando') || n.endsWith('.descartando')), []);
   assert.equal(JSON.parse(fs.readFileSync(path.join(ad, 'estado.json'), 'utf8')).restauracao_pendente, undefined);
+});
+
+test('abrir a apresentação põe de volta o deck que uma troca parada deixou fora, com aviso', () => {
+  const { env, pasta, slide } = bolo('posta-de-volta');
+  trocarNoArquivo(slide, 'A manhã já é nossa.', 'Texto que estava no lugar.');
+  // a troca parou entre os dois nomes: o deck saiu para .descartando e o novo não entrou
+  fs.renameSync(path.join(pasta, 'deck'), path.join(pasta, 'deck.descartando'));
+  escrever(path.join(pasta, 'deck.trocando', 'index.html'), 'cópia montada');
+  const r = estudio(env, 'antes', 'bolo');
+  assert.equal(r.json.codigo, 'ANTES_GUARDADO', JSON.stringify(r.json));
+  assert.deepEqual(r.json.avisos.map((a) => [a.codigo, a.dados.itens]), [['APRESENTACAO_POSTA_DE_VOLTA', ['deck']]]);
+  assert.ok(fs.readFileSync(slide, 'utf8').includes('Texto que estava no lugar.'));
+  assert.equal(fs.existsSync(path.join(pasta, 'deck.descartando')), false);
+  // o aviso vai também quando o comando falha depois de abrir
+  fs.renameSync(path.join(pasta, 'deck'), path.join(pasta, 'deck.descartando'));
+  const aberto = estudio(env, 'antes', 'bolo');
+  assert.equal(aberto.json.codigo, 'ANTES_EM_ABERTO');
+  assert.deepEqual(aberto.json.avisos.map((a) => a.codigo), ['APRESENTACAO_POSTA_DE_VOLTA']);
 });
 
 test('escolher: "outro" repetido diz que a versão vista antes foi substituída; "depois" apaga a tentativa', async () => {

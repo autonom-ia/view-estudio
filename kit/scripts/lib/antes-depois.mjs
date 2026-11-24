@@ -266,28 +266,32 @@ const existeSemSeguir = (caminho) => {
 export const sobrasDaTroca = (atual) => ({ novo: `${atual}.trocando`, velho: `${atual}.descartando` });
 
 // Sobra de uma troca que parou no meio (o programa morreu entre os dois nomes): se o item sumiu e
-// o .descartando ficou, ele volta para o lugar. O .trocando é só uma cópia montada e sai.
-function recuperarSobra(atual, renomear) {
-  const { novo, velho } = sobrasDaTroca(atual);
-  if (!existeSemSeguir(atual) && existeSemSeguir(velho)) renomear(velho, atual);
-  fs.rmSync(novo, { recursive: true, force: true });
+// o .descartando ficou, ele volta para o lugar. Devolve se voltou. Nada é apagado aqui.
+function devolverSeFora(atual, renomear) {
+  const { velho } = sobrasDaTroca(atual);
+  if (existeSemSeguir(atual) || !existeSemSeguir(velho)) return false;
+  renomear(velho, atual);
+  return true;
 }
 
-// Põe de volta no lugar todo item que uma troca parada no meio deixou fora (o deck sem index.html
-// não abre). Só devolve o .descartando quando o item sumiu; nada é apagado além do .trocando.
+// Põe de volta no lugar todo item que uma troca parada no meio deixou fora (sem isso o deck sem
+// index.html nem abre, e checar, abrir e entregar leriam a apresentação faltando um pedaço). Chamado
+// ao abrir qualquer apresentação (lib/apresentacao.mjs). Devolve os itens que voltaram.
 export function recuperarSobras(pastaDaApresentacao, renomear = fs.renameSync) {
-  for (const item of ITENS_GUARDADOS) recuperarSobra(path.join(pastaDaApresentacao, item), renomear);
+  return ITENS_GUARDADOS.filter((item) => devolverSeFora(path.join(pastaDaApresentacao, item), renomear));
 }
 
 // Troca um item sem deixar a apresentação sem ele: o novo é montado ao lado (.trocando), o atual
 // vai para .descartando, o novo entra no lugar e só então o descartado sai. Se a entrada do novo
 // falhar, o atual volta. Sobra de uma troca anterior: o item volta ao lugar primeiro
-// (recuperarSobra); um .descartando que sobra com o item no lugar é a versão vista (já guardada na
-// tentativa, que o "escolher" grava antes de qualquer troca) ou o antes, nunca a única cópia.
+// (devolverSeFora); o .trocando de antes é só uma cópia montada e sai; um .descartando que sobra
+// com o item no lugar é a versão vista (já guardada na tentativa, que o "escolher" grava antes de
+// qualquer troca) ou o antes, nunca a única cópia.
 function trocarItem(pasta, origem, item, existia, renomear) {
   const atual = path.join(pasta, item);
   const { novo, velho } = sobrasDaTroca(atual);
-  recuperarSobra(atual, renomear);
+  devolverSeFora(atual, renomear);
+  fs.rmSync(novo, { recursive: true, force: true });
   fs.rmSync(velho, { recursive: true, force: true });
   if (!existia) {
     if (!existeSemSeguir(atual)) return null;

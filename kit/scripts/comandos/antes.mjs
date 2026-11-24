@@ -36,6 +36,14 @@ function oQueSai(ad) {
   return nada ? null : saem;
 }
 
+// Atalho que virou cópia e atalho quebrado que ficou de fora (Windows sem licença de atalho).
+export function avisosDosAtalhos({ atalhos = [], quebrados = [] }) {
+  const avisos = [];
+  if (atalhos.length) avisos.push(aviso('ATALHO_VIROU_COPIA', { arquivos: atalhos }));
+  if (quebrados.length) avisos.push(aviso('ATALHO_QUEBRADO_FORA', { arquivos: quebrados }));
+  return avisos;
+}
+
 export default async function antes(args) {
   const nome = nomeDaApresentacao(args);
   const c = abrirApresentacao(nome);
@@ -51,9 +59,7 @@ export default async function antes(args) {
   return {
     ok: true,
     codigo: 'ANTES_GUARDADO',
-    avisos: manifesto.atalhos.length || manifesto.quebrados.length
-      ? [aviso('ATALHO_VIROU_COPIA', { arquivos: manifesto.atalhos, quebrados: manifesto.quebrados })]
-      : [],
+    avisos: avisosDosAtalhos(manifesto),
     arquivos: { antes: c.rel('revisao', 'antes-depois', 'antes'), mudancas: c.rel('revisao', 'antes-depois', 'mudancas.json') },
     dados: {
       itens: manifesto.itens,

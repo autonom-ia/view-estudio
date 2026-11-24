@@ -222,7 +222,7 @@ function falas(c) {
 }
 
 // A comparação é de cada clique parado: o que só se vê andando fica de fora, e a página diz.
-export const NOTA_SEM_MOVIMENTO = 'Cada foto é a tela parada, depois do clique. Vídeo e movimento não entram nesta comparação: para ver, abra a apresentação.';
+export const NOTA_SEM_MOVIMENTO = 'Cada foto é a tela parada, depois do clique. Movimento, pulso, vídeo e animação desenhada à mão não entram nesta comparação: para ver, abra a apresentação.';
 
 const SITUACAO = { nova: 'tela nova', saiu: 'tela que saiu', mudou: '' };
 

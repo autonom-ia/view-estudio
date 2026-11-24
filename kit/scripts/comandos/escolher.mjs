@@ -18,8 +18,7 @@
 // Portado do Site Estúdio (comando "escolher").
 import fs from 'node:fs';
 import { nomeDaApresentacao } from '../lib/args.mjs';
-import { abrirApresentacao, caminhosDe } from '../lib/apresentacao.mjs';
-import { ehPasta } from '../lib/caminhos.mjs';
+import { abrirApresentacao } from '../lib/apresentacao.mjs';
 import { escreverJson, lerJson } from '../lib/json.mjs';
 import { aviso, falha, reprovado } from '../lib/saida.mjs';
 import {
@@ -27,7 +26,6 @@ import {
   fecharAntes,
   guardarTentativa,
   pesadosAlterados,
-  recuperarSobras,
   restaurarAntes,
   restaurarDe,
   temAntes,
@@ -42,9 +40,7 @@ export default async function escolher(args, pecas = {}) {
   const nome = nomeDaApresentacao(args);
   const escolha = args.posicionais[1] || '';
   if (!ESCOLHAS.includes(escolha)) falha('ARGUMENTO_INVALIDO', { argumento: '<escolha>', valor: escolha, opcoes: ESCOLHAS });
-  // uma troca que parou no meio pode ter deixado o deck fora do lugar: ele volta antes de abrir
-  const pasta = caminhosDe(nome).pasta;
-  if (ehPasta(pasta)) recuperarSobras(pasta, renomear);
+  // uma troca que parou no meio pode ter deixado o deck fora do lugar: abrirApresentacao o põe de volta
   const c = abrirApresentacao(nome);
   const ad = caminhosDoAntesDepois(c);
   const estado = lerJson(ad.estado, { aberto: false });

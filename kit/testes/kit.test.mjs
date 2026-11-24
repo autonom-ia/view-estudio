@@ -165,6 +165,9 @@ const CAMPOS_ENVIADOS = Object.freeze({
   ESTUDIO_ATUALIZADO: ['de', 'para'],
   PDF_PRONTO: ['paginas'],
   APRESENTACAO_JA_EXISTE: ['nome'],
+  FONTE_BAIXADA: ['familia'],
+  FONTE_NAO_ACHADA: ['familia'],
+  FONTE_SEM_LICENCA: ['familia'],
 });
 
 test('resumo: os {{campos}} do mensagens.json são os que o comando manda, e saem preenchidos', () => {

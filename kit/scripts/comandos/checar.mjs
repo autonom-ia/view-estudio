@@ -1,7 +1,8 @@
 // Confere o deck no Chrome: estrutura (vendor local, nenhum endereço externo, fontes que carregam,
 // links e mídia), e em cada tela × beat assentado: colisão de texto, texto < 18 px a 1920, texto fora
 // da tela e contraste do texto contra o fundo de verdade (foto da tela sem a letra, lib/contraste.mjs).
-// RED reprova (saída 2). WARN avisa. Também confere roteiro × beats e <select> nativo.
+// RED reprova (saída 2). WARN avisa. Também confere roteiro × beats, <select> nativo e as letras do
+// deck (cada família com a sua licença; .woff2 leve).
 import fs from 'node:fs';
 import path from 'node:path';
 import { nomeDaApresentacao } from '../lib/args.mjs';
@@ -9,6 +10,7 @@ import { abrirApresentacao, lerRoteiro, numeroDoNome } from '../lib/apresentacao
 import { abrirSessao, telasDoIndex, LARGURA, ALTURA } from '../lib/sessao.mjs';
 import { ESPERAR_PRONTA, ASSENTAR, ESTATICO, MEDIR, ESCONDER_TEXTO, MOSTRAR_TEXTO } from '../lib/pagina.mjs';
 import { medirNaFoto, anotarContraste } from '../lib/contraste.mjs';
+import { anotarLetras } from '../lib/letras.mjs';
 import { decodePng } from '../lib/png.mjs';
 import { progresso } from '../lib/executar.mjs';
 import { esperar } from '../lib/cdp.mjs';
@@ -88,6 +90,7 @@ export default async function checar(args) {
   const telasMedidas = [];
   let contrasteMedido = 0;
   conferirArquivos(c, red);
+  const letras = anotarLetras(c.deck, red, warn);
 
   const sessao = await abrirSessao(c.deck);
   try {
@@ -159,6 +162,7 @@ export default async function checar(args) {
       vermelhos: red,
       amarelos: warn,
       contraste_medido: contrasteMedido,
+      letras_kb: letras.kb,
       limites: LIMITES,
     },
   };

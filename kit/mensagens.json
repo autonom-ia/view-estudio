@@ -5,7 +5,7 @@
   },
   "_tipos_do_checar": {
     "texto": "Tipos de achado em dados.vermelhos (RED, reprova) e dados.amarelos (WARN, avisa) do checar.",
-    "acao": "RED: select-nativo, endereco-externo (CDN ou link de fora carregado pela tela), arquivo-quebrado, fonte-quebrada, fonte-nao-declarada, vendor-ausente, palco-ausente, palco-preso, sem-telas, tela-sem-arquivo, colisao, texto-pequeno (menor que 18 px na tela de 1920), fora-da-tela, contraste (texto contra o fundo de verdade abaixo de 4,5:1, ou 3:1 no texto de 24 px ou mais). WARN: sem-contrato, titulo-colado, texto-cortado, contraste-justo (texto grande entre 3:1 e 4,5:1: passa, mas o projetor apaga), contraste-nao-medido (texto pintado com o fundo ou com outra camada por cima), roteiro-ausente, roteiro-descasado, roteiro-invalido, tela-sem-numero. Corrija pela causa (layout, tamanho, cor, arquivo) e rode checar de novo. Contraste: escureça ou clareie a cor do texto, ponha um véu ou uma sombra atrás dele, ou mude o enquadramento da foto; texto decorativo (marca d'água) leva aria-hidden=\"true\" e fica fora da medida."
+    "acao": "RED: select-nativo, endereco-externo (CDN ou link de fora carregado pela tela), arquivo-quebrado, fonte-quebrada, fonte-nao-declarada, fonte-sem-licenca (letra sem a licença com o nome da família ao lado), vendor-ausente, palco-ausente, palco-preso, sem-telas, tela-sem-arquivo, colisao, texto-pequeno (menor que 18 px na tela de 1920), fora-da-tela, contraste (texto contra o fundo de verdade abaixo de 4,5:1, ou 3:1 no texto de 24 px ou mais). WARN: sem-contrato, titulo-colado, texto-cortado, contraste-justo (texto grande entre 3:1 e 4,5:1: passa, mas o projetor apaga), contraste-nao-medido (texto pintado com o fundo ou com outra camada por cima), fonte-pesada (letra que não é .woff2, ou letras somando mais de 300 KB), roteiro-ausente, roteiro-descasado, roteiro-invalido, tela-sem-numero. Corrija pela causa (layout, tamanho, cor, arquivo) e rode checar de novo. Contraste: escureça ou clareie a cor do texto, ponha um véu ou uma sombra atrás dele, ou mude o enquadramento da foto; texto decorativo (marca d'água) leva aria-hidden=\"true\" e fica fora da medida."
   },
   "OK": {
     "texto": "Pronto.",
@@ -102,6 +102,22 @@
   "FATOS_SEM_TABELA": {
     "texto": "A apresentação ainda não tem a lista de fatos com a fonte de cada um. Vou montar.",
     "acao": "Preencha a tabela Fato | Fonte | Data do brief.md com o que a pessoa informou e os documentos de referencias/, e rode fatos de novo."
+  },
+  "FONTE_BAIXADA": {
+    "texto": "Baixei a letra {{familia}} já leve, com a licença dela.",
+    "acao": "Cole dados.css no topo do tokens.css que fica ao lado da pasta em arquivos.pasta (minha-marca/tokens.css, ou deck/assets/marca/tokens.css da apresentação), no lugar das linhas @font-face antigas dessa família, e use dados.familia em --fonte-titulo ou --fonte-texto. A licença fica ao lado, com o nome da família (dados.licenca): nunca apague nem renomeie para OFL.txt."
+  },
+  "FONTE_NAO_ACHADA": {
+    "texto": "Não achei a letra {{familia}} no catálogo livre do Google Fonts.",
+    "acao": "Confira o nome exato da família (com espaços e maiúsculas, como no site do Google Fonts) e os pesos pedidos. Se a letra não for livre, escolha uma livre parecida e diga isso à pessoa em uma frase."
+  },
+  "FONTE_SEM_LICENCA": {
+    "texto": "A letra {{familia}} não tem licença no repositório oficial, então não baixei.",
+    "acao": "Escolha outra letra livre parecida. Letra sem licença clara nunca entra na apresentação."
+  },
+  "FONTE_DOWNLOAD_FALHOU": {
+    "texto": "Não consegui baixar a letra agora.",
+    "acao": "Veja dados.detalhe. Sem internet, tente de novo depois; no Codex, rode fora da área protegida. Nada foi guardado."
   },
   "PRINTS_PRONTOS": {
     "texto": "Fotografei todas as telas, a cada clique.",

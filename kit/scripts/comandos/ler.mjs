@@ -26,6 +26,7 @@ function texto(opcoes, nome) {
 }
 
 export default async function ler(args) {
+  const inicio = Date.now(); // o teto da leitura conta daqui, com a abertura do navegador dentro
   const nome = nomeDaApresentacao(args);
   const c = caminhosDe(nome);
   if (!ehPasta(c.pasta)) falha('APRESENTACAO_NAO_ACHADA', { nome, pasta: relativoARaiz(c.pasta) });
@@ -37,7 +38,7 @@ export default async function ler(args) {
   let r;
   try {
     leitor = await abrirLeitor();
-    r = await lerFontes(pedido, { pasta: path.join(c.pasta, 'coleta'), brief: c.brief, leitor, aoAvancar: progresso });
+    r = await lerFontes(pedido, { pasta: path.join(c.pasta, 'coleta'), brief: c.brief, leitor, aoAvancar: progresso, inicio });
   } finally {
     leitor?.fechar();
   }

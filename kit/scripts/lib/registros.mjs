@@ -87,35 +87,88 @@ export function marcasInteiras(markdown) {
   return ini === 1 && fim === 1 && texto.indexOf(MARCA_INICIO) < texto.indexOf(MARCA_FIM);
 }
 
+// O texto em linhas, cada uma com o próprio fim ('\r\n', '\n' ou '' na última).
+function emLinhas(texto) {
+  const linhas = [];
+  let ini = 0;
+  for (;;) {
+    const i = texto.indexOf('\n', ini);
+    if (i === -1) {
+      linhas.push({ texto: texto.slice(ini), fim: '' });
+      return linhas;
+    }
+    const crlf = i > ini && texto[i - 1] === '\r';
+    linhas.push({ texto: texto.slice(ini, crlf ? i - 1 : i), fim: crlf ? '\r\n' : '\n' });
+    ini = i + 1;
+  }
+}
+
+// O fim de linha que o arquivo mais usa: é o das linhas novas.
+function fimMaisUsado(linhas) {
+  const crlf = linhas.filter((l) => l.fim === '\r\n').length;
+  const lf = linhas.filter((l) => l.fim === '\n').length;
+  return crlf > lf ? '\r\n' : '\n';
+}
+
+// Junta as linhas: cada linha que já existia mantém o fim dela; linha nova (fim null) e a que era a
+// última e deixou de ser ganham o fim mais usado do arquivo.
+function juntarLinhas(linhas, novo) {
+  return linhas
+    .map((l, i) => {
+      const ultima = i === linhas.length - 1;
+      const fim = ultima ? (l.fim ?? '') : l.fim || novo;
+      return `${l.texto}${fim}`;
+    })
+    .join('');
+}
+
+const VAZIA = Object.freeze({ texto: '', fim: null });
+const ehVazia = (l) => !l.texto.trim();
+
+function semVaziasNoFim(linhas, minimo = 0) {
+  let n = linhas.length;
+  while (n > minimo && ehVazia(linhas[n - 1])) n -= 1;
+  return linhas.slice(0, n);
+}
+
 // Põe a parte lida no brief: no lugar da que já existe; senão, no fim da seção "Fatos e números"
-// (antes do próximo título "## "); sem essa seção, numa seção nova no fim do brief. Mantém o fim
-// de linha do arquivo (CRLF no Windows). Devolve null, sem mexer em nada, se as marcas estão
-// quebradas (marcasInteiras).
+// (antes do próximo título "## "); sem essa seção, numa seção nova no fim do brief. Cada linha que
+// já existia mantém o próprio fim de linha (CRLF no Windows, LF, ou os dois misturados); as novas
+// usam o que o arquivo mais usa. Devolve null, sem mexer em nada, se as marcas estão quebradas
+// (marcasInteiras).
 export function juntarNoBrief(markdown, secao) {
   const original = String(markdown || '');
   if (!marcasInteiras(original)) return null;
-  const crlf = original.includes('\r\n');
-  const texto = crlf ? original.split('\r\n').join('\n') : original;
-  const junto = juntarLf(texto, String(secao).split('\r\n').join('\n'));
-  return crlf ? junto.split('\n').join('\r\n') : junto;
+  const linhas = emLinhas(original);
+  const novas = emLinhas(String(secao).split('\r\n').join('\n')).map((l) => ({ texto: l.texto, fim: null }));
+  return juntarLinhas(colocarSecao(linhas, novas), fimMaisUsado(linhas));
 }
 
-function juntarLf(texto, secao) {
-  const ini = texto.indexOf(MARCA_INICIO);
-  const fim = texto.indexOf(MARCA_FIM);
-  if (ini !== -1) return `${texto.slice(0, ini)}${secao}${texto.slice(fim + MARCA_FIM.length)}`;
-  const linhas = texto.split('\n');
-  const k = linhas.findIndex(ehTituloDosFatos);
-  if (k === -1) {
-    const base = texto.trimEnd();
-    return `${base ? `${base}\n\n` : ''}${TITULO_DOS_FATOS}\n\n${secao}\n`;
+function colocarSecao(linhas, novas) {
+  const iIni = linhas.findIndex((l) => l.texto.includes(MARCA_INICIO));
+  if (iIni !== -1) {
+    const iFim = linhas.findIndex((l, i) => i >= iIni && l.texto.includes(MARCA_FIM));
+    const primeira = linhas[iIni].texto;
+    const ultima = linhas[iFim];
+    const antes = primeira.slice(0, primeira.indexOf(MARCA_INICIO));
+    const depois = ultima.texto.slice(ultima.texto.indexOf(MARCA_FIM) + MARCA_FIM.length);
+    const meio = novas.map((l, i) => ({
+      texto: `${i === 0 ? antes : ''}${l.texto}${i === novas.length - 1 ? depois : ''}`,
+      fim: i === novas.length - 1 ? ultima.fim : null,
+    }));
+    return [...linhas.slice(0, iIni), ...meio, ...linhas.slice(iFim + 1)];
   }
-  let proximo = linhas.findIndex((l, i) => i > k && l.startsWith('## '));
+  const k = linhas.findIndex((l) => ehTituloDosFatos(l.texto));
+  const fimDoArquivo = { texto: '', fim: '' };
+  if (k === -1) {
+    const base = semVaziasNoFim(linhas);
+    return [...base, ...(base.length ? [VAZIA] : []), { texto: TITULO_DOS_FATOS, fim: null }, VAZIA, ...novas, fimDoArquivo];
+  }
+  let proximo = linhas.findIndex((l, i) => i > k && l.texto.startsWith('## '));
   if (proximo === -1) proximo = linhas.length;
-  const antes = linhas.slice(0, proximo);
-  while (antes.length > k + 1 && !antes[antes.length - 1].trim()) antes.pop();
+  const antes = semVaziasNoFim(linhas.slice(0, proximo), k + 1);
   const depois = linhas.slice(proximo);
-  return [...antes, '', secao, ...(depois.length ? ['', ...depois] : [''])].join('\n');
+  return [...antes, VAZIA, ...novas, ...(depois.length ? [VAZIA, ...depois] : [fimDoArquivo])];
 }
 
 // O texto de cada página do site atual, com o endereço e a data, para o assistente ler.

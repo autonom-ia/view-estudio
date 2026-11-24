@@ -427,9 +427,13 @@
     "texto": "Achei no site um contato que pode não ser do negócio. Às vezes é de quem fez o site. Não anotei como certo.",
     "acao": "dados.contatos lista cada um (tipo, valor, fonte e motivo: \"em-todas-as-paginas\" é contato repetido em toda página lida; \"so-no-rodape\" é, num site de uma página só, contato que só aparece no rodapé; os dois podem ser de quem fez o site, como em \"site feito por\"; \"dados-de-outro\" é dado escondido na página em nome de outra empresa, com o nome em \"de\"). Nada disso está na tabela de fatos. No portão 1, pergunte junto com o brief se algum é da pessoa; se for, anote na tabela de cima com a fonte \"a própria pessoa disse em <data>\". Sem esse sim, nunca vai para a tela."
   },
+  "LER_SITE_CONTATO_A_CONFERIR": {
+    "texto": "Anotei os contatos do site, mas não tive com o que comparar. Confira se são mesmo do negócio.",
+    "acao": "Sem telefone do perfil do Google e sem contato que o próprio site declara, não dá para saber se um contato repetido em toda página (ou só no rodapé) é do negócio ou de quem fez o site. dados.contatos lista esses (tipo, valor, fonte, motivo); eles ESTÃO na tabela de fatos. No portão 1, pergunte junto com o brief se são da pessoa; o que não for, apague da parte \"Lido pelo estúdio\" e nunca ponha na tela."
+  },
   "LER_BRIEF_MARCADOR_QUEBRADO": {
     "texto": "Li o negócio, mas não mexi no resumo da apresentação: a parte que eu atualizo sozinho está quebrada ali.",
-    "acao": "O brief.md tem as marcas dados.inicio e dados.fim faltando, repetidas ou fora de ordem. O brief ficou como estava; o que foi lido está em arquivos.coleta (fatos-lidos.json). Abra o brief.md, deixe um só par de marcas (início antes do fim) em volta da parte \"Lido pelo estúdio\", ou apague as duas, sem apagar o texto da pessoa, e rode o ler de novo."
+    "acao": "O brief.md tem as marcas dados.inicio e dados.fim faltando, repetidas ou fora de ordem, e ficou como estava; o que foi lido está em arquivos.coleta (fatos-lidos.json). Para consertar: 1) mostre à pessoa o trecho entre as marcas e peça o sim antes de mexer; 2) com o sim, apague só a marca sobrando (a sem par, ou a repetida), sem apagar texto dela; ou, se a parte lida estiver toda estragada, apague as duas marcas e o que estiver entre elas e reescreva a parte \"Lido pelo estúdio\" a partir de coleta/fatos-lidos.json (Fato | Fonte | Data, uma linha por fato, entre um só par de marcas, início antes do fim); 3) rode o ler de novo e confira que saiu sem este aviso."
   },
   "LER_TEMPO_ESGOTADO": {
     "texto": "A leitura passou do tempo e eu parei. Guardei o que já tinha lido.",

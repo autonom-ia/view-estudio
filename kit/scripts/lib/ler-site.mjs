@@ -266,13 +266,16 @@ export function mesmoContato(a, b) {
 }
 
 const vezesNosLinks = (links, c) => links.map(contatoDoLink).filter((x) => x && mesmoContato(x, c)).length;
+const ehContato = (f) => f.tipo === 'Telefone' || f.tipo === 'E-mail' || f.tipo === 'WhatsApp';
 
-// Contato que pode ser de quem fez o site ("site feito por", com o WhatsApp da agência), quando não
-// é o contato principal do negócio (o do JSON-LD dele ou o do perfil do Google):
+// Contato que pode ser de quem fez o site ("site feito por", com o WhatsApp da agência):
 // - com 2 páginas ou mais, o que aparece em TODAS as páginas lidas (rodapé, cabeçalho);
 // - com 1 página só (não dá para comparar), o que aparece SÓ no rodapé dela.
-// Esses vão para "duvidosos", para a pessoa confirmar; os outros são fato, com a página onde estão.
+// Só com referência própria do negócio (telefone do perfil do Google ou contato do JSON-LD dele) um
+// contato desses que DIFERE da referência vai para "duvidosos" (fora dos fatos). Sem referência,
+// não há com o que comparar: o contato fica como fato e entra em "aConferir" (aviso leve).
 export function separarContatos(paginas, principais) {
+  const referencia = principais.filter(ehContato);
   const porPagina = paginas.map((p) => contatosDosLinks(p.links));
   const emTodas = (c) => porPagina.every((lista) => lista.some((x) => mesmoContato(x, c)));
   const soNoRodape = (c, p) => vezesNosLinks(p.links, c) <= vezesNosLinks(p.rodape || [], c);
@@ -280,14 +283,22 @@ export function separarContatos(paginas, principais) {
   const motivo = paginas.length >= 2 ? 'em-todas-as-paginas' : 'so-no-rodape';
   const contatos = [];
   const duvidosos = [];
+  const aConferir = [];
+  const anotar = (lista, c, p) => {
+    if (!lista.some((d) => mesmoContato(d, c))) lista.push({ ...c, fonte: p.url, motivo });
+  };
   paginas.forEach((p, i) => {
     for (const c of porPagina[i]) {
-      const doNegocio = principais.some((x) => mesmoContato(x, c));
-      if (doNegocio || !repetido(c, p)) contatos.push({ ...c, fonte: p.url });
-      else if (!duvidosos.some((d) => mesmoContato(d, c))) duvidosos.push({ ...c, fonte: p.url, motivo });
+      const suspeito = repetido(c, p) && !referencia.some((x) => mesmoContato(x, c));
+      if (suspeito && referencia.length) {
+        anotar(duvidosos, c, p);
+        continue;
+      }
+      contatos.push({ ...c, fonte: p.url });
+      if (suspeito) anotar(aConferir, c, p);
     }
   });
-  return { contatos, duvidosos };
+  return { contatos, duvidosos, aConferir };
 }
 
 // Roda a leitura de uma página: abre, rola e lê.
@@ -300,13 +311,13 @@ async function lerUmaPagina(leitor, url) {
 const SEM_PRAZO = Number.POSITIVE_INFINITY;
 
 // Visita o site a partir do endereço dado. Devolve { inicio, paginas, contatos, declarados,
-// duvidosos, foraDoSite, fotos, esgotou }, ou { desvio } (sem ler nada) quando a primeira página
+// duvidosos, aConferir, foraDoSite, fotos, esgotou }, ou { desvio } (sem ler nada) quando a primeira página
 // abre em outro endereço ou fora do site do negócio. Página seguinte que abre fora do site fica de
 // fora (foraDoSite). prazo: hora (Date.now) em que a leitura para e devolve o que já leu.
 // referencia: { nomes, telefones } do negócio, para separar o contato dele do contato de outro.
 // permitirEnderecoLocal: só os testes (que servem páginas em 127.0.0.1) ligam.
 export async function lerSite(leitor, endereco, opcoes = {}) {
-  const { maximo = TETO_DE_PAGINAS, pasta, aoAvancar = () => {}, prazo = SEM_PRAZO, referencia = {}, permitirEnderecoLocal = false } = opcoes;
+  const { maximo = TETO_DE_PAGINAS, pasta, aoAvancar = () => {}, prazo = SEM_PRAZO, referencia = {}, permitirEnderecoLocal = false, baixarFoto = baixar } = opcoes;
   const fila0 = semAncora(new URL(endereco).href);
   const fila = [fila0];
   const vistas = new Set(fila);
@@ -346,19 +357,21 @@ export async function lerSite(leitor, endereco, opcoes = {}) {
     }
   }
   if (!paginas.length && !esgotou) throw new Error('nenhuma página do site abriu');
+  if (!paginas.length) return { inicio: origem, paginas, contatos: [], declarados: [], duvidosos: [], aConferir: [], foraDoSite, fotos: [], esgotou };
   const ref = { host: paginas.length ? new URL(origem).hostname : '', nomes: [...(referencia.nomes || []), paginas[0]?.titulo || ''].filter(Boolean) };
   const doJsonLd = paginas.map((p) => ({ p, ...fatosDoJsonLd(p.jsonld, ref) }));
   const declarados = doJsonLd.flatMap(({ p, fatos }) => fatos.map((f) => ({ ...f, fonte: p.url })));
   const principais = [...declarados, ...(referencia.telefones || []).map((t) => ({ tipo: 'Telefone', valor: t }))];
   const separados = separarContatos(paginas, principais);
   const outrosDoJsonLd = doJsonLd.flatMap(({ p, outros }) => outros.map((f) => ({ ...f, fonte: p.url, motivo: 'dados-de-outro' })));
-  const fotos = pasta && !esgotou ? await baixarFotos(paginas, path.join(pasta, 'fotos'), { prazo, permitirEnderecoLocal }) : { lista: [], esgotou: false };
+  const fotos = pasta && !esgotou ? await baixarFotos(paginas, path.join(pasta, 'fotos'), { prazo, permitirEnderecoLocal, baixarFoto }) : { lista: [], esgotou: false };
   return {
     inicio: origem,
     paginas,
     contatos: separados.contatos,
     declarados,
     duvidosos: [...separados.duvidosos, ...outrosDoJsonLd],
+    aConferir: separados.aConferir,
     foraDoSite,
     fotos: fotos.lista,
     esgotou: esgotou || fotos.esgotou,
@@ -367,7 +380,8 @@ export async function lerSite(leitor, endereco, opcoes = {}) {
 
 const TETO_DA_FOTO_MS = 30000;
 
-async function baixarFotos(paginas, pasta, { prazo, permitirEnderecoLocal }) {
+// baixarFoto: o baixar de verdade; os testes trocam por um lento. Cada foto respeita o prazo.
+async function baixarFotos(paginas, pasta, { prazo, permitirEnderecoLocal, baixarFoto }) {
   const vistas = new Set();
   const lista = [];
   for (const p of paginas) {
@@ -385,9 +399,10 @@ async function baixarFotos(paginas, pasta, { prazo, permitirEnderecoLocal }) {
       const ext = ['.png', '.webp', '.avif', '.gif'].find((e) => nome.endsWith(e)) || '.jpg';
       const arquivo = path.join(pasta, `foto-${String(lista.length + 1).padStart(2, '0')}${ext}`);
       try {
-        const r = await baixar(img.src, arquivo, { tetoMs: Math.min(TETO_DA_FOTO_MS, resta), permitirEnderecoLocal });
+        const r = await antesDoPrazo(baixarFoto(img.src, arquivo, { tetoMs: Math.min(TETO_DA_FOTO_MS, resta), prazo, permitirEnderecoLocal }), prazo);
         lista.push({ arquivo, origem: img.src, pagina: p.url, alt: img.alt, largura: r.largura, altura: r.altura });
-      } catch {
+      } catch (e) {
+        if (e instanceof TempoEsgotado) return { lista, esgotou: true };
         /* foto que não baixou (ou de endereço interno) fica só na lista da página */
       }
     }

@@ -97,6 +97,7 @@ async function parteSite(endereco, referencia, ctx) {
   escreverJson(path.join(dir, 'paginas.json'), s.paginas.map(({ texto, ...resto }) => resto));
   escreverTexto(path.join(dir, 'texto.md'), R.textoDoSite(s.paginas, ctx.data));
   if (s.duvidosos.length) ctx.avisos.push(aviso('LER_SITE_CONTATO_DE_TERCEIRO', { contatos: s.duvidosos }));
+  if (s.aConferir.length) ctx.avisos.push(aviso('LER_SITE_CONTATO_A_CONFERIR', { contatos: s.aConferir }));
   ctx.registros.push(...R.registrosDoSite(s, ctx.data));
   ctx.dados.site = { endereco: s.inicio, paginas: s.paginas.length, fotos: s.fotos.length, fora_do_site: s.foraDoSite.length };
   return s;
@@ -139,7 +140,8 @@ function gravarNoBrief(registros, ctx, brief) {
 }
 
 // pedido: { negocio, google, site }. opcoes: { pasta (coleta/), brief (brief.md), leitor, bases,
-// data, aoAvancar }. Só os testes passam tetoMs (teto da leitura) e permitirEnderecoLocal (fotos
+// data, aoAvancar, inicio }. inicio: o instante (Date.now) em que o comando começou; o teto conta
+// dali, com a abertura do navegador dentro dele. Só os testes passam tetoMs (teto da leitura) e permitirEnderecoLocal (fotos
 // servidas em 127.0.0.1); o comando nunca. Devolve { avisos, dados, registros }.
 export async function lerFontes(pedido, opcoes) {
   const ctx = {
@@ -148,7 +150,7 @@ export async function lerFontes(pedido, opcoes) {
     bases: { google: BASE_GOOGLE, ...(opcoes.bases || {}) },
     data: opcoes.data || hoje(),
     aoAvancar: opcoes.aoAvancar || (() => {}),
-    prazo: Date.now() + (opcoes.tetoMs ?? TETO_DA_LEITURA_MS),
+    prazo: (opcoes.inicio ?? Date.now()) + (opcoes.tetoMs ?? TETO_DA_LEITURA_MS),
     permitirEnderecoLocal: opcoes.permitirEnderecoLocal === true,
     esgotou: false,
     avisos: [],

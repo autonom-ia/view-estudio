@@ -15,9 +15,9 @@ import { opcoesDoNavegador, TEM_NAVEGADOR, exigirNavegador } from './fixtures/na
 import { horarioDoLugar, notaDoLugar, dadosDoLugar, enderecoDaBusca, ehDiaDaSemana } from '../scripts/lib/ler-google.mjs';
 import { linksDoMesmoSite, contatosDosLinks, fatosDoJsonLd, abriuNoMesmoSite, lerSite } from '../scripts/lib/ler-site.mjs';
 import { celula, secaoLida, juntarNoBrief, registrosDoGoogle, MARCA_INICIO, MARCA_FIM } from '../scripts/lib/registros.mjs';
-import { ehSiteDoNegocio, lerFontes, semEnderecosLocais } from '../scripts/lib/ler.mjs';
+import { ehSiteDoNegocio, lerFontes, semEnderecosLocais, TETO_DA_LEITURA_MS } from '../scripts/lib/ler.mjs';
 import { dimensoes, baixar, ehEnderecoInterno } from '../scripts/lib/baixar.mjs';
-import { acharObjetos, hoje, abrirLeitor } from '../scripts/lib/leitor.mjs';
+import { acharObjetos, hoje, abrirLeitor, TempoEsgotado } from '../scripts/lib/leitor.mjs';
 import { lerTabelaDeFatos, montarLastro, conferirTexto } from '../scripts/lib/fatos.mjs';
 import { servirFontes, NEGOCIO, AUTORES, AGENCIA } from './fixtures/fontes-sinteticas.mjs';
 
@@ -264,13 +264,14 @@ test('JSON-LD só vale como fato se for de negócio (Organization, LocalBusiness
   assert.equal(comPonto.outros.length, 0, 'endereço e contactPoint do negócio não viram "de outro"');
 });
 
-test('site de uma página só: contato do corpo é fato; o que está só no rodapé (e não é o principal) vira aviso', comPasta(async (pasta) => {
+test('site de uma página só, com referência própria: contato do corpo é fato; o que está só no rodapé (e difere) vira aviso', comPasta(async (pasta) => {
   const mapa = {
     'https://casa.example/': {
       url: 'https://casa.example/',
       titulo: 'Casa Exemplo',
       links: ['mailto:ola@casa.example', 'https://wa.me/5511988887777', 'mailto:ola@casa.example', rodapeDeAgencia],
       rodape: ['mailto:ola@casa.example', rodapeDeAgencia],
+      jsonld: [ldDoNegocio],
     },
   };
   const r = await lerFontes({ site: 'https://casa.example/' }, { pasta: path.join(pasta, 'coleta'), brief: path.join(pasta, 'brief.md'), leitor: leitorDeSite(mapa), data: DATA });
@@ -280,6 +281,23 @@ test('site de uma página só: contato do corpo é fato; o que está só no roda
   assert.ok(!fatos.join(' ').includes('5599999990000'));
   const a = r.avisos.find((x) => x.codigo === 'LER_SITE_CONTATO_DE_TERCEIRO');
   assert.deepEqual(a.dados.contatos.map((c) => `${c.motivo}|${c.valor}`), ['so-no-rodape|5599999990000']);
+}));
+
+test('sem referência própria (nem Google nem contato no JSON-LD do negócio): contato repetido fica fato, com aviso leve', comPasta(async (pasta) => {
+  const cabecalho = 'https://wa.me/5511977776666';
+  const mapa = {
+    'https://casa.example/': { url: 'https://casa.example/', titulo: 'Casa Exemplo', links: [cabecalho, 'https://casa.example/sobre'] },
+    'https://casa.example/sobre': { url: 'https://casa.example/sobre', titulo: 'Sobre', links: [cabecalho, 'mailto:ola@casa.example'] },
+  };
+  const r = await lerFontes({ site: 'https://casa.example/' }, { pasta: path.join(pasta, 'coleta'), brief: path.join(pasta, 'brief.md'), leitor: leitorDeSite(mapa), data: DATA });
+  const fatos = r.registros.map((x) => x.fato);
+  assert.ok(fatos.includes('WhatsApp no site atual: 5511977776666'), fatos.join('\n'));
+  assert.ok(fatos.includes('E-mail no site atual: ola@casa.example'));
+  assert.ok(fs.readFileSync(path.join(pasta, 'brief.md'), 'utf8').includes('5511977776666'));
+  assert.ok(!r.avisos.some((a) => a.codigo === 'LER_SITE_CONTATO_DE_TERCEIRO'));
+  const leve = r.avisos.find((a) => a.codigo === 'LER_SITE_CONTATO_A_CONFERIR');
+  assert.ok(leve, r.avisos.map((a) => a.codigo).join(', '));
+  assert.deepEqual(leve.dados.contatos.map((c) => `${c.motivo}|${c.valor}`), ['em-todas-as-paginas|5511977776666']);
 }));
 
 test('página seguinte que redireciona para outro endereço fica de fora; só a primeira para a leitura', comPasta(async (pasta) => {
@@ -352,6 +370,18 @@ test('brief salvo com BOM (Bloco de Notas antigo) continua com ele, e o texto da
   assert.ok(md.includes('ola@casa.example') && !md.split('\r\n').join('').includes('\n'));
 }));
 
+test('brief com fim de linha misturado: cada linha que já existia fica com o fim dela', () => {
+  const md = '# Brief\r\nlinha LF\nlinha CRLF\r\n\r\n## Fatos e números\r\n\r\n| Fato | Fonte |\n|---|---|\r\n| X | Y |\n\r\n## Material\nfim';
+  const um = juntarNoBrief(md, secaoLida([{ fato: 'A', fonte: 'f', data: DATA }], DATA));
+  assert.ok(um.startsWith('# Brief\r\nlinha LF\nlinha CRLF\r\n\r\n## Fatos e números\r\n\r\n| Fato | Fonte |\n|---|---|\r\n| X | Y |\n'), JSON.stringify(um.slice(0, 120)));
+  assert.ok(um.endsWith('\r\n## Material\nfim'), JSON.stringify(um.slice(-30)));
+  assert.ok(um.includes(`${MARCA_INICIO}\r\n`), 'linha nova usa o fim mais usado (CRLF)');
+  const dois = juntarNoBrief(um, secaoLida([{ fato: 'B', fonte: 'f', data: DATA }], DATA));
+  assert.equal(dois.slice(0, dois.indexOf(MARCA_INICIO)), um.slice(0, um.indexOf(MARCA_INICIO)));
+  assert.equal(dois.slice(dois.indexOf(MARCA_FIM)), um.slice(um.indexOf(MARCA_FIM)));
+  assert.ok(dois.includes('| B | f |') && !dois.includes('| A | f |'));
+});
+
 test('brief com fim de linha do Windows (CRLF) continua todo em CRLF depois da leitura', () => {
   const md = '# Brief\r\n\r\n## Fatos e números\r\n\r\n| Fato | Fonte |\r\n|---|---|\r\n| X | Y |\r\n\r\n## Material\r\nfim\r\n';
   const um = juntarNoBrief(md, secaoLida([{ fato: 'A', fonte: 'f', data: DATA }], DATA));
@@ -384,6 +414,36 @@ test('teto de tempo: a leitura para no teto, grava o que já leu e avisa', comPa
   assert.ok(Date.now() - inicio2 < 5000, `parou em ${Date.now() - inicio2} ms`);
   assert.deepEqual(r2.avisos.map((a) => a.codigo), ['LER_TEMPO_ESGOTADO']);
   assert.equal(fs.existsSync(path.join(pasta, 'b2.md')), false);
+}));
+
+test('teto de tempo: conta do início do comando (navegador incluído) e cobre o laço das fotos', comPasta(async (pasta) => {
+  const leitor = leitorDeSite({ 'https://casa.example/': { url: 'https://casa.example/', titulo: 'Casa', links: [] } });
+  const r = await lerFontes({ site: 'https://casa.example/' }, { pasta: path.join(pasta, 'coleta'), brief: path.join(pasta, 'b.md'), leitor, data: DATA, inicio: Date.now() - TETO_DA_LEITURA_MS });
+  assert.equal(leitor.visitas.length, 0, 'o tempo já tinha acabado ao abrir o navegador');
+  assert.deepEqual(r.avisos.map((a) => a.codigo), ['LER_TEMPO_ESGOTADO']);
+  const comando = fs.readFileSync(path.join(RAIZ, 'kit', 'scripts', 'comandos', 'ler.mjs'), 'utf8');
+  const marca = comando.indexOf('const inicio = Date.now()');
+  assert.ok(marca !== -1 && marca < comando.indexOf('abrirLeitor()') && comando.includes('inicio })'), 'o comando mede antes de abrir o navegador e passa o instante');
+  // Fotos: um download que nunca termina não segura a leitura além do prazo.
+  const imagens = [1, 2, 3].map((n) => ({ src: `https://fotos.example/${n}.jpg`, largura: 800, altura: 600, alt: '' }));
+  const comFotos = leitorDeSite({ 'https://casa.example/': { url: 'https://casa.example/', titulo: 'Casa', links: [], imagens } });
+  const baixarFoto = () => new Promise(() => {});
+  const inicio = Date.now();
+  const s = await lerSite(comFotos, 'https://casa.example/', { pasta: path.join(pasta, 'site'), prazo: Date.now() + 300, baixarFoto });
+  assert.ok(Date.now() - inicio < 3000, `parou em ${Date.now() - inicio} ms`);
+  assert.equal(s.esgotou, true);
+  assert.equal(s.paginas.length, 1, 'a página lida fica');
+}));
+
+test('foto: a consulta do nome tem prazo próprio e respeita o prazo da leitura', comPasta(async (pasta) => {
+  const parado = () => new Promise(() => {});
+  const inicio = Date.now();
+  await assert.rejects(baixar('https://fotos.example/a.jpg', path.join(pasta, 'a.jpg'), { consultarNome: parado, tetoDoNomeMs: 100 }), (e) => !(e instanceof TempoEsgotado) && e.message.includes('não respondeu'));
+  await assert.rejects(baixar('https://fotos.example/a.jpg', path.join(pasta, 'a.jpg'), { consultarNome: parado, prazo: Date.now() + 150 }), (e) => e instanceof TempoEsgotado);
+  assert.ok(Date.now() - inicio < 3000, `parou em ${Date.now() - inicio} ms`);
+  const interno = async () => [{ address: '10.0.0.5', family: 4 }];
+  await assert.rejects(baixar('https://fotos.example/a.jpg', path.join(pasta, 'a.jpg'), { consultarNome: interno }), (e) => e.message.includes('endereço interno'));
+  assert.equal(fs.existsSync(path.join(pasta, 'a.jpg')), false);
 }));
 
 test('o comando ler nunca liga as opções só de teste (teto curto e endereço local)', () => {

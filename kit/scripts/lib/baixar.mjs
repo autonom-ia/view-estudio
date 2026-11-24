@@ -1,15 +1,25 @@
 // Baixa uma foto pública para a pasta de coleta e lê a largura e a altura dela pelo cabeçalho do
 // arquivo (JPEG, PNG ou WebP), sem programa de imagem. Só http e https; nunca endereço interno do
 // computador ou da rede de casa (127.x, 10.x, 172.16 a 31.x, 192.168.x, ::1, localhost), nem por
-// redirecionamento nem pelo nome. Lê aos pedaços e para ao passar do teto de tamanho.
+// redirecionamento nem pelo nome. Lê aos pedaços e para ao passar do teto de tamanho. A consulta do
+// nome tem prazo próprio, e tudo respeita o prazo da leitura inteira (lib/ler.mjs).
+//
+// Limite aceito: o endereço é conferido ANTES do download. Um site que troque o endereço do nome
+// entre a conferência e o download (DNS rebinding) não é bloqueado. O dano máximo é um arquivo de
+// imagem a mais em coleta/: nada é enviado, e o arquivo só vai para a apresentação com o sim da
+// pessoa. Bloquear isso exigiria trocar a consulta de nome dentro do próprio download, o que o
+// estúdio decidiu não fazer.
 import fs from 'node:fs';
 import path from 'node:path';
 import net from 'node:net';
 import dns from 'node:dns/promises';
+import { antesDoPrazo, TempoEsgotado } from './leitor.mjs';
 
 const TETO_BYTES = 20 * 1024 * 1024;
 const TETO_MS = 30000;
 const MAXIMO_DE_REDIRECIONAMENTOS = 5;
+const TETO_DO_NOME_MS = 5000;
+const SEM_PRAZO = Number.POSITIVE_INFINITY;
 const AGENTE = 'Mozilla/5.0 (View Estudio)';
 
 function ipv4Interno(ip) {
@@ -43,13 +53,23 @@ export function ehEnderecoInterno(host) {
   return h.startsWith('fc') || h.startsWith('fd') || ['fe8', 'fe9', 'fea', 'feb'].some((ini) => h.startsWith(ini));
 }
 
-async function conferirEndereco(url, permitirEnderecoLocal) {
+const consultarNomeDeVerdade = (nome) => dns.lookup(nome, { all: true });
+
+// o: { permitirEnderecoLocal, consultarNome, tetoDoNomeMs }.
+async function conferirEndereco(url, o) {
   const u = new URL(url);
   if (u.protocol !== 'http:' && u.protocol !== 'https:') throw new Error('a foto não está num endereço da internet (http ou https)');
-  if (permitirEnderecoLocal) return;
+  if (o.permitirEnderecoLocal) return;
   if (ehEnderecoInterno(u.hostname)) throw new Error('a foto aponta para um endereço interno e não foi baixada');
   if (net.isIP(u.hostname)) return;
-  const enderecos = await dns.lookup(u.hostname, { all: true });
+  let enderecos;
+  try {
+    enderecos = await antesDoPrazo(o.consultarNome(u.hostname), Date.now() + o.tetoDoNomeMs);
+  } catch (e) {
+    // Nome que não responde é foto que não baixa, não o fim do tempo da leitura inteira.
+    if (e instanceof TempoEsgotado) throw new Error('o endereço da foto não respondeu a tempo');
+    throw e;
+  }
   if (enderecos.some((e) => ehEnderecoInterno(e.address))) throw new Error('a foto aponta para um endereço interno e não foi baixada');
 }
 
@@ -71,12 +91,19 @@ async function lerComTeto(corpo, tetoBytes) {
   return Buffer.concat(partes);
 }
 
-// opcoes: tetoMs, tetoBytes e permitirEnderecoLocal (só os testes, que servem fotos em 127.0.0.1).
-export async function baixar(url, destino, { tetoMs = TETO_MS, tetoBytes = TETO_BYTES, permitirEnderecoLocal = false } = {}) {
-  const sinal = AbortSignal.timeout(tetoMs);
+// opcoes: tetoMs, tetoBytes, prazo (hora em que a leitura inteira acaba). Só os testes passam
+// permitirEnderecoLocal (fotos servidas em 127.0.0.1), consultarNome e tetoDoNomeMs.
+export async function baixar(url, destino, opcoes = {}) {
+  const { tetoMs = TETO_MS, tetoBytes = TETO_BYTES, prazo = SEM_PRAZO } = opcoes;
+  const conferencia = {
+    permitirEnderecoLocal: opcoes.permitirEnderecoLocal === true,
+    consultarNome: opcoes.consultarNome || consultarNomeDeVerdade,
+    tetoDoNomeMs: opcoes.tetoDoNomeMs ?? TETO_DO_NOME_MS,
+  };
+  const sinal = AbortSignal.timeout(Math.max(1, Math.min(tetoMs, prazo - Date.now())));
   let atual = url;
   for (let i = 0; i <= MAXIMO_DE_REDIRECIONAMENTOS; i += 1) {
-    await conferirEndereco(atual, permitirEnderecoLocal);
+    await antesDoPrazo(conferirEndereco(atual, conferencia), prazo);
     const r = await fetch(atual, { headers: { 'User-Agent': AGENTE }, redirect: 'manual', signal: sinal });
     const destinoDoDesvio = r.headers.get('location');
     if (r.status >= 300 && r.status < 400 && destinoDoDesvio) {

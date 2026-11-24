@@ -75,10 +75,16 @@ test('fatos: só vale linha com fonte; número de uma linha não empresta dígit
 
 test('fatos: número com % ou com mil/milhão/bilhão pede fonte mesmo com menos de 3 dígitos', () => {
   assert.deepEqual(numerosMarcados('Cresceu 38% e 2,5 % ao mês; 40 mil clientes, 3 milhões de reais, 12,5% e 7 dias').map((m) => m.chave),
-    ['38%', '25%', '40 mil', '3 milhoes']);
+    ['38%', '2,5%', '40 mil', '3 milhoes']);
   const lastro = montarLastro(lerTabelaDeFatos('| Fato | Fonte |\n|---|---|\n| 38% das vendas antes das 8 | caixa da loja |\n| 3 milhões de reais em 2025 | balanço |\n| 7% de desconto | |'));
   const r = conferirTexto({ texto: '38% das vendas. 3 milhoes de reais. 40 mil clientes. 7% de desconto. 3 lojas.' }, lastro);
   assert.deepEqual(r.faltam.map((f) => `${f.trecho}:${f.motivo}`).sort(), ['40 mil:fora-de-fatos', '7%:linha-sem-fonte']);
+});
+
+test('fatos: a vírgula decimal faz parte do número ("2,5%" não libera "25%"; "12,5%" não libera "125")', () => {
+  const lastro = montarLastro(lerTabelaDeFatos('| Fato | Fonte |\n|---|---|\n| Cresceu 2,5% ao mês | balanço |\n| 12,5% dos pedidos | sistema |\n| Ticket de R$ 1.250,90 | caixa |'));
+  const r = conferirTexto({ texto: 'Cresceu 25% ao mês. 125 clientes. 2,5% ao mês. 12,5% dos pedidos. R$ 1.250,90 de ticket.' }, lastro);
+  assert.deepEqual(r.faltam.map((f) => `${f.trecho}:${f.motivo}`).sort(), ['125:fora-de-fatos', '25%:fora-de-fatos']);
 });
 
 test('fatos: número de uma linha só se junta pelo separador de número, não atravessa palavras', () => {

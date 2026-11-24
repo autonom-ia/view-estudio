@@ -26,6 +26,35 @@ export function soDigitos(texto) {
   return s;
 }
 
+// Chave de um número em português: ponto e espaço são milhar e somem; a vírgula entre dígitos é a
+// decimal e fica ("2,5" ≠ "25", "1.250,90" → "1250,90"). Hífen, barra e parênteses somem
+// (telefone, CEP, data).
+export function chaveNumerica(texto) {
+  const t = String(texto);
+  let s = '';
+  for (let i = 0; i < t.length; i += 1) {
+    const ch = t[i];
+    if (ehDigito(ch)) s += ch;
+    else if (ch === ',' && ehDigito(t[i - 1] || '') && ehDigito(t[i + 1] || '')) s += ',';
+  }
+  return s;
+}
+
+// Pedaços de um número separados pela vírgula decimal: "12,5" → ["12", "5"].
+function partesDecimais(trecho) {
+  const t = String(trecho);
+  const partes = [];
+  let atual = '';
+  for (let i = 0; i < t.length; i += 1) {
+    if (t[i] === ',' && ehDigito(t[i - 1] || '') && ehDigito(t[i + 1] || '')) {
+      partes.push(atual);
+      atual = '';
+    } else atual += t[i];
+  }
+  partes.push(atual);
+  return partes;
+}
+
 // Corridas de dígitos contíguos: "(11) 0000-0000" → ["11", "0000", "0000"].
 export function corridas(texto) {
   const lista = [];
@@ -67,7 +96,7 @@ function sequencias(texto) {
       else break;
     }
     const trecho = t.slice(inicio, ultimo + 1);
-    achados.push({ trecho, digitos: soDigitos(trecho), fim: ultimo + 1 });
+    achados.push({ trecho, digitos: chaveNumerica(trecho), qtd: soDigitos(trecho).length, fim: ultimo + 1 });
     i = Math.max(ultimo + 1, i + 1);
   }
   return achados;
@@ -75,7 +104,7 @@ function sequencias(texto) {
 
 // Sequências numéricas com 3+ dígitos.
 export function sequenciasNumericas(texto) {
-  return sequencias(texto).filter((s) => s.digitos.length >= 3).map(({ trecho, digitos }) => ({ trecho, digitos }));
+  return sequencias(texto).filter((s) => s.qtd >= 3).map(({ trecho, digitos }) => ({ trecho, digitos }));
 }
 
 // O que vem logo depois do número: "%" (com ou sem espaço antes) ou uma palavra de GRANDEZAS.
@@ -99,7 +128,7 @@ export function numerosMarcados(texto) {
   const t = String(texto);
   const achados = [];
   for (const s of sequencias(t)) {
-    if (s.digitos.length === 0 || s.digitos.length >= 3) continue;
+    if (s.qtd === 0 || s.qtd >= 3) continue;
     const marca = marcaDepois(t, s.fim);
     if (!marca) continue;
     const chave = `${s.digitos}${marca === '%' ? '%' : ` ${marca}`}`;
@@ -203,12 +232,16 @@ export function tabelaDeFatosIlegivel(markdown) {
 // 00000000, 1100000000…; "1 de 3 pedidos (33%)" não sustenta 133 (são três números).
 export function numerosDaLinha(texto, dentro = new Set()) {
   for (const s of sequencias(texto)) {
-    const cs = corridas(s.trecho);
-    for (let i = 0; i < cs.length; i += 1) {
-      let junto = '';
-      for (let j = i; j < cs.length; j += 1) {
-        junto += cs[j];
-        if (junto.length >= 3) dentro.add(junto);
+    if (s.qtd >= 3) dentro.add(s.digitos);
+    // as combinações nunca atravessam a vírgula decimal: "12,5%" não sustenta "125"
+    for (const parte of partesDecimais(s.trecho)) {
+      const cs = corridas(parte);
+      for (let i = 0; i < cs.length; i += 1) {
+        let junto = '';
+        for (let j = i; j < cs.length; j += 1) {
+          junto += cs[j];
+          if (junto.length >= 3) dentro.add(junto);
+        }
       }
     }
   }
@@ -270,8 +303,8 @@ function numeroTemLastro(seq, lastro) {
   if (pedacos.length < 2) return false;
   let algum = false;
   for (const p of pedacos) {
-    const d = soDigitos(p);
-    if (d.length < 3) continue;
+    if (soDigitos(p).length < 3) continue;
+    const d = chaveNumerica(p);
     algum = true;
     if (!lastro.numeros.has(d)) return false;
   }

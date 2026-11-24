@@ -1,4 +1,5 @@
-// Fato com fonte: todo número de 3+ dígitos, palavra com @ e endereço tel:/mailto: que a plateia vê
+// Fato com fonte: todo número de 3+ dígitos, número com % ou com mil/milhão/bilhão (lib/fatos.mjs),
+// palavra com @ e endereço tel:/mailto: que a plateia vê
 // em alguma tela, em algum clique, ou ouve no roteiro, precisa estar na tabela de fatos do brief.md,
 // numa linha com a fonte preenchida. O brief.md já é o lugar dos fatos no View (AGENTS.md, "Fato com
 // fonte"): não existe um segundo arquivo. Portado do Site Estúdio (comando "fatos"), onde a tabela
@@ -6,6 +7,7 @@
 // Telas: lidas pelo DOM do Chrome em cada beat assentado (o que entra no clique 2 e sai no 4 só
 // aparece no meio), juntando innerText, o content: do CSS e o href dos links. Sem regex.
 // Roteiro: a "fala" de cada beat (é dita à plateia). A "nota" é só para quem apresenta e fica fora.
+// Tela que o index pede e não existe: RED tela-sem-arquivo (como no checar).
 // RED (saída 2): achado sem fonte. RED fonte-de-exemplo: linha do brief.md que ainda tem a fonte do
 // molde (negócio fictício). Data, nome próprio e citação ficam com o revisor de fatos (skill revisar).
 // O texto dentro do vídeo de uma cena é imagem: quem confere é o revisor de fatos.
@@ -15,7 +17,7 @@ import { nomeDaApresentacao } from '../lib/args.mjs';
 import { abrirApresentacao, lerRoteiro } from '../lib/apresentacao.mjs';
 import { abrirSessao, telasDoIndex } from '../lib/sessao.mjs';
 import { ESPERAR_PRONTA, ASSENTAR, TEXTO_PARA_FATOS } from '../lib/pagina.mjs';
-import { lerTabelaDeFatos, montarLastro, conferirTexto } from '../lib/fatos.mjs';
+import { lerTabelaDeFatos, tabelaDeFatosIlegivel, montarLastro, conferirTexto } from '../lib/fatos.mjs';
 import { lerTexto } from '../lib/json.mjs';
 import { progresso } from '../lib/executar.mjs';
 
@@ -36,16 +38,17 @@ async function textoDaTela(sessao, url) {
 }
 
 function lerTabela(c) {
-  if (!fs.existsSync(c.brief)) return { temTabela: false, linhas: [] };
-  const linhas = lerTabelaDeFatos(lerTexto(c.brief));
+  if (!fs.existsSync(c.brief)) return { temTabela: false, ilegivel: false, linhas: [] };
+  const md = lerTexto(c.brief);
+  const linhas = lerTabelaDeFatos(md);
   // a tabela vazia do molde ("|  |  |  |") não tem linha: conta como sem tabela preenchida
-  return { temTabela: linhas.length > 0, linhas };
+  return { temTabela: linhas.length > 0, ilegivel: tabelaDeFatosIlegivel(md), linhas };
 }
 
 export default async function fatos(args) {
   const nome = nomeDaApresentacao(args);
   const c = abrirApresentacao(nome);
-  const { temTabela, linhas } = lerTabela(c);
+  const { temTabela, ilegivel, linhas } = lerTabela(c);
   const lastro = montarLastro(linhas);
   const vermelhos = [];
   for (const l of linhas) {
@@ -55,8 +58,12 @@ export default async function fatos(args) {
   const telasLidas = [];
   const sessao = await abrirSessao(c.deck);
   try {
-    const telas = (await telasDoIndex(sessao)).filter((t) => t.rel && fs.existsSync(path.join(c.deck, ...t.rel.split('/'))));
-    for (const t of telas) {
+    for (const t of await telasDoIndex(sessao)) {
+      // tela que o index pede e não existe: reprova, como no checar (não some calada da conferência)
+      if (!t.rel || !fs.existsSync(path.join(c.deck, ...t.rel.split('/')))) {
+        vermelhos.push({ tela: t.arquivo || t.id, tipo: 'tela-sem-arquivo', trecho: t.rel || t.url || '', motivo: 'tela-sem-arquivo' });
+        continue;
+      }
       progresso(`Conferindo os fatos de ${t.arquivo}...`);
       const lido = await textoDaTela(sessao, t.url);
       const r = conferirTexto(lido, lastro);
@@ -79,7 +86,7 @@ export default async function fatos(args) {
 
   const aprovado = vermelhos.length === 0;
   const avisos = [];
-  if (!temTabela) avisos.push({ codigo: 'FATOS_SEM_TABELA', dados: { arquivo: c.rel('brief.md') } });
+  if (!temTabela) avisos.push({ codigo: ilegivel ? 'FATOS_TABELA_ILEGIVEL' : 'FATOS_SEM_TABELA', dados: { arquivo: c.rel('brief.md') } });
   return {
     ok: aprovado,
     codigo: aprovado ? 'FATOS_OK' : 'FATOS_SEM_FONTE',

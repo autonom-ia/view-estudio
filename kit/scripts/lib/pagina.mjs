@@ -388,16 +388,39 @@ export const MOSTRAR_TEXTO = `(async () => {
   return true;
 })()`;
 
-// O texto que a plateia lê numa tela assentada, para a conferência de fatos: o innerText (que deixa
-// de fora o que está escondido neste beat), o que o CSS escreve com content: nos elementos visíveis e
-// os endereços tel: e mailto: dos links. A dica de teclado ([data-controle]) fica de fora.
+// O texto que a plateia lê numa tela assentada, para a conferência de fatos: só os nós de texto
+// visíveis (checkVisibility com opacidade e visibilidade: texto com opacity 0 não conta, o innerText
+// contaria), o que o CSS escreve com content: nos elementos visíveis e os endereços tel: e mailto:
+// dos links. Texto de blocos diferentes vai em linhas diferentes (como o innerText faz). A dica de
+// teclado ([data-controle]) fica de fora.
 export const TEXTO_PARA_FATOS = `(() => {
   const raiz = document.querySelector('.palco-tela') || document.body;
-  const pedacos = [raiz.innerText || ''];
   const visivel = (el) => {
     try { if (el.checkVisibility) return el.checkVisibility({ opacityProperty: true, visibilityProperty: true }); } catch (e) {}
-    return getComputedStyle(el).visibility !== 'hidden';
+    const cs = getComputedStyle(el);
+    return cs.visibility !== 'hidden' && cs.display !== 'none' && parseFloat(cs.opacity) > 0;
   };
+  const blocoDe = (el) => {
+    let e = el;
+    while (e && e !== raiz && getComputedStyle(e).display.startsWith('inline')) e = e.parentElement;
+    return e;
+  };
+  const pedacos = [];
+  let bloco = null;
+  let linha = '';
+  const andar = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT);
+  for (let n = andar.nextNode(); n; n = andar.nextNode()) {
+    const el = n.parentElement;
+    if (!el || el.closest('script, style, template, noscript, [data-controle]')) continue;
+    // espaço entre palavras (inclusive entre os spans de data-entra="palavras") separa números
+    if (!n.textContent.trim()) { if (linha) linha += ' '; continue; }
+    if (!visivel(el)) continue;
+    const b = blocoDe(el);
+    if (b !== bloco && linha) { pedacos.push(linha); linha = ''; }
+    bloco = b;
+    linha += n.textContent;
+  }
+  if (linha) pedacos.push(linha);
   for (const el of raiz.querySelectorAll('*')) {
     if (el.closest('[data-controle]') || !visivel(el)) continue;
     for (const pseudo of ['::before', '::after']) {

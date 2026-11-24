@@ -97,11 +97,15 @@
   },
   "FATOS_SEM_FONTE": {
     "texto": "Há números, contatos ou @ nas telas ou na fala sem fonte guardada. Vou conferir antes de seguir.",
-    "acao": "Leia dados.vermelhos (tela, beat, tipo, trecho, motivo). Para cada um: confirme com a pessoa e registre na tabela de fatos do brief.md com a fonte, ou tire da tela e do roteiro. fonte-de-exemplo: apague as linhas do exemplo do molde. Nunca invente fonte."
+    "acao": "Leia dados.vermelhos (tela, beat, tipo, trecho, motivo). Para cada um: confirme com a pessoa e registre na tabela de fatos do brief.md com a fonte, ou tire da tela e do roteiro. fonte-de-exemplo: apague as linhas do exemplo do molde. tela-sem-arquivo: o index pede uma tela que não existe; corrija o index ou crie a tela. Nunca invente fonte."
   },
   "FATOS_SEM_TABELA": {
     "texto": "A apresentação ainda não tem a lista de fatos com a fonte de cada um. Vou montar.",
     "acao": "Preencha a tabela Fato | Fonte | Data do brief.md com o que a pessoa informou e os documentos de referencias/, e rode fatos de novo."
+  },
+  "FATOS_TABELA_ILEGIVEL": {
+    "texto": "Não consegui ler a lista de fatos da apresentação. Vou arrumar o jeito dela.",
+    "acao": "O brief.md tem uma linha com Fato e Fonte, mas a tabela não foi reconhecida: logo abaixo do cabeçalho precisa vir a linha separadora (| --- | --- | --- |), e cada linha de fato com as colunas separadas por barra. Arrume e rode fatos de novo."
   },
   "ACESSIBILIDADE_OK": {
     "texto": "A conferência de acessibilidade não achou nada.",

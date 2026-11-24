@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { acharNavegador } from '../scripts/lib/chrome.mjs';
 import {
   sequenciasNumericas, palavrasComArroba, lerTabelaDeFatos, montarLastro, conferirTexto, FONTE_DE_EXEMPLO,
+  numerosMarcados, numerosDaLinha, celulasDaLinha, tabelaDeFatosIlegivel,
 } from '../scripts/lib/fatos.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -72,6 +73,35 @@ test('fatos: só vale linha com fonte; número de uma linha não empresta dígit
   ]);
 });
 
+test('fatos: número com % ou com mil/milhão/bilhão pede fonte mesmo com menos de 3 dígitos', () => {
+  assert.deepEqual(numerosMarcados('Cresceu 38% e 2,5 % ao mês; 40 mil clientes, 3 milhões de reais, 12,5% e 7 dias').map((m) => m.chave),
+    ['38%', '25%', '40 mil', '3 milhoes']);
+  const lastro = montarLastro(lerTabelaDeFatos('| Fato | Fonte |\n|---|---|\n| 38% das vendas antes das 8 | caixa da loja |\n| 3 milhões de reais em 2025 | balanço |\n| 7% de desconto | |'));
+  const r = conferirTexto({ texto: '38% das vendas. 3 milhoes de reais. 40 mil clientes. 7% de desconto. 3 lojas.' }, lastro);
+  assert.deepEqual(r.faltam.map((f) => `${f.trecho}:${f.motivo}`).sort(), ['40 mil:fora-de-fatos', '7%:linha-sem-fonte']);
+});
+
+test('fatos: número de uma linha só se junta pelo separador de número, não atravessa palavras', () => {
+  assert.equal(numerosDaLinha('1 de 3 pedidos (33%)').has('133'), false);
+  assert.ok(numerosDaLinha('(11) 4198-2000').has('1141982000'));
+  assert.ok(numerosDaLinha('1 250 cafés').has('1250'), 'espaço fino é separador de milhar');
+  const lastro = montarLastro(lerTabelaDeFatos('| Fato | Fonte |\n|---|---|\n| 1 de 3 pedidos (33%) | sistema |'));
+  assert.deepEqual(conferirTexto({ texto: 'Foram 133 pedidos.' }, lastro).faltam.map((f) => f.trecho), ['133']);
+});
+
+test('fatos: tabela com ou sem barra nas bordas, barra escapada na célula, e tabela ilegível avisada', () => {
+  assert.deepEqual(celulasDaLinha('| Preço \\| à vista | loja |'), ['Preço | à vista', 'loja']);
+  const semBorda = lerTabelaDeFatos('Fato | Fonte | Data\n--- | --- | ---\nAbriu em 2019 | a dona | 2026\n\nTexto solto 1982 | nada');
+  assert.deepEqual(semBorda.map((l) => [l.fato, l.fonte, l.comFonte]), [['Abriu em 2019', 'a dona', true]]);
+  const escapada = lerTabelaDeFatos('| Fato | Fonte |\n|:--|--:|\n| R$ 120 \\| R$ 150 | tabela de preços \\| 2026 |');
+  assert.deepEqual(escapada.map((l) => [l.fato, l.fonte]), [['R$ 120 | R$ 150', 'tabela de preços | 2026']]);
+  // sem a linha separadora: a tabela não vale, e isso é dito (em vez de tudo virar fora-de-fatos)
+  const md = '| Fato | Fonte |\n| Abriu em 2019 | a dona |';
+  assert.equal(lerTabelaDeFatos(md).length, 0);
+  assert.equal(tabelaDeFatosIlegivel(md), true);
+  assert.equal(tabelaDeFatosIlegivel('# Brief sem tabela'), false);
+});
+
 test('molde: todo número das telas está na tabela de fatos do brief.md, só com a fonte do exemplo', () => {
   const linhas = lerTabelaDeFatos(fs.readFileSync(path.join(KIT, 'molde', 'brief.md'), 'utf8'));
   assert.ok(linhas.length >= 3);
@@ -91,6 +121,7 @@ test('molde: todo número das telas está na tabela de fatos do brief.md, só co
   const r = conferirTexto({ texto }, lastro);
   assert.ok(r.conferidos >= 3, 'as telas do molde precisam ter número para o exemplo valer');
   assert.deepEqual(r.faltam.filter((f) => f.motivo !== 'fonte-de-exemplo'), []);
+  assert.ok(r.faltam.some((f) => f.trecho === '38%'), 'o 38% do molde também pede fonte (e a do exemplo não vale)');
 });
 
 // Uma tela com um telefone que só aparece no beat 1 e sai no beat 2, e um número na fala do roteiro.
@@ -99,7 +130,9 @@ function estragarFatos(nome) {
   const brief = path.join(pasta, 'brief.md');
   fs.writeFileSync(brief, fs.readFileSync(brief, 'utf8').replaceAll(FONTE_DE_EXEMPLO, 'Teste automatizado do estúdio'));
   const tela = path.join(pasta, 'deck', 'slides', 's03-movimentos.html');
-  const extra = '<p style="position:absolute;left:140px;top:960px;font-size:28px" data-beat="1" data-sai="2">Ligue (11) 4321-9876</p>';
+  // um telefone que só aparece no beat 1, e um número que nunca aparece (opacidade 0 o tempo todo)
+  const extra = '<p style="position:absolute;left:140px;top:960px;font-size:28px" data-beat="1" data-sai="2">Ligue (11) 4321-9876</p>'
+    + '<p style="position:absolute;left:900px;top:960px;font-size:28px;opacity:0">número escondido 98765</p>';
   fs.writeFileSync(tela, fs.readFileSync(tela, 'utf8').replace('<div class="palco-tela">', `<div class="palco-tela">\n${extra}`));
   const roteiro = path.join(pasta, 'roteiro', 'S02.json');
   const doc = JSON.parse(fs.readFileSync(roteiro, 'utf8'));
@@ -133,11 +166,22 @@ test('fatos no Chrome: o molde reprova com a fonte do exemplo; número de um bea
   assert.equal(ok.json.codigo, 'FATOS_OK');
 });
 
-test('fatos no Chrome: brief sem tabela preenchida avisa FATOS_SEM_TABELA', opcoes, () => {
+test('fatos no Chrome: brief sem tabela avisa FATOS_SEM_TABELA; tabela que não se lê avisa FATOS_TABELA_ILEGIVEL; tela sem arquivo reprova', opcoes, () => {
   assert.equal(estudio('nova', 'sem-tabela').codigo, 0);
-  fs.writeFileSync(path.join(base, 'sem-tabela', 'brief.md'), '# Brief\n\nSem fatos ainda.\n');
+  const brief = path.join(base, 'sem-tabela', 'brief.md');
+  fs.writeFileSync(brief, '# Brief\n\nSem fatos ainda.\n');
   const r = estudio('fatos', 'sem-tabela');
   assert.equal(r.codigo, 2);
   assert.ok(r.json.avisos.some((a) => a.codigo === 'FATOS_SEM_TABELA'), JSON.stringify(r.json.avisos));
   assert.ok(r.json.dados.vermelhos.every((v) => v.motivo === 'fora-de-fatos'));
+
+  fs.writeFileSync(brief, '# Brief\n\n| Fato | Fonte |\n| Abriu em 2027 | a dona |\n');
+  const ilegivel = estudio('fatos', 'sem-tabela');
+  assert.ok(ilegivel.json.avisos.some((a) => a.codigo === 'FATOS_TABELA_ILEGIVEL'), JSON.stringify(ilegivel.json.avisos));
+
+  const index = path.join(base, 'sem-tabela', 'deck', 'index.html');
+  const secao = '<section class="slide" id="t09"><iframe data-src="slides/s09-sumiu.html"></iframe></section>';
+  fs.writeFileSync(index, fs.readFileSync(index, 'utf8').replace('  </div>\n</div>', `    ${secao}\n  </div>\n</div>`));
+  const sumiu = estudio('fatos', 'sem-tabela');
+  assert.ok(sumiu.json.dados.vermelhos.some((v) => v.tipo === 'tela-sem-arquivo' && v.trecho === 'slides/s09-sumiu.html'), JSON.stringify(sumiu.json.dados.vermelhos));
 });

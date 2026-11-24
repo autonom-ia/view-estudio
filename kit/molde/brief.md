@@ -24,8 +24,9 @@ Três palavras que descrevem como a apresentação deve soar.
 > Todo número, data, nome, citação, contato e @ que vai para a tela ou para a fala nasce de uma linha
 > desta tabela. Fonte é de onde veio: "relatório anual 2025, página 12", "planilha de vendas de junho",
 > "a própria pessoa disse em 12/03". Nunca invente uma fonte.
-> O comando `./estudio fatos <nome>` reprova número de 3 ou mais dígitos, contato e @ das telas e do
-> roteiro que não estão aqui. O resto (nome, citação, data por extenso) quem pega é o revisor de fatos.
+> O comando `./estudio fatos <nome>` reprova número de 3 ou mais dígitos, número com % ou com mil,
+> milhão ou bilhão, contato e @ das telas e do roteiro que não estão aqui. O resto (número pequeno
+> solto, nome, citação, data por extenso) quem pega é o revisor de fatos.
 >
 > As linhas abaixo são do exemplo do molde (Café Aurora, negócio fictício). A fonte "Exemplo fictício
 > do View Estúdio" não vale como fonte: enquanto sobrar uma linha com ela, o `fatos` reprova

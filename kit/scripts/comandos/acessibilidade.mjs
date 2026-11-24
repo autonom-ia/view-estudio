@@ -13,6 +13,7 @@ import { ESPERAR_PRONTA, ASSENTAR } from '../lib/pagina.mjs';
 import { KIT } from '../lib/caminhos.mjs';
 import { falha } from '../lib/saida.mjs';
 import { progresso } from '../lib/executar.mjs';
+import { impressaoDaApresentacao, anotarConferencia } from '../lib/conferencias.mjs';
 
 export const PASTA_AXE = path.join(KIT, 'vendor', 'axe');
 export const ETIQUETAS = Object.freeze(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22a', 'wcag22aa', 'best-practice']);
@@ -84,6 +85,7 @@ const ESPERAR_PALCO = `(async () => {
 export default async function acessibilidade(args) {
   const nome = nomeDaApresentacao(args);
   const c = abrirApresentacao(nome);
+  const impressao = impressaoDaApresentacao(c);
   const arquivoAxe = path.join(PASTA_AXE, 'axe.min.js');
   if (!fs.existsSync(arquivoAxe)) falha('AXE_AUSENTE', { arquivo: 'kit/vendor/axe/axe.min.js' });
   const codigoAxe = fs.readFileSync(arquivoAxe, 'utf8');
@@ -119,6 +121,7 @@ export default async function acessibilidade(args) {
     await sessao.fechar();
   }
   const aprovado = red.length === 0;
+  anotarConferencia(c, 'acessibilidade', impressao, aprovado);
   return {
     ok: aprovado,
     codigo: aprovado ? (warn.length ? 'ACESSIBILIDADE_COM_AVISOS' : 'ACESSIBILIDADE_OK') : 'ACESSIBILIDADE_REPROVADA',

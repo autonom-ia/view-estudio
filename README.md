@@ -6,7 +6,7 @@ Apresentações que parecem filme, feitas por conversa, no seu computador.
 
 Você conta para o assistente (Claude Code ou Codex) para quem é a apresentação e o que a plateia precisa fazer depois. Ele monta o caminho da história, mostra 3 telas para você aprovar, faz o resto, escreve o que falar em cada clique, confere tudo e entrega a apresentação pronta e o PDF.
 
-- **Grátis e local.** Nada sobe para a internet, nada é pago, não precisa de conta. A apresentação fica numa pasta do seu computador.
+- **Grátis e local.** Nada sobe para a internet sem você pedir, nada é pago, não precisa de conta para fazer a apresentação. Ela fica numa pasta do seu computador. Para ter um link, você escolhe: num endereço da Autonom.ia (com convite) ou onde preferir, e o assistente mostra o passo a passo.
 - **Telas com movimento.** Cada clique revela uma parte da tela, com transição costurada entre uma tela e outra. Se você quiser, uma cena animada vira vídeo dentro da tela.
 - **Teleprompter que acompanha sozinho.** Abra o roteiro numa segunda janela ou monitor: ele segue cada clique.
 - **Conferência de verdade.** Antes de entregar, o estúdio mede cada tela no navegador (letra pequena, texto encostado, arquivo faltando) e quatro revisores independentes dão nota: direção de arte, direção geral, fatos e qualidade.
@@ -40,6 +40,7 @@ Escreva do seu jeito. Por exemplo:
 - "Ajusta a minha marca: as cores estão no logo que coloquei na pasta referencias."
 - "Dá uma nota para a minha apresentação."
 - "Gera o PDF."
+- "Põe no ar, quero um link para mandar."
 
 O caminho é sempre o mesmo:
 
@@ -50,7 +51,21 @@ O caminho é sempre o mesmo:
 5. **Roteiro** do que falar em cada clique, e o teleprompter.
 6. **Conferência** automática (tamanho e contraste das letras em cada clique, todo número com fonte, acessibilidade) e fotos de cada tela, lidas uma a uma.
 7. **Revisão** por quatro revisores independentes, até nota 8,5.
-8. **Entrega**: a apresentação, o teleprompter e o PDF.
+8. **Entrega**: a apresentação, o teleprompter e o PDF. Se você quiser, um link para mandar.
+
+## Pôr a apresentação no ar
+
+Quem tem acesso põe a apresentação num endereço próprio, como `minha-aula.sites.autonomia.site`, com cadeado de site seguro e sem pagar nada. É o mesmo acesso de quem publica sites ali. O acesso é por convite:
+
+1. Entre em **[sites.autonomia.site](https://sites.autonomia.site)** e clique em **Entrar com o Google**.
+2. Se o seu e-mail ainda não estiver liberado, aparece *Acesso só por convite*. Escreva o seu nome, conte em uma frase o que quer publicar e clique em **Pedir acesso**.
+3. A resposta chega por e-mail. Aprovado, é só voltar ao assistente e pedir: **"põe no ar"**.
+
+Recebeu um link de convite? Abra o link, entre com o Google e o acesso já fica liberado.
+
+Na primeira vez, o assistente mostra um código para você autorizar este computador no navegador. Depois, ele só põe no ar quando você confirmar, a cada vez, e só com a conferência aprovada. Quem tiver o link vê a apresentação inteira; o teleprompter, com o que você vai falar, fica só no seu computador. Cada pessoa tem até 5 endereços no ar, somando sites e apresentações, e cada apresentação pode ter até 200 MB.
+
+Sem convite, ou se preferir outro lugar: o assistente prepara um arquivo e explica, passo a passo, como você mesmo põe no ar de graça no Netlify, no Cloudflare Pages ou no GitHub Pages, na sua conta. Nesses serviços ele não entra na sua conta nem pede senha.
 
 ## As suas pastas
 

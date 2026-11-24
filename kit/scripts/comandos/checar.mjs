@@ -13,6 +13,7 @@ import { medirNaFoto, anotarContraste } from '../lib/contraste.mjs';
 import { anotarLetras } from '../lib/letras.mjs';
 import { decodePng } from '../lib/png.mjs';
 import { progresso } from '../lib/executar.mjs';
+import { impressaoDaApresentacao, anotarConferencia } from '../lib/conferencias.mjs';
 import { esperar } from '../lib/cdp.mjs';
 
 export const LIMITES = Object.freeze({
@@ -85,6 +86,7 @@ function anotarEstatico(tela, est, rede, red) {
 export default async function checar(args) {
   const nome = nomeDaApresentacao(args);
   const c = abrirApresentacao(nome);
+  const impressao = impressaoDaApresentacao(c);
   const red = [];
   const warn = [];
   const telasMedidas = [];
@@ -147,6 +149,7 @@ export default async function checar(args) {
   }
 
   const aprovado = red.length === 0;
+  anotarConferencia(c, 'checar', impressao, aprovado);
   return {
     ok: aprovado,
     codigo: aprovado ? (warn.length ? 'CHECAGEM_COM_AVISOS' : 'CHECAGEM_OK') : 'CHECAGEM_REPROVADA',

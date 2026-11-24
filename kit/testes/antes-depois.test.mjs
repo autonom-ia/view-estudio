@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { acharNavegador } from '../scripts/lib/chrome.mjs';
 import {
   guardarAntes, pesadosAlterados, restaurarAntes, igualAoAntes, lerMudancas, ehPesado, PESADO_BYTES,
-  caminhosDoAntesDepois, fecharAntes, impressao, mesmoArquivo, pastasIguais, semLinkFixo, guardarTentativa,
+  caminhosDoAntesDepois, fecharAntes, impressao, mesmoArquivo, mesmoConteudo, pastasIguais, semLinkFixo, guardarTentativa,
   ErroDeRestauracao,
 } from '../scripts/lib/antes-depois.mjs';
 import { renderizarSemPerderOAnterior } from '../scripts/lib/hyperframes.mjs';
@@ -106,6 +106,12 @@ test('antes-depois: sem licença para criar link (EPERM), o arquivo apontado vir
     throw Object.assign(new Error('sem espaço'), { code: 'ENOSPC' });
   };
   assert.throws(() => guardarAntes(pasta, antes, { criarLink: outro }), (e) => e.code === 'ENOSPC');
+  // atalho quebrado (o alvo não existe): fica de fora e entra em "quebrados", sem erro
+  fs.symlinkSync(path.join(pasta, 'sumiu.md'), path.join(pasta, 'deck', 'quebrado.md'));
+  const q = guardarAntes(pasta, antes, { criarLink });
+  assert.deepEqual(q.quebrados, ['deck/quebrado.md']);
+  assert.deepEqual(q.atalhos, ['deck/atalho.md']);
+  assert.equal(fs.existsSync(path.join(antes, 'deck', 'quebrado.md')), false);
 });
 
 test('antes-depois: vídeo trocado pelo nome mantém o antes; gravado por cima do mesmo arquivo é pego', () => {
@@ -222,6 +228,25 @@ test('antes-depois: mesmo arquivo só com número de arquivo de verdade e mesmo 
   assert.equal(pastasIguais(a, b), true);
   escrever(path.join(b, 'x.txt'), 'outro texto');
   assert.equal(pastasIguais(a, b), false);
+});
+
+test('antes-depois: leitura curta (disco de rede) não faz arquivos iguais parecerem diferentes', () => {
+  const a = path.join(base, 'curta-a.bin');
+  const b = path.join(base, 'curta-b.bin');
+  const dados = crypto.randomBytes(5000);
+  fs.writeFileSync(a, dados);
+  fs.writeFileSync(b, dados);
+  // cada leitura devolve no máximo 3 bytes (ou 7, para os dois lados não andarem iguais)
+  let vez = 0;
+  const curta = (fd, buf, desde, quanto, pos) => {
+    vez += 1;
+    return fs.readSync(fd, buf, desde, Math.min(quanto, vez % 2 ? 3 : 7), pos);
+  };
+  assert.equal(mesmoConteudo(a, b, curta), true);
+  const outro = Buffer.from(dados);
+  outro[4999] ^= 1;
+  fs.writeFileSync(b, outro);
+  assert.equal(mesmoConteudo(a, b, curta), false);
 });
 
 test('antes-depois: impressão digital lida aos pedaços dá o mesmo SHA-256 do arquivo inteiro', () => {

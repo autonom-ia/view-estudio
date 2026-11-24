@@ -51,7 +51,9 @@ export default async function antes(args) {
   return {
     ok: true,
     codigo: 'ANTES_GUARDADO',
-    avisos: manifesto.atalhos.length ? [aviso('ATALHO_VIROU_COPIA', { arquivos: manifesto.atalhos })] : [],
+    avisos: manifesto.atalhos.length || manifesto.quebrados.length
+      ? [aviso('ATALHO_VIROU_COPIA', { arquivos: manifesto.atalhos, quebrados: manifesto.quebrados })]
+      : [],
     arquivos: { antes: c.rel('revisao', 'antes-depois', 'antes'), mudancas: c.rel('revisao', 'antes-depois', 'mudancas.json') },
     dados: {
       itens: manifesto.itens,

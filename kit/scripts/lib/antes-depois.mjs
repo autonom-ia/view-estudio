@@ -78,15 +78,28 @@ export function impressao(arquivo) {
 }
 
 // Mesmo conteúdo, byte a byte, lendo os dois aos pedaços.
-function mesmoConteudo(x, y) {
+// Lê até encher o bloco ou o arquivo acabar: uma leitura pode devolver menos que o pedido (disco de
+// rede, por exemplo) sem o arquivo ter acabado. Devolve quantos bytes leu.
+function lerBloco(fd, buf, ler) {
+  let total = 0;
+  while (total < buf.length) {
+    const lidos = ler(fd, buf, total, buf.length - total, null);
+    if (lidos === 0) break;
+    total += lidos;
+  }
+  return total;
+}
+
+// "ler" é injetável (fs.readSync) para os testes simularem leitura curta.
+export function mesmoConteudo(x, y, ler = fs.readSync) {
   const fx = fs.openSync(x, 'r');
   const fy = fs.openSync(y, 'r');
   try {
     const bx = Buffer.allocUnsafe(BLOCO);
     const by = Buffer.allocUnsafe(BLOCO);
     for (;;) {
-      const lx = fs.readSync(fx, bx);
-      const ly = fs.readSync(fy, by);
+      const lx = lerBloco(fx, bx, ler);
+      const ly = lerBloco(fy, by, ler);
       if (lx !== ly) return false;
       if (lx === 0) return true;
       if (!bx.subarray(0, lx).equals(by.subarray(0, ly))) return false;
@@ -120,15 +133,32 @@ function guardarArquivo(de, para, pesado) {
   return 'copia';
 }
 
+// O que o link aponta: 'arquivo', 'pasta' ou null (atalho quebrado, o alvo não existe).
+function alvoDoLink(origem) {
+  try {
+    return fs.statSync(origem).isDirectory() ? 'pasta' : 'arquivo';
+  } catch (erro) {
+    if (erro.code === 'ENOENT' || erro.code === 'ENOTDIR') return null;
+    throw erro;
+  }
+}
+
 // Recria o link simbólico. No Windows sem modo de desenvolvedor, criar link de arquivo dá EPERM:
 // aí o arquivo para onde ele aponta é copiado (o conteúdo fica igual; o atalho vira cópia) e entra
-// em "atalhos" para o aviso. Link de pasta vira junção, que não precisa de licença; outro erro sobe.
+// em "atalhos" para o aviso. Atalho quebrado (o alvo não existe) não tem o que copiar: fica de fora
+// e entra em "quebrados". Link de pasta vira junção, que não precisa de licença; outro erro sobe.
 function guardarLink(origem, destino, rel, ctx) {
   fs.mkdirSync(path.dirname(destino), { recursive: true });
   try {
     (ctx.criarLink || recriarLink)(origem, destino);
   } catch (erro) {
-    if (erro.code !== 'EPERM' || !fs.statSync(origem).isFile()) throw erro;
+    if (erro.code !== 'EPERM') throw erro;
+    const alvo = alvoDoLink(origem);
+    if (alvo === 'pasta') throw erro;
+    if (alvo === null) {
+      if (ctx.quebrados) ctx.quebrados.push(rel);
+      return;
+    }
     fs.copyFileSync(origem, destino);
     if (ctx.atalhos) ctx.atalhos.push(rel);
   }
@@ -160,20 +190,22 @@ function guardarItem(origem, destino, rel, ctx = {}) {
 }
 
 // Guarda os ITENS_GUARDADOS da apresentação em "antes". Devolve o manifesto ({ itens, pesados,
-// atalhos }: atalhos são os links que viraram cópia).
+// atalhos, quebrados }: atalhos são os links que viraram cópia; quebrados, os que ficaram de fora
+// por não apontarem para nada).
 export function guardarAntes(pastaDaApresentacao, antes, { criarLink } = {}) {
   fs.rmSync(antes, { recursive: true, force: true });
   fs.mkdirSync(antes, { recursive: true });
   const itens = [];
   const pesados = [];
   const atalhos = [];
+  const quebrados = [];
   for (const item of ITENS_GUARDADOS) {
     const de = path.join(pastaDaApresentacao, item);
     if (!existe(de)) continue;
     itens.push(item);
-    guardarItem(de, path.join(antes, item), item, { pesados, atalhos, criarLink });
+    guardarItem(de, path.join(antes, item), item, { pesados, atalhos, quebrados, criarLink });
   }
-  return { itens, pesados, atalhos };
+  return { itens, pesados, atalhos, quebrados };
 }
 
 // Pesados do antes que mudaram desde o "antes" (alguém gravou por cima do mesmo arquivo).

@@ -10,12 +10,12 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { acharNavegador } from '../scripts/lib/chrome.mjs';
+import { opcoesDoNavegador } from './fixtures/navegador.mjs';
 import { razao, medirNaFoto, anotarContraste, minimoPara, MINIMO_NORMAL, MINIMO_GRANDE } from '../scripts/lib/contraste.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const DESPACHANTE = path.join(RAIZ, 'kit', 'scripts', 'estudio.mjs');
-const opcoes = { skip: acharNavegador() ? false : 'sem Chrome, Edge ou Chromium nesta máquina', timeout: 240000 };
+const opcoes = opcoesDoNavegador(240000);
 
 let base;
 let env;

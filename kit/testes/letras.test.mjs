@@ -8,7 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { acharNavegador } from '../scripts/lib/chrome.mjs';
+import { opcoesDoNavegador } from './fixtures/navegador.mjs';
 import {
   lerMetadados, lerPesos, pedidoDoCss2, blocosDoCss, enderecoPermitido, nomeProprio, slugDaFamilia,
   familiaValida, arquivoDaLicenca,
@@ -297,7 +297,7 @@ test('fonte: nome de família e apresentação conferidos antes de qualquer pedi
   assert.equal(fs.existsSync(path.join(base, 'sem-marca')), false, 'nada foi escrito');
 });
 
-test('checar no Chrome: letra sem a licença da família reprova; .ttf só avisa', { skip: acharNavegador() ? false : 'sem Chrome, Edge ou Chromium nesta máquina', timeout: 240000 }, () => {
+test('checar no Chrome: letra sem a licença da família reprova; .ttf só avisa', opcoesDoNavegador(240000), () => {
   assert.equal(estudio('nova', 'letras').codigo, 0);
   const fontes = path.join(base, 'letras', 'deck', 'assets', 'marca', 'fontes');
   const ok = estudio('checar', 'letras');

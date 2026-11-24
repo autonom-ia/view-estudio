@@ -48,7 +48,11 @@
       "revelacao": "Apresenta o problema da vela como prova num julgamento e só depois conta o resultado que contraria o senso comum.",
       "fecho": "Termina como advogado: encerro meu caso.",
       "naoCopiar": "O papel de advogado, que é a voz dele; o que vale é um experimento contra o senso comum antes do modelo.",
-      "conferidaEm": "2026-11-24"
+      "conferidaEm": "2026-11-24",
+      "trechoConferido": {
+        "transcricao": "https://www.ted.com/talks/dan_pink_the_puzzle_of_motivation/transcript",
+        "trecho": "It took them, on average, three and a half minutes longer."
+      }
     },
     {
       "id": "treasure-falar",
@@ -64,7 +68,11 @@
       "revelacao": "Uma lista curta por vez, cada item com um exemplo falado na própria voz dele.",
       "fecho": "Antes do fecho, a plateia levanta os braços e faz seis aquecimentos de voz junto com ele.",
       "naoCopiar": "O exercício de voz em si; o que vale é a plateia fazer na sala o que vai aplicar depois.",
-      "conferidaEm": "2026-11-24"
+      "conferidaEm": "2026-11-24",
+      "trechoConferido": {
+        "transcricao": "https://www.ted.com/talks/julian_treasure_how_to_speak_so_that_people_want_to_listen/transcript",
+        "trecho": "Fortunately, these things spell a word. The word is \"hail,\" and it has a great definition as well."
+      }
     }
   ]
 }

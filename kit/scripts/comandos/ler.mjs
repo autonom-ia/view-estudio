@@ -3,7 +3,8 @@
 // páginas públicas dele, sem entrar em conta nenhuma: o perfil do Google (endereço, telefone,
 // horário, nota e avaliações sem o nome de quem escreveu) e o site atual inteiro (achado pelo Google
 // se não vier --site). Salva tudo em apresentacoes/<nome>/coleta/ e põe cada fato, com a fonte e a
-// data, na parte "Lido pelo estúdio" da tabela de fatos do brief.md. Ler é permitido; nada é
+// data, na parte "Lido pelo estúdio" da tabela de fatos do brief.md (o texto das avaliações fica só
+// em coleta/, nunca na tabela). Ler é permitido; nada é
 // publicado nem enviado. O Instagram não é lido (fica para depois).
 // Portado do Site Estúdio (comando "ler").
 import path from 'node:path';
@@ -25,6 +26,7 @@ function texto(opcoes, nome) {
 }
 
 export default async function ler(args) {
+  const inicio = Date.now(); // o teto da leitura conta daqui, com a abertura do navegador dentro
   const nome = nomeDaApresentacao(args);
   const c = caminhosDe(nome);
   if (!ehPasta(c.pasta)) falha('APRESENTACAO_NAO_ACHADA', { nome, pasta: relativoARaiz(c.pasta) });
@@ -36,7 +38,7 @@ export default async function ler(args) {
   let r;
   try {
     leitor = await abrirLeitor();
-    r = await lerFontes(pedido, { pasta: path.join(c.pasta, 'coleta'), brief: c.brief, leitor, aoAvancar: progresso });
+    r = await lerFontes(pedido, { pasta: path.join(c.pasta, 'coleta'), brief: c.brief, leitor, aoAvancar: progresso, inicio });
   } finally {
     leitor?.fechar();
   }

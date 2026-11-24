@@ -9,14 +9,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { acharNavegador } from '../scripts/lib/chrome.mjs';
+import { opcoesDoNavegador } from './fixtures/navegador.mjs';
 import { abrirSessao } from '../scripts/lib/sessao.mjs';
 import { openTab, navegar, esperar } from '../scripts/lib/cdp.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const DESPACHANTE = path.join(RAIZ, 'kit', 'scripts', 'estudio.mjs');
-const SEM_NAVEGADOR = !acharNavegador();
-const opcoes = { skip: SEM_NAVEGADOR ? 'sem Chrome, Edge ou Chromium nesta máquina' : false, timeout: 240000 };
+const opcoes = opcoesDoNavegador(240000);
 
 let base;
 let env;

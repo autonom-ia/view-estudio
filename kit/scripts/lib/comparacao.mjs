@@ -1,8 +1,10 @@
 // O "antes e depois" de uma apresentação, tela por tela e clique por clique. Cada deck (o guardado
 // pelo "antes" e o de agora) é fotografado no navegador sem janela em cada beat assentado, como o
 // "prints" faz. Uma tela entra na comparação quando algum clique dela mudou: a foto (lida em tamanho
-// reduzido, com tolerância para a diferença de desenho que não é mudança), o texto da tela ou a fala
-// do roteiro. Tela nova e tela que saiu também entram. A página mostra só essas telas, lado a lado,
+// reduzido, com tolerância só para a diferença mínima de desenho que não é mudança), o estilo de
+// cada elemento visível (cor, fundo, letra, borda, sombra), o texto da tela ou a fala do roteiro.
+// Tela nova e tela que saiu também entram. Vídeo e movimento não entram: a foto é de cada clique
+// parado, e a página diz isso. A página mostra só essas telas, lado a lado,
 // com as mudanças numeradas no alto e, em cada tela, o número das mudanças que passaram por ela.
 // Portado do Site Estúdio (lib/comparacao.mjs), que compara páginas inteiras em iframes; aqui são
 // fotos assentadas, porque a tela de apresentação anda por cliques, não por rolagem.
@@ -18,10 +20,43 @@ export const ESCALA_DA_FOTO = 0.5;
 export const QUALIDADE_DA_FOTO = 80;
 export const ESCALA_DA_CONFERENCIA = 0.25;
 // Um ponto mudou quando algum canal de cor mudou mais que isto (0 a 255); a tela mudou quando mais
-// que esta fração dos pontos mudou. Pega uma palavra trocada num texto de 18 px e não pega a
-// diferença de serrilhado entre duas fotos da mesma tela.
-export const DIFERENCA_DO_PONTO = 24;
+// que esta fração dos pontos mudou. Troca de cor de verdade passa disso (âmbar #FFA000 para #FF8C00
+// muda 20; creme #F6F4EF para #F4F1E8 muda 7), e uma palavra trocada passa da fração. O que fica
+// abaixo é a diferença mínima de desenho: 1 ou 2 no canal, ou um punhado de pontos soltos.
+// Troca de cor num detalhe pequeno demais para a foto reduzida é pega pelo estilo (ESTILO_VISIVEL).
+export const DIFERENCA_DO_PONTO = 2;
 export const FRACAO_MUDADA = 0.0003;
+
+// O estilo que se vê, elemento por elemento, no clique assentado: [tag e propriedades], na ordem do
+// documento. Endereço de imagem perde a origem (o antes e o depois são servidos em portas
+// diferentes). Animação sem fim (CSS ou GSAP) entra: o ASSENTAR leva todas ao instante zero, então
+// o mesmo elemento dá o mesmo estilo nos dois lados. Escondido fica de fora.
+const PROPRIEDADES_DE_ESTILO = Object.freeze([
+  'color', 'background-color', 'background-image', 'border-top-color', 'border-right-color', 'border-bottom-color',
+  'border-left-color', 'border-top-width', 'border-radius', 'outline-color', 'box-shadow', 'text-shadow',
+  'text-decoration-color', 'font-family', 'font-size', 'font-weight', 'font-style', 'letter-spacing', 'line-height',
+  'text-transform', 'fill', 'stroke',
+]);
+export const ESTILO_VISIVEL = `(() => {
+  const raiz = document.querySelector('.palco-tela') || document.body;
+  const props = ${JSON.stringify(PROPRIEDADES_DE_ESTILO)};
+  const origem = location.origin;
+  const semOrigem = (v) => String(v).split(origem).join('');
+  const visivel = (el) => {
+    try { if (el.checkVisibility) return el.checkVisibility({ opacityProperty: true, visibilityProperty: true }); } catch (e) {}
+    const cs = getComputedStyle(el);
+    return cs.visibility !== 'hidden' && cs.display !== 'none' && parseFloat(cs.opacity) > 0;
+  };
+  const linhas = [];
+  for (const el of [raiz, ...raiz.querySelectorAll('*')]) {
+    if (el.closest('script, style, template, noscript, [data-controle]')) continue;
+    if (!visivel(el)) continue;
+    const cs = getComputedStyle(el);
+    const src = el.getAttribute('src');
+    linhas.push(el.tagName + ' ' + props.map((p) => semOrigem(cs.getPropertyValue(p))).join(' | ') + (src ? ' ' + src : ''));
+  }
+  return linhas;
+})()`;
 
 async function foto(tab, escala, formato) {
   const r = await tab.send('Page.captureScreenshot', {
@@ -48,10 +83,12 @@ export async function fotografarDeck(deck, rotulo) {
       for (let b = 0; b <= ultimo; b += 1) {
         await sessao.tab.evaluate(ASSENTAR(b));
         const lido = await sessao.tab.evaluate(TEXTO_PARA_FATOS);
+        const estilo = await sessao.tab.evaluate(ESTILO_VISIVEL);
         beats.push({
           jpeg: await foto(sessao.tab, ESCALA_DA_FOTO, 'jpeg'),
           png: await foto(sessao.tab, ESCALA_DA_CONFERENCIA, 'png'),
           texto: lido.texto,
+          estilo: Array.isArray(estilo) ? estilo : [],
         });
       }
       telas.push({ arquivo: t.arquivo, numero: numeroDoNome(t.arquivo), titulo: String(titulo || ''), beats });
@@ -75,13 +112,20 @@ export function fracaoDiferente(a, b) {
   return mudados / total;
 }
 
+// Duas fotos PNG (do mesmo tamanho) mostram coisas diferentes?
+export function fotosDiferentes(pngA, pngB) {
+  if (pngA.equals(pngB)) return false;
+  return fracaoDiferente(decodePng(pngA), decodePng(pngB)) > FRACAO_MUDADA;
+}
+
 const juntar = (t) => String(t || '').split('\n').map((l) => l.trim()).filter(Boolean).join(' ');
+const estiloDe = (beat) => (Array.isArray(beat.estilo) ? beat.estilo.join('\n') : '');
 
 function beatMudou(a, b) {
   if (!a || !b) return true;
   if (juntar(a.texto) !== juntar(b.texto)) return true;
-  if (a.png.equals(b.png)) return false;
-  return fracaoDiferente(decodePng(a.png), decodePng(b.png)) > FRACAO_MUDADA;
+  if (estiloDe(a) !== estiloDe(b)) return true;
+  return fotosDiferentes(a.png, b.png);
 }
 
 const falasDe = (roteiro, numero) => {
@@ -154,6 +198,7 @@ h1{margin:6px 0 0;font-size:30px;line-height:1.2;font-weight:650}
 .clique{margin:22px 0 8px}
 .clique h3{margin:0 0 10px;font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:var(--apoio);font-weight:600}
 .lados{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.nota{margin:0;padding:14px 40px;color:var(--apoio);font-size:15px;border-bottom:1px solid var(--linha)}
 figure{margin:0}
 figure img{display:block;width:100%;height:auto;aspect-ratio:16/9;border-radius:6px;outline:1px solid var(--linha)}
 figcaption{margin-top:8px;font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:var(--apoio)}
@@ -162,12 +207,12 @@ figcaption{margin-top:8px;font-size:14px;letter-spacing:.12em;text-transform:upp
 .fala{margin:10px 0 0;color:var(--apoio);font-size:16px}
 .fala b{color:var(--tinta);font-weight:600}
 .igual{color:var(--apoio);font-size:15px}
-@media (max-width:820px){header,.mudancas,.tela{padding-left:16px;padding-right:16px}.lados{grid-template-columns:1fr}}
+@media (max-width:820px){header,.mudancas,.nota,.tela{padding-left:16px;padding-right:16px}.lados{grid-template-columns:1fr}}
 `;
 
 function lado(classe, rotulo, arquivoDaFoto, alt) {
   if (!arquivoDaFoto) return `<figure class="${classe}"><div class="vazio">Este clique não existia</div><figcaption>${rotulo}</figcaption></figure>`;
-  return `<figure class="${classe}"><img src="fotos/${escaparHtml(arquivoDaFoto)}" alt="${escaparHtml(alt)}" loading="lazy"><figcaption>${rotulo}</figcaption></figure>`;
+  return `<figure class="${classe}"><img src="fotos/${escaparHtml(encodeURIComponent(arquivoDaFoto))}" alt="${escaparHtml(alt)}" loading="lazy"><figcaption>${rotulo}</figcaption></figure>`;
 }
 
 function falas(c) {
@@ -175,6 +220,9 @@ function falas(c) {
   const parte = (rotulo, t) => (t ? `<b>${rotulo}:</b> “${escaparHtml(t)}”` : `<b>${rotulo}:</b> sem fala`);
   return `<p class="fala">${parte('Fala antes', c.falaAntes)}<br>${parte('Fala depois', c.falaDepois)}</p>`;
 }
+
+// A comparação é de cada clique parado: o que só se vê andando fica de fora, e a página diz.
+export const NOTA_SEM_MOVIMENTO = 'Cada foto é a tela parada, depois do clique. Movimento, pulso, vídeo e animação desenhada à mão não entram nesta comparação: para ver, abra a apresentação.';
 
 const SITUACAO = { nova: 'tela nova', saiu: 'tela que saiu', mudou: '' };
 
@@ -212,6 +260,7 @@ export function paginaDeComparacao({ pedido, mudancas, telas }) {
 <ol class="mudancas" aria-label="O que mudou">
 ${itens}
 </ol>
+<p class="nota">${NOTA_SEM_MOVIMENTO}</p>
 <main>
 ${telas.map((t) => blocoDaTela(t, mudancas)).join('\n')}
 </main>

@@ -310,5 +310,57 @@
   "RODADA_ILEGIVEL": {
     "texto": "Não consegui ler as anotações da conferência anterior. Vou arrumar antes de seguir.",
     "acao": "Leia dados.erro, corrija dados.arquivo no formato da skill revisar (rodada-N.json) e rode revisao de novo antes de chamar os revisores."
+  },
+  "ANTES_GUARDADO": {
+    "texto": "Guardei como a apresentação está agora, para mostrar o antes e o depois.",
+    "acao": "Faça 2 ou 3 mudanças concretas que se vejam (tela, fala, cena) e preencha arquivos.mudancas com {\"pedido\": \"as palavras da pessoa\", \"mudancas\": [{\"titulo\": \"o que mudou, em palavras do dia a dia\", \"porque\": \"como isso atende o pedido\", \"telas\": [2]}]}. Depois rode ./estudio comparar <nome>. Vídeo e arquivo pesado ficaram ligados ao original, sem cópia (dados.pesados_sem_duplicar): para mudar uma cena, use ./estudio cena, que grava o vídeo novo ao lado; nunca grave por cima do mesmo arquivo."
+  },
+  "ANTES_EM_ABERTO": {
+    "texto": "Ainda falta você escolher entre o antes e o depois da última mudança.",
+    "acao": "A pessoa ainda não respondeu o \"Qual fica?\". Não guarde um antes novo por cima: rode ./estudio escolher <nome> com depois, antes ou outro, conforme a resposta. Só use --de-novo se a pessoa pediu para partir da apresentação como está agora."
+  },
+  "ANTES_NAO_GUARDADO": {
+    "texto": "Esqueci de guardar como a apresentação estava antes. Vou refazer do jeito certo.",
+    "acao": "Desfaça a mudança, rode ./estudio antes <nome>, refaça a mudança e rode comparar de novo."
+  },
+  "ANTES_JA_RESOLVIDO": {
+    "texto": "Essa comparação já foi resolvida. Vou guardar a apresentação de agora antes de mudar de novo.",
+    "acao": "A pessoa já escolheu (dados.escolha) e a cópia do antes foi apagada. Para outra mudança, rode ./estudio antes <nome> primeiro."
+  },
+  "ANTES_VIDEO_MUDOU": {
+    "texto": "Um vídeo guardado no antes foi trocado no meio do caminho, e o antes já não é o de antes. Vou refazer a comparação do jeito certo.",
+    "acao": "dados.arquivos foi gravado por cima do mesmo arquivo (o antes guarda vídeo sem cópia). Não compare nem volte com esse antes. Regrave a cena com ./estudio cena (ele grava ao lado e troca pelo nome); se a pessoa ainda quer comparar com o original, refaça a cena original, rode ./estudio antes <nome> --de-novo e repita a mudança."
+  },
+  "POUCAS_MUDANCAS": {
+    "texto": "Ainda falta mostrar pelo menos duas mudanças concretas.",
+    "acao": "Pedido vago vira 2 ou 3 mudanças que se veem (texto, letra, cor, foto, espaço, movimento, fala). Faça as que faltam e preencha dados.arquivo com cada uma (titulo, porque e telas). Rode comparar de novo."
+  },
+  "NADA_MUDOU": {
+    "texto": "A apresentação ainda está igual à de antes. Vou aplicar as mudanças.",
+    "acao": "Nenhuma tela, clique ou fala mudou em relação ao antes. Confira se a mudança foi gravada no deck/ ou no roteiro/ desta apresentação (mudança só no brief.md não aparece na comparação) e rode comparar de novo."
+  },
+  "MUDANCAS_DEMAIS": {
+    "texto": "Mudei mais coisas do que dá para comparar de uma vez.",
+    "acao": "Mostre no máximo 3 mudanças por vez (dados.maximo). Junte as pequenas numa só ou deixe as outras para a próxima comparação."
+  },
+  "MUDANCA_SEM_TITULO": {
+    "texto": "Uma das mudanças ficou sem nome. Vou completar.",
+    "acao": "Cada item de mudancas precisa de titulo. dados.ignoradas diz quantos ficaram de fora."
+  },
+  "COMPARACAO_PRONTA": {
+    "texto": "Abri o antes e o depois lado a lado, só nas telas que mudaram, com cada mudança numerada.",
+    "acao": "Diga em uma frase cada mudança de dados.mudancas, na ordem, e pergunte qual fica: \"O depois ★\", \"Voltar como estava\", \"Outro caminho\". Com a resposta, rode ./estudio escolher <nome> depois, antes ou outro. dados.telas diz que telas e cliques mudaram. Endereço em dados.endereco (só neste computador)."
+  },
+  "FICOU_O_DEPOIS": {
+    "texto": "Combinado, fica o depois.",
+    "acao": "Grave no andamento.md o pedido e as mudanças que ficaram. A cópia do antes foi apagada; o próximo pedido vago começa com ./estudio antes <nome>. Rode checar, fatos e acessibilidade antes de entregar."
+  },
+  "VOLTOU_COMO_ESTAVA": {
+    "texto": "Voltei a apresentação para como estava antes.",
+    "acao": "deck/, roteiro/, cenas/ e brief.md voltaram ao que o antes guardou (dados.restaurados) e a cópia do antes foi apagada. Rode ./estudio abrir <nome> para a pessoa ver."
+  },
+  "PRONTO_PARA_OUTRO_CAMINHO": {
+    "texto": "Voltei para o ponto de partida. Vou tentar outro caminho.",
+    "acao": "A apresentação voltou ao original e o antes continua guardado. Não rode ./estudio antes: faça 2 ou 3 mudanças diferentes, preencha arquivos.mudancas e rode ./estudio comparar <nome>."
   }
 }

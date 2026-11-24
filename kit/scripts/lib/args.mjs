@@ -3,7 +3,7 @@ import { falha } from './saida.mjs';
 import { nomeValido, sugerirNome } from './caminhos.mjs';
 
 // Opções que nunca levam valor: não engolem o argumento seguinte, em qualquer ordem.
-export const OPCOES_SEM_VALOR = Object.freeze(['sem-navegador', 'criar', 'conferir', 'rapido', 'pasta', 'italico', 'larguras']);
+export const OPCOES_SEM_VALOR = Object.freeze(['sem-navegador', 'criar', 'conferir', 'rapido', 'pasta', 'italico', 'larguras', 'de-novo']);
 
 export function lerArgs(lista) {
   const posicionais = [];

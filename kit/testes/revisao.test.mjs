@@ -96,9 +96,24 @@ test('trajetória: promessa ou pedido que não batem com o brief põem o geral n
   assert.equal(acima.notas[0].bloqueios, 0);
   const os2 = trajetoria([rodada(1, { arte: 9, geral: 8, fatos: 9, qa: 9 }, { plateia: { ...naoBate, sem_fala: false } })]);
   assert.deepEqual(os2.notas[0].alertas, ['plateia_sem_fala', 'plateia_nao_bate', 'geral_acima_do_teto']);
+  // o teto é imposto: o geral conta 7 (abaixo do mínimo 7,5), então a rodada não passa
+  assert.deepEqual([acima.notas[0].geral, acima.notas[0].geral_dada, acima.notas[0].passou], [7, 8.5, false]);
   // "bate_com_brief" é sim ou não; ausente não acusa nada
   const ruim = validarRodada(rodada(1, { ...OITO }, { plateia: { ...naoBate, bate_com_brief: 'não' } }), 1);
   assert.ok(ruim.some((e) => e.includes('plateia.bate_com_brief')), ruim.join(' | '));
+});
+
+test('teto imposto: plateia que não bate com o brief e geral 9 não passa, mesmo com as outras lentes em 10', () => {
+  const t = trajetoria([rodada(1, { arte: 10, geral: 9, fatos: 10, qa: 10 }, { plateia: { ...PLATEIA, bate_com_brief: false } })]);
+  const n = t.notas[0];
+  assert.deepEqual([n.geral, n.geral_dada, n.media, n.bloqueios, n.passou], [7, 9, 9.3, 0, false]);
+  assert.deepEqual([t.passou_na_rodada, t.metas.em_ate_2_rodadas], [null, false]);
+  // no teto ou abaixo, nada muda e não aparece geral_dada
+  const abaixo = trajetoria([rodada(1, { arte: 9, geral: 6.5, fatos: 9, qa: 9 }, { plateia: { ...PLATEIA, bate_com_brief: false } })]).notas[0];
+  assert.deepEqual([abaixo.geral, abaixo.geral_dada], [6.5, undefined]);
+  // com a plateia certa, o geral 9 conta inteiro
+  const certa = trajetoria([rodada(1, { arte: 10, geral: 9, fatos: 10, qa: 10 })]).notas[0];
+  assert.deepEqual([certa.geral, certa.geral_dada, certa.passou], [9, undefined, true]);
 });
 
 test('metas separadas: rodadas por passou_na_rodada; estabilidade só por reavaliação do mesmo estado', () => {

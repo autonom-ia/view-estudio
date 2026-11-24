@@ -57,7 +57,7 @@ Cada rodada usa revisores novos. Nunca reaproveite o da rodada anterior.
 
 ## 5. Juntar e conferir
 
-1. Nota da rodada = média das 4 notas. **Passa com 8,5 ou mais e nenhuma lente abaixo de 7,5.** Fato sem fonte ou divergente, problema de QA que impede alguém de acompanhar (texto ilegível ou cortado, tela que não avança) e teste da plateia com "não" na terceira pergunta bloqueiam mesmo com média alta. Plateia com resposta que não bate com o brief, ou com "não" na terceira pergunta, põe o diretor geral no teto 7 (a régua manda): se a nota dele veio acima, devolva a ele.
+1. Nota da rodada = média das 4 notas. **Passa com 8,5 ou mais e nenhuma lente abaixo de 7,5.** Fato sem fonte ou divergente, problema de QA que impede alguém de acompanhar (texto ilegível ou cortado, tela que não avança) e teste da plateia com "não" na terceira pergunta bloqueiam mesmo com média alta. Plateia com resposta que não bate com o brief, ou com "não" na terceira pergunta, põe o diretor geral no teto 7 (a régua manda): se a nota dele veio acima, devolva a ele; o comando `revisao` já conta 7 no lugar dela.
 2. Revisor também erra. Antes de aplicar cada correção, confira: o fato contra a fonte; o problema visual contra a foto; a sugestão contra o brief aprovado e o piloto aprovado. Mudança que contraria o que a pessoa aprovou vira pergunta para ela, não correção.
 3. Grave `apresentacoes/<nome>/revisao/rodada-N.md`: as 4 notas, a média, as respostas do teste da plateia, os problemas aceitos (com a correção feita), os recusados (com o porquê). Grave também `apresentacoes/<nome>/revisao/rodada-N.json`, que o comando `revisao` passa aos revisores da rodada seguinte:
    ```json
@@ -70,7 +70,7 @@ Cada rodada usa revisores novos. Nunca reaproveite o da rodada anterior.
      "recusados": [{ "lente": "fatos", "problema": "o que foi pedido", "porque": "por que ficou como está" }]
    }
    ```
-   `lente` é `arte`, `geral`, `fatos` ou `qa`. `plateia` é obrigatório. `bate_com_brief` é você quem marca, comparando as respostas 1 e 2 da plateia com a promessa e o pedido final do brief: `false` quando não batem. `sem_fala: false` já conta como bloqueio no comando `revisao`; com `sem_fala` ou `bate_com_brief` em `false`, ele também acusa em `dados.notas[].alertas` o diretor geral acima do teto 7. `reavaliacao` só existe quando você mede a estabilidade (ver "Como medir a meta"). `bloqueios` lista o que impede passar mesmo com média alta (fato sem fonte, QA que impede acompanhar, plateia sem fala = não); pendência que só a pessoa resolve não entra aqui, vai para `andamento.md` > Pendências (a skill `entregar` pergunta antes de entregar).
+   `lente` é `arte`, `geral`, `fatos` ou `qa`. `plateia` é obrigatório. `bate_com_brief` é você quem marca, comparando as respostas 1 e 2 da plateia com a promessa e o pedido final do brief: `false` quando não batem. `sem_fala: false` já conta como bloqueio no comando `revisao`; com `sem_fala` ou `bate_com_brief` em `false`, ele também acusa em `dados.notas[].alertas` o diretor geral acima do teto 7 e conta o geral como 7 na média, na lente mínima e no "passou" (a nota que veio fica em `geral_dada`). `reavaliacao` só existe quando você mede a estabilidade (ver "Como medir a meta"). `bloqueios` lista o que impede passar mesmo com média alta (fato sem fonte, QA que impede acompanhar, plateia sem fala = não); pendência que só a pessoa resolve não entra aqui, vai para `andamento.md` > Pendências (a skill `entregar` pergunta antes de entregar).
 4. Atualize o `andamento.md` (`revisão: rodada N, nota X`).
 
 ## 6. Rodadas

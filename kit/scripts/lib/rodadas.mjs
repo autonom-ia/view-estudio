@@ -111,7 +111,8 @@ export function lerRodadas(pastaRevisao, ate) {
 // O que o código impõe sozinho, sem depender do orquestrador copiar para "bloqueios".
 // O teto 7 do diretor geral segue a régua: promessa ou pedido final que não batem com o brief
 // (bate_com_brief: false), ou o pedido final que não se entende só pelas telas (sem_fala: false).
-// Só o "sem fala" é bloqueio; o "não bate" segura a rodada pela nota do geral.
+// Só o "sem fala" é bloqueio; o "não bate" segura a rodada pela nota do geral, que o código
+// limita a 7 (abaixo do mínimo 7,5) mesmo quando o revisor deu mais.
 function alertasDaRodada(r) {
   const alertas = [];
   if (r.plateia.sem_fala === false) alertas.push('plateia_sem_fala');
@@ -120,13 +121,23 @@ function alertasDaRodada(r) {
   return alertas;
 }
 
+// Com o teste da plateia falhando, a nota do diretor geral que conta é no máximo 7 (o teto da
+// régua), na média, na lente mínima e no "passou". A nota que o revisor deu fica em geral_dada.
+function notasQueContam(r, alertas) {
+  const falhou = alertas.includes('plateia_sem_fala') || alertas.includes('plateia_nao_bate');
+  if (!falhou || r.notas.geral <= META.teto_geral_plateia) return r.notas;
+  return { ...r.notas, geral: META.teto_geral_plateia };
+}
+
 function resumoDaRodada(r) {
-  const valores = LENTES.map((l) => r.notas[l]);
   const alertas = alertasDaRodada(r);
+  const notas = notasQueContam(r, alertas);
+  const valores = LENTES.map((l) => notas[l]);
   const bloqueios = (Array.isArray(r.bloqueios) ? r.bloqueios.length : 0) + (alertas.includes('plateia_sem_fala') ? 1 : 0);
-  const passou = atingeMedia(r.notas) && Math.min(...valores) >= META.minima && bloqueios === 0;
-  const lentes = Object.fromEntries(LENTES.map((l) => [l, r.notas[l]]));
-  return { rodada: r.rodada, ...lentes, media: umaCasa(mediaExata(r.notas)), bloqueios, alertas, passou };
+  const passou = atingeMedia(notas) && Math.min(...valores) >= META.minima && bloqueios === 0;
+  const lentes = Object.fromEntries(LENTES.map((l) => [l, notas[l]]));
+  const dada = notas.geral !== r.notas.geral ? { geral_dada: r.notas.geral } : {};
+  return { rodada: r.rodada, ...lentes, ...dada, media: umaCasa(mediaExata(notas)), bloqueios, alertas, passou };
 }
 
 // Maior diferença de cada lente entre a avaliação e a reavaliação do mesmo estado; null se não houve.

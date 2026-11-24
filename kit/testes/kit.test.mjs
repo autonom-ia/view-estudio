@@ -188,6 +188,67 @@ test('resumo: os {{campos}} do mensagens.json são os que o comando manda, e sae
   assert.equal(preencher('{{n}} páginas', { n: 0 }), '0 páginas');
 });
 
+// Cada ponto do kit que emite o código (falha, reprovado, aviso ou "codigo: '...'"), lido como
+// texto até o fim da instrução (o primeiro ";"), sem expressão regular.
+const PASTA_SCRIPTS = path.join(RAIZ, 'kit', 'scripts');
+function arquivosDoKit(pasta) {
+  const lista = [];
+  for (const nome of fs.readdirSync(pasta)) {
+    const c = path.join(pasta, nome);
+    if (fs.statSync(c).isDirectory()) lista.push(...arquivosDoKit(c));
+    else if (nome.endsWith('.mjs')) lista.push(c);
+  }
+  return lista;
+}
+function emissoes(codigo) {
+  const achados = [];
+  for (const arquivo of arquivosDoKit(PASTA_SCRIPTS)) {
+    const texto = fs.readFileSync(arquivo, 'utf8');
+    for (const prefixo of [`falha('${codigo}'`, `reprovado('${codigo}'`, `aviso('${codigo}'`, `codigo: '${codigo}'`]) {
+      let i = texto.indexOf(prefixo);
+      while (i !== -1) {
+        const fim = texto.indexOf(';', i);
+        achados.push({ arquivo: path.relative(RAIZ, arquivo), trecho: texto.slice(i, fim === -1 ? undefined : fim) });
+        i = texto.indexOf(prefixo, i + prefixo.length);
+      }
+    }
+  }
+  return achados;
+}
+const ehDeNome = (ch) => (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch === '_' || ch === '$';
+const vizinho = (texto, i, passo) => {
+  let j = i;
+  while (j >= 0 && j < texto.length && (texto[j] === ' ' || texto[j] === '\n')) j += passo;
+  return texto[j] || '';
+};
+// O campo aparece como chave de objeto: "{ campo," "campo:" "campo }" (inclusive a forma curta).
+function temChave(trecho, campo) {
+  let i = trecho.indexOf(campo);
+  while (i !== -1) {
+    const fim = i + campo.length;
+    const inteiro = !ehDeNome(trecho[i - 1] || '') && !ehDeNome(trecho[fim] || '');
+    if (inteiro && '{,'.includes(vizinho(trecho, i - 1, -1)) && ':,}'.includes(vizinho(trecho, fim, 1))) return true;
+    i = trecho.indexOf(campo, fim);
+  }
+  return false;
+}
+
+test('resumo: todo {{campo}} de cada código é mandado por todos os pontos do kit que emitem esse código', () => {
+  assert.equal(temChave("falha('X', { nome, pasta: p })", 'nome'), true);
+  assert.equal(temChave("codigo: 'X', dados: { de: r.de }", 'de'), true);
+  assert.equal(temChave("codigo: 'X', dados: { outro: r.de }", 'de'), false, 'r.de é valor, não chave');
+  const mensagens = JSON.parse(fs.readFileSync(path.join(RAIZ, 'kit', 'mensagens.json'), 'utf8'));
+  for (const [codigo, m] of Object.entries(mensagens)) {
+    if (codigo.startsWith('_') || !m.texto.includes('{{')) continue;
+    const campos = [...new Set(m.texto.split('{{').slice(1).map((pedaco) => pedaco.split('}}')[0]))];
+    const pontos = emissoes(codigo);
+    assert.ok(pontos.length > 0, `${codigo}: nenhum ponto do kit emite este código`);
+    for (const { arquivo, trecho } of pontos) {
+      for (const campo of campos) assert.ok(temChave(trecho, campo), `${codigo} em ${arquivo} não manda "${campo}": ${trecho.slice(0, 160)}`);
+    }
+  }
+});
+
 test('textoDoCodigo: código herdado (constructor, __proto__) não acha nada e não quebra', () => {
   for (const c of ['constructor', '__proto__', 'toString', 'hasOwnProperty', 'valueOf']) {
     assert.equal(textoDoCodigo(c), '', c);

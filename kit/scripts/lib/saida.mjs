@@ -41,9 +41,32 @@ export function mensagens() {
   return cacheMensagens;
 }
 
-export function textoDoCodigo(codigo) {
-  const m = mensagens()[codigo];
-  return m ? m.texto : '';
+// Troca cada {{campo}} do texto pelo valor de dados[campo]. Só texto e número entram; campo sem
+// valor some com o marcador, para a pessoa nunca ver "{{versao}}". Sem regex: split/indexOf.
+export function preencher(texto, dados) {
+  if (typeof texto !== 'string') return '';
+  const partes = texto.split('{{');
+  let saida = partes[0];
+  for (const parte of partes.slice(1)) {
+    const fim = parte.indexOf('}}');
+    if (fim < 0) {
+      saida += `{{${parte}`;
+      continue;
+    }
+    const campo = parte.slice(0, fim);
+    const valor = dados && typeof dados === 'object' && Object.hasOwn(dados, campo) ? dados[campo] : undefined;
+    const trecho = typeof valor === 'string' || typeof valor === 'number' ? String(valor) : '';
+    saida += trecho + parte.slice(fim + 2);
+  }
+  return saida;
+}
+
+// Só código que é do próprio mensagens.json: "constructor" ou "__proto__" não acham nada herdado.
+export function textoDoCodigo(codigo, dados = {}) {
+  const todas = mensagens();
+  if (typeof codigo !== 'string' || !Object.hasOwn(todas, codigo)) return '';
+  const m = todas[codigo];
+  return m && typeof m === 'object' ? preencher(m.texto, dados) : '';
 }
 
 // Só o texto livre (vindo de processo filho, exceção ou rede) passa pelo sanear. Nome, título
@@ -73,7 +96,7 @@ export function montarResultado(comando, resultado) {
     ok,
     comando,
     codigo: resultado.codigo || (ok ? 'OK' : 'DESCONHECIDO'),
-    resumo: resultado.resumo || textoDoCodigo(resultado.codigo) || '',
+    resumo: resultado.resumo || textoDoCodigo(resultado.codigo, limpar(resultado.dados || {})) || '',
     arquivos: resultado.arquivos || {},
     avisos: limpar(resultado.avisos || []),
     dados: limpar(resultado.dados === undefined ? {} : resultado.dados),
@@ -86,7 +109,7 @@ export function imprimirResultado(comando, resultado) {
 
 export function resultadoDeErro(erro) {
   if (erro instanceof KitErro) {
-    return { ok: false, codigo: erro.codigo, dados: erro.dados, resumo: textoDoCodigo(erro.codigo) || erro.codigo, sair: erro.sair };
+    return { ok: false, codigo: erro.codigo, dados: erro.dados, resumo: textoDoCodigo(erro.codigo, limpar(erro.dados || {})) || erro.codigo, sair: erro.sair };
   }
   const detalhe = sanear(String((erro && erro.stack) || erro)).split('\n').slice(0, 6).join('\n');
   return { ok: false, codigo: 'DESCONHECIDO', dados: { detalhe }, resumo: textoDoCodigo('DESCONHECIDO'), sair: 1 };

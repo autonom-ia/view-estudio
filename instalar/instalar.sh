@@ -6,6 +6,9 @@
 #   bash instalar/instalar.sh <acao> [id] [--agente claude|codex] [--modo tudo|um_por_um]
 #
 # Acoes:
+#   tudo          A entrada unica: checar, os cinco passos e verificar, em sequencia. Para na primeira
+#                 etapa obrigatoria que nao der certo e devolve o JSON dela em "resultado". O ffmpeg
+#                 e opcional: se falhar, segue e a verificacao diz o que faltou.
 #   checar        So olha o computador (sistema, espaco, memoria, internet, pasta). Nao instala nada.
 #   plano         Diz o estado de cada passo (falta, pronto).
 #   passo <id>    Instala ou executa um passo. Rodar de novo nao baixa de novo.
@@ -80,7 +83,7 @@ ler_versoes() {
 }
 ler_versoes
 
-VERSAO_ESTUDIO="1.0.0"
+VERSAO_ESTUDIO="1.1.0"
 if [ -f "$REPO/VERSAO" ]; then
   IFS= read -r VERSAO_ESTUDIO < "$REPO/VERSAO" || true
   VERSAO_ESTUDIO="${VERSAO_ESTUDIO%$'\r'}"
@@ -797,8 +800,10 @@ acao_plano() {
   exit 0
 }
 
+# O ffmpeg e opcional (so para cena em video): faltando, o item sai com "opcional":true e
+# ok:false, mas a verificacao fica ok. Qualquer outro item que falha deixa a verificacao em ok:false.
 acao_verificar() {
-  local itens="" total=0 prontos=0 v res livre obrig=1 kit_saida kit_ult kit_ok t nav
+  local itens="" total=0 prontos=0 v res livre obrig=1 kit_saida kit_ult kit_ok t nav falhas=0 opcionais=""
   add_item() {
     # add_item <id> <ok 1/0> <texto> [codigo] [extra json]
     total=$((total + 1))
@@ -807,9 +812,15 @@ acao_verificar() {
     itens="$itens{\"id\":$(js "$1"),\"ok\":$(jbool "$2"),\"texto\":$(js "$3")"
     case "$1" in
       node|npm) itens="$itens,\"passo\":\"node\"" ;;
-      ffmpeg|ffprobe) itens="$itens,\"passo\":\"ffmpeg\"" ;;
+      ffmpeg|ffprobe) itens="$itens,\"passo\":\"ffmpeg\",\"opcional\":true" ;;
       pacotes|navegador) itens="$itens,\"passo\":\"$1\"" ;;
     esac
+    if [ "$2" != "1" ]; then
+      case "$1" in
+        ffmpeg|ffprobe) [ -n "$opcionais" ] && opcionais="$opcionais,"; opcionais="$opcionais$(js "$1")" ;;
+        *) falhas=$((falhas + 1)) ;;
+      esac
+    fi
     [ -n "${4:-}" ] && itens="$itens,\"codigo\":$(js "$4")"
     [ -n "${5:-}" ] && itens="$itens,$5"
     itens="$itens}"
@@ -864,12 +875,14 @@ acao_verificar() {
   fi
 
   local gravou=0 ok=0
-  [ "$prontos" = "$total" ] && ok=1
+  [ "$falhas" = "0" ] && ok=1
   if [ "$obrig" = "1" ] && [ -x "$NODE_BIN" ]; then
     gravar_instalacao && gravou=1
   fi
-  if [ "$ok" = "1" ]; then diga "Tudo pronto: $prontos de $total."; else diga "Ficou quase tudo pronto: $prontos de $total."; fi
-  printf '{"ok":%s,"total":%s,"prontos":%s,"instalacao_gravada":%s,"itens":[%s]}\n' "$(jbool "$ok")" "$total" "$prontos" "$(jbool "$gravou")" "$itens"
+  if [ "$ok" = "1" ] && [ -n "$opcionais" ]; then diga "Pronto para as apresentacoes: $prontos de $total. Faltou so o FFmpeg, que e opcional."
+  elif [ "$ok" = "1" ]; then diga "Tudo pronto: $prontos de $total."
+  else diga "Ficou quase tudo pronto: $prontos de $total."; fi
+  printf '{"ok":%s,"total":%s,"prontos":%s,"instalacao_gravada":%s,"opcionais_faltando":[%s],"itens":[%s]}\n' "$(jbool "$ok")" "$total" "$prontos" "$(jbool "$gravou")" "$opcionais" "$itens"
   [ "$ok" = "1" ] && exit 0
   exit 1
 }
@@ -940,9 +953,62 @@ acao_desinstalar() {
   exit 0
 }
 
+# Uma entrada so (uma caixinha de licenca): checar, os cinco passos e verificar, cada um num
+# processo filho deste mesmo script. Passo que falha por motivo passageiro ganha uma segunda chance.
+# Passo opcional (ffmpeg) que falha nao para o resto: a verificacao diz o que faltou.
+# Ultima linha: {"acao":"tudo","ok":...,"etapa":"<checar|id do passo|verificar>","checar":{...},"resultado":{...}}.
+rodar_etapa() {
+  local extra=""
+  [ -n "$AGENTE" ] && extra="--agente $AGENTE"
+  # shellcheck disable=SC2086 # extra vazio ou "--agente <nome>", sem espaco no nome
+  ETAPA_SAIDA="$(bash "$AQUI/instalar.sh" "$@" $extra --modo tudo)"
+  ETAPA_RC=$?
+  printf '%s\n' "$ETAPA_SAIDA" | sed '$d'
+  ETAPA_ULTIMA="$(ultima_linha "$ETAPA_SAIDA")"
+  [ -n "$ETAPA_ULTIMA" ] || ETAPA_ULTIMA='{"ok":false,"codigo":"DESCONHECIDO","dados":{}}'
+}
+
+vale_tentar_de_novo() {
+  case "$1" in
+    *'"codigo":"DOWNLOAD_FALHOU"'*|*'"codigo":"ARQUIVO_DIFERENTE"'*|*'"codigo":"MAC_BLOQUEOU"'*) return 0 ;;
+    *'"codigo":"PACOTES_FALHOU"'*|*'"codigo":"NAVEGADOR_FALHOU"'*|*'"codigo":"DESCONHECIDO"'*) return 0 ;;
+  esac
+  return 1
+}
+
+saida_tudo() {
+  printf '{"acao":"tudo","ok":%s,"etapa":%s,"checar":%s,"resultado":%s}\n' "$(jbool "$1")" "$(js "$2")" "$3" "$4"
+  [ "$1" = "1" ] && exit 0
+  exit 1
+}
+
+acao_tudo() {
+  local id checar
+  diga "Etapa 1 de 3: olhando o computador."
+  rodar_etapa checar
+  checar="$ETAPA_ULTIMA"
+  [ "$ETAPA_RC" = "0" ] || saida_tudo 0 checar "$checar" "$checar"
+  diga "Etapa 2 de 3: instalando os programas do estudio."
+  for id in $PASSOS; do
+    rodar_etapa passo "$id"
+    if [ "$ETAPA_RC" != "0" ] && vale_tentar_de_novo "$ETAPA_ULTIMA"; then
+      diga "Nao deu na primeira vez. Tentando de novo."
+      rodar_etapa passo "$id"
+    fi
+    if [ "$ETAPA_RC" != "0" ] && [ "$(obrigatorio "$id")" = "true" ]; then
+      saida_tudo 0 "$id" "$checar" "$ETAPA_ULTIMA"
+    fi
+  done
+  diga "Etapa 3 de 3: conferindo tudo."
+  rodar_etapa verificar
+  [ "$ETAPA_RC" = "0" ] || saida_tudo 0 verificar "$checar" "$ETAPA_ULTIMA"
+  saida_tudo 1 verificar "$checar" "$ETAPA_ULTIMA"
+}
+
 # ---------------------------------------------------------------- despacho
 
 case "$ACAO" in
+  tudo) acao_tudo ;;
   checar) acao_checar ;;
   plano) acao_plano ;;
   passo) acao_passo "$ID" ;;
@@ -950,6 +1016,6 @@ case "$ACAO" in
   mudar-pasta) acao_mudar_pasta ;;
   desinstalar) acao_desinstalar ;;
   *)
-    printf '{"acao":%s,"ok":false,"codigo":"ACAO_DESCONHECIDA","dados":{"acoes":["checar","plano","passo","verificar","mudar-pasta","desinstalar"]}}\n' "$(js "$ACAO")"
+    printf '{"acao":%s,"ok":false,"codigo":"ACAO_DESCONHECIDA","dados":{"acoes":["tudo","checar","plano","passo","verificar","mudar-pasta","desinstalar"]}}\n' "$(js "$ACAO")"
     exit 1 ;;
 esac

@@ -9,7 +9,8 @@ import { fileURLToPath } from 'node:url';
 import { lerArgs } from '../scripts/lib/args.mjs';
 import { nomeValido, sugerirNome, nomeReservadoDoWindows } from '../scripts/lib/caminhos.mjs';
 import { sanear } from '../scripts/lib/executar.mjs';
-import { montarResultado } from '../scripts/lib/saida.mjs';
+import { montarResultado, resultadoDeErro, preencher, textoDoCodigo, KitErro } from '../scripts/lib/saida.mjs';
+import { resultadoDaVersao } from '../scripts/comandos/versao.mjs';
 import { numeroDoNome, ehArquivoDeRoteiro, lerRoteiro } from '../scripts/lib/apresentacao.mjs';
 import { montarTeleprompter, jsonParaScript } from '../scripts/lib/teleprompter.mjs';
 import { conferirEspelhos, gerarEspelhos } from '../scripts/lib/espelho.mjs';
@@ -156,6 +157,136 @@ test('despachante: comando desconhecido sai 1 com JSON na última linha', () => 
   assert.ok(r.json.dados.disponiveis.includes('checar'));
 });
 
+// Os {{campos}} de cada texto de kit/mensagens.json e o que o comando manda em "dados".
+// Texto novo com {{campo}} entra aqui, com o campo que o comando de fato envia.
+const CAMPOS_ENVIADOS = Object.freeze({
+  VERSAO: ['versao'],
+  JA_ATUALIZADO: ['de'],
+  ESTUDIO_ATUALIZADO: ['de', 'para'],
+  PDF_PRONTO: ['paginas'],
+  APRESENTACAO_JA_EXISTE: ['nome'],
+});
+
+test('resumo: os {{campos}} do mensagens.json são os que o comando manda, e saem preenchidos', () => {
+  const mensagens = JSON.parse(fs.readFileSync(path.join(RAIZ, 'kit', 'mensagens.json'), 'utf8'));
+  const comCampos = Object.entries(mensagens).filter(([codigo, m]) => !codigo.startsWith('_') && m.texto.includes('{{'));
+  assert.deepEqual(comCampos.map(([codigo]) => codigo).sort(), Object.keys(CAMPOS_ENVIADOS).sort());
+  for (const [codigo, m] of comCampos) {
+    const campos = m.texto.split('{{').slice(1).map((pedaco) => pedaco.split('}}')[0]);
+    assert.deepEqual([...new Set(campos)].sort(), [...CAMPOS_ENVIADOS[codigo]].sort(), codigo);
+    const dados = Object.fromEntries(campos.map((campo) => [campo, `valor-${campo}`]));
+    for (const r of [montarResultado('x', { ok: true, codigo, dados }), resultadoDeErro(new KitErro(codigo, dados))]) {
+      assert.ok(!r.resumo.includes('{{') && !r.resumo.includes('}}'), `${codigo}: ${r.resumo}`);
+      for (const campo of campos) assert.ok(r.resumo.includes(`valor-${campo}`), `${codigo} sem ${campo}`);
+    }
+  }
+  // campo ausente ou que não é texto nem número some com o marcador
+  assert.equal(montarResultado('x', { ok: true, codigo: 'VERSAO', dados: {} }).resumo, 'Esta é a versão  do estúdio.');
+  assert.ok(!montarResultado('x', { ok: true, codigo: 'VERSAO', dados: { versao: { x: 1 } } }).resumo.includes('[object'));
+  assert.equal(preencher('a {{constructor}} b {{toString}}', {}), 'a  b ', 'campo herdado não entra');
+  assert.equal(preencher('sem fecho {{x', { x: 'y' }), 'sem fecho {{x');
+  assert.equal(preencher('{{n}} páginas', { n: 0 }), '0 páginas');
+});
+
+// Cada ponto do kit que emite o código (falha, reprovado, aviso ou "codigo: '...'"), lido como
+// texto até o fim da instrução (o primeiro ";"), sem expressão regular.
+const PASTA_SCRIPTS = path.join(RAIZ, 'kit', 'scripts');
+function arquivosDoKit(pasta) {
+  const lista = [];
+  for (const nome of fs.readdirSync(pasta)) {
+    const c = path.join(pasta, nome);
+    if (fs.statSync(c).isDirectory()) lista.push(...arquivosDoKit(c));
+    else if (nome.endsWith('.mjs')) lista.push(c);
+  }
+  return lista;
+}
+function emissoes(codigo) {
+  const achados = [];
+  for (const arquivo of arquivosDoKit(PASTA_SCRIPTS)) {
+    const texto = fs.readFileSync(arquivo, 'utf8');
+    for (const prefixo of [`falha('${codigo}'`, `reprovado('${codigo}'`, `aviso('${codigo}'`, `codigo: '${codigo}'`]) {
+      let i = texto.indexOf(prefixo);
+      while (i !== -1) {
+        const fim = texto.indexOf(';', i);
+        achados.push({ arquivo: path.relative(RAIZ, arquivo), trecho: texto.slice(i, fim === -1 ? undefined : fim) });
+        i = texto.indexOf(prefixo, i + prefixo.length);
+      }
+    }
+  }
+  return achados;
+}
+const ehDeNome = (ch) => (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch === '_' || ch === '$';
+const vizinho = (texto, i, passo) => {
+  let j = i;
+  while (j >= 0 && j < texto.length && (texto[j] === ' ' || texto[j] === '\n')) j += passo;
+  return texto[j] || '';
+};
+// O campo aparece como chave de objeto: "{ campo," "campo:" "campo }" (inclusive a forma curta).
+function temChave(trecho, campo) {
+  let i = trecho.indexOf(campo);
+  while (i !== -1) {
+    const fim = i + campo.length;
+    const inteiro = !ehDeNome(trecho[i - 1] || '') && !ehDeNome(trecho[fim] || '');
+    if (inteiro && '{,'.includes(vizinho(trecho, i - 1, -1)) && ':,}'.includes(vizinho(trecho, fim, 1))) return true;
+    i = trecho.indexOf(campo, fim);
+  }
+  return false;
+}
+
+test('resumo: todo {{campo}} de cada código é mandado por todos os pontos do kit que emitem esse código', () => {
+  assert.equal(temChave("falha('X', { nome, pasta: p })", 'nome'), true);
+  assert.equal(temChave("codigo: 'X', dados: { de: r.de }", 'de'), true);
+  assert.equal(temChave("codigo: 'X', dados: { outro: r.de }", 'de'), false, 'r.de é valor, não chave');
+  const mensagens = JSON.parse(fs.readFileSync(path.join(RAIZ, 'kit', 'mensagens.json'), 'utf8'));
+  for (const [codigo, m] of Object.entries(mensagens)) {
+    if (codigo.startsWith('_') || !m.texto.includes('{{')) continue;
+    const campos = [...new Set(m.texto.split('{{').slice(1).map((pedaco) => pedaco.split('}}')[0]))];
+    const pontos = emissoes(codigo);
+    assert.ok(pontos.length > 0, `${codigo}: nenhum ponto do kit emite este código`);
+    for (const { arquivo, trecho } of pontos) {
+      for (const campo of campos) assert.ok(temChave(trecho, campo), `${codigo} em ${arquivo} não manda "${campo}": ${trecho.slice(0, 160)}`);
+    }
+  }
+});
+
+test('textoDoCodigo: código herdado (constructor, __proto__) não acha nada e não quebra', () => {
+  for (const c of ['constructor', '__proto__', 'toString', 'hasOwnProperty', 'valueOf']) {
+    assert.equal(textoDoCodigo(c), '', c);
+    assert.equal(montarResultado('x', { ok: false, codigo: c }).resumo, '', c);
+    assert.equal(resultadoDeErro(new KitErro(c)).resumo, c, c);
+  }
+  assert.equal(textoDoCodigo(undefined), '');
+  assert.equal(preencher(undefined, {}), '');
+  assert.equal(preencher(42, {}), '');
+  assert.equal(textoDoCodigo('OK'), 'Pronto.');
+});
+
+test('versao sem o arquivo VERSAO: avisa VERSAO_NAO_ACHADA e o resumo diz isso, sem buraco na frase', () => {
+  const sem = montarResultado('versao', resultadoDaVersao(null));
+  assert.deepEqual(sem.avisos.map((a) => a.codigo), ['VERSAO_NAO_ACHADA']);
+  assert.equal(sem.resumo, textoDoCodigo('VERSAO_NAO_ACHADA'));
+  assert.ok(sem.resumo.length > 0 && !sem.resumo.includes('versão  do'), sem.resumo);
+  assert.equal(sem.dados.versao, null);
+  const com = montarResultado('versao', resultadoDaVersao('1.1.0', { version: '1.1.0' }));
+  assert.deepEqual([com.avisos, com.resumo, com.dados.pacote], [[], 'Esta é a versão 1.1.0 do estúdio.', '1.1.0']);
+});
+
+test('resumo de verdade: versao e nova repetida saem com o valor no lugar do {{campo}}', () => {
+  const v = rodarEstudio(['versao']);
+  const versao = fs.readFileSync(path.join(RAIZ, 'VERSAO'), 'utf8').trim();
+  assert.equal(v.json.resumo, `Esta é a versão ${versao} do estúdio.`);
+  const base = temporaria('estudio-resumo-');
+  try {
+    const env = { ESTUDIO_APRESENTACOES: base };
+    assert.equal(rodarEstudio(['nova', 'repetida'], env).codigo, 0);
+    const deNovo = rodarEstudio(['nova', 'repetida'], env);
+    assert.equal(deNovo.json.codigo, 'APRESENTACAO_JA_EXISTE');
+    assert.equal(deNovo.json.resumo, 'Já existe uma apresentação chamada repetida.');
+  } finally {
+    fs.rmSync(base, { recursive: true, force: true });
+  }
+});
+
 test('despachante: versao sai 0 e informa o HyperFrames fixo', () => {
   const r = rodarEstudio(['versao']);
   assert.equal(r.codigo, 0);
@@ -176,8 +307,8 @@ test('nova: nome inválido vira NOME_INVALIDO com sugestão; nome repetido não 
     const index = fs.readFileSync(path.join(base, 'teste', 'deck', 'index.html'), 'utf8');
     assert.ok(index.includes('<title>Título &lt;x&gt;</title>'));
     assert.ok(fs.existsSync(path.join(base, 'teste', 'deck', 'assets', 'marca', 'tokens.css')));
-    const de_novo = rodarEstudio(['nova', 'teste'], { ESTUDIO_APRESENTACOES: base });
-    assert.equal(de_novo.json.codigo, 'APRESENTACAO_JA_EXISTE');
+    const deNovo = rodarEstudio(['nova', 'teste'], { ESTUDIO_APRESENTACOES: base });
+    assert.equal(deNovo.json.codigo, 'APRESENTACAO_JA_EXISTE');
   } finally {
     fs.rmSync(base, { recursive: true, force: true });
   }

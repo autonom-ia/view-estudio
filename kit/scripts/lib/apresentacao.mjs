@@ -18,6 +18,7 @@ export function caminhosDe(nome, base = pastaApresentacoes()) {
     assets: path.join(pasta, 'deck', 'assets'),
     cenas: path.join(pasta, 'cenas'),
     prints: path.join(pasta, 'prints'),
+    revisao: path.join(pasta, 'revisao'),
     pdf: path.join(pasta, `${nome}.pdf`),
     teleprompter: path.join(pasta, 'deck', 'teleprompter.html'),
     rel: (...partes) => relativoARaiz(path.join(pasta, ...partes)),

@@ -18,7 +18,7 @@ Diga uma frase só: "Vou olhar o que aconteceu. Não precisa fazer nada." E rode
 
 No Codex, a verificação do instalador roda pedindo para sair da área protegida.
 
-Se nem o `./estudio` rodar e a última linha disser `ESTUDIO_NAO_INSTALADO`, rode a skill `instalar-estudio` (ela pula o que já está pronto). Se a pasta do estúdio sumiu ou mudou de lugar, diga: "Não achei a pasta do estúdio no lugar de sempre. Você moveu ou renomeou a pasta view-estudio?" e ajude a achar, sem apagar nada.
+Se nem o `./estudio` rodar e a última linha disser `ESTUDIO_NAO_INSTALADO`, rode a skill `instalar-estudio` (ela pula o que já está pronto). Se a pasta do estúdio sumiu ou mudou de lugar, diga: "Não achei o estúdio no lugar de sempre. Você mudou o view-estudio de lugar ou trocou o nome dele?" e ajude a achar, sem apagar nada.
 
 ## 2. Entender o código
 - Item da verificação do instalador com `ok:false`: é de instalação. O texto está em `instalar/mensagens.json` (`itens` e `erros`), e o item traz `passo`.
@@ -70,7 +70,7 @@ Depois de duas tentativas sem sucesso no mesmo problema:
 > 1. Tentar mais uma vez ★
 > 2. Vou pedir ajuda
 
-Se ela for pedir ajuda, diga que pode abrir um aviso em <https://github.com/autonom-ia/view-estudio/issues> com a frase: "{{código}} no comando {{nome}}" e a versão de `./estudio versao`. Nunca inclua arquivos da apresentação nem dados pessoais nesse aviso.
+Se ela for pedir ajuda, diga que pode abrir um aviso em <https://github.com/autonom-ia/view-estudio/issues> com a frase: "{{código}} ao rodar {{nome}}" e a versão de `./estudio versao`. Nunca inclua arquivos da apresentação nem dados pessoais nesse aviso.
 
 ## Proibido
 

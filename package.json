@@ -1,6 +1,6 @@
 {
   "name": "view-estudio",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "description": "View Estúdio: apresentações animadas em HTML, feitas com um assistente de IA, geradas no seu computador.",

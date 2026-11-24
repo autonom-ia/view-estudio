@@ -11,6 +11,32 @@ export const ALTURA = 1080;
 
 const PECAS = Object.freeze({ servir, launch, openTab });
 
+// O Chrome pede /favicon.ico sozinho quando a página não declara ícone, e nem sempre a tempo de
+// a rede registrar. A apresentação não pede esse arquivo, então a falta dele não é arquivo
+// quebrado: contar daria vermelho num computador e verde no outro. Ícone declarado com outro
+// nome (<link rel="icon" href="assets/...">) continua conferido.
+const PEDIDO_DO_NAVEGADOR = '/favicon.ico';
+
+// Separa o que a página pediu para fora da origem local e o que não carregou.
+export function separarPedidos(pedidos, origem) {
+  const externos = [];
+  const quebrados = [];
+  for (const p of pedidos) {
+    const u = p.url;
+    if (u.startsWith('data:') || u.startsWith('blob:') || u.startsWith('about:') || u.startsWith('chrome')) continue;
+    if (!u.startsWith(`${origem}/`)) {
+      externos.push(u);
+      continue;
+    }
+    const rel = u.slice(origem.length);
+    if (rel === PEDIDO_DO_NAVEGADOR) continue;
+    if (p.falhou || (p.status !== null && p.status >= 400)) {
+      quebrados.push({ url: rel, status: p.status || 0, erro: p.falhou || '' });
+    }
+  }
+  return { externos: [...new Set(externos)], quebrados };
+}
+
 // "pecas" existe para os testes trocarem o servidor e o navegador por versões de mentira.
 export async function abrirSessao(raizServida, { largura = LARGURA, altura = ALTURA, virtuais = {} } = {}, pecas = PECAS) {
   const srv = await pecas.servir(raizServida, { virtuais });
@@ -63,22 +89,7 @@ export async function abrirSessao(raizServida, { largura = LARGURA, altura = ALT
       pedidos = new Map();
     },
     // pedidos para fora da origem local e pedidos que falharam
-    rede: () => {
-      const externos = [];
-      const quebrados = [];
-      for (const p of pedidos.values()) {
-        const u = p.url;
-        if (u.startsWith('data:') || u.startsWith('blob:') || u.startsWith('about:') || u.startsWith('chrome')) continue;
-        if (!u.startsWith(`${srv.origem}/`)) {
-          externos.push(u);
-          continue;
-        }
-        if (p.falhou || (p.status !== null && p.status >= 400)) {
-          quebrados.push({ url: u.slice(srv.origem.length), status: p.status || 0, erro: p.falhou || '' });
-        }
-      }
-      return { externos: [...new Set(externos)], quebrados };
-    },
+    rede: () => separarPedidos(pedidos.values(), srv.origem),
     ir: async (url) => {
       await navegar(tab, url);
     },

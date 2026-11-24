@@ -7,7 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { abrirSessao } from '../scripts/lib/sessao.mjs';
+import { abrirSessao, separarPedidos } from '../scripts/lib/sessao.mjs';
 import { servir, ROTA_IDENTIDADE } from '../scripts/lib/servidor.mjs';
 import { copiarMarca } from '../scripts/lib/marca.mjs';
 import { pegarTrava } from '../scripts/comandos/abrir.mjs';
@@ -265,4 +265,26 @@ test('openTab: WebSocket que não abre vira CHROME_NAO_ABRIU e o socket é fecha
   } finally {
     await falso.fechar();
   }
+});
+
+test('rede: o favicon.ico que o navegador pede sozinho não vira arquivo quebrado; o resto continua', () => {
+  const origem = 'http://127.0.0.1:5000';
+  const { externos, quebrados } = separarPedidos(
+    [
+      { url: `${origem}/favicon.ico`, status: 404, falhou: null },
+      { url: `${origem}/assets/icone.png`, status: 404, falhou: null },
+      { url: `${origem}/assets/favicon.ico`, status: 404, falhou: null },
+      { url: `${origem}/assets/fonte.woff2`, status: null, falhou: 'net::ERR_FAILED' },
+      { url: `${origem}/index.html`, status: 200, falhou: null },
+      { url: 'https://fonts.googleapis.com/css2', status: 200, falhou: null },
+      { url: 'data:image/png;base64,AAAA', status: 200, falhou: null },
+    ],
+    origem,
+  );
+  assert.deepEqual(externos, ['https://fonts.googleapis.com/css2']);
+  assert.deepEqual(quebrados, [
+    { url: '/assets/icone.png', status: 404, erro: '' },
+    { url: '/assets/favicon.ico', status: 404, erro: '' },
+    { url: '/assets/fonte.woff2', status: 0, erro: 'net::ERR_FAILED' },
+  ]);
 });

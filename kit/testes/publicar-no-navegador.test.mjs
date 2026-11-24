@@ -106,8 +106,7 @@ test('publicada de verdade: abre sem o servidor do estúdio, vídeo de cena toca
       }
     }
     const { externos, quebrados } = sessao.rede();
-    // o favicon.ico o navegador pede sozinho; o painel também responde 404 e nada quebra
-    assert.deepEqual([externos, quebrados.filter((q) => q.url !== '/favicon.ico')], [[], []], 'nada falta e nada vem de fora');
+    assert.deepEqual([externos, quebrados], [[], []], 'nada falta e nada vem de fora');
 
     const tp = await openTab(sessao.portaDevtools);
     try {

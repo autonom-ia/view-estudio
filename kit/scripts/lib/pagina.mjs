@@ -126,9 +126,14 @@ export const ESTATICO = `(async () => {
 })()`;
 
 // Medidas do quadro assentado: colisão de texto, texto pequeno, texto fora da tela,
-// título colado no próximo elemento e texto vazando de um recorte.
-export const MEDIR = (limites) => `(() => {
+// título colado no próximo elemento e texto vazando de um recorte. Devolve também, em "contraste",
+// os textos que o checar mede contra a foto da tela (lib/contraste.mjs): cor, opacidade, caixas
+// das linhas, tamanho e peso. Fica fora da medida de contraste: texto decorativo
+// (aria-hidden="true", como uma marca d'água) e texto recuado de propósito (data-recua já
+// alcançado neste beat: foi medido nos beats em que estava em foco).
+export const MEDIR = (limites, beat = 0) => `(() => {
   const L = ${JSON.stringify(limites)};
+  const BEAT = ${Number.isInteger(beat) ? beat : 0};
   const palco = document.querySelector('.palco-tela') || document.body;
   const pr = palco.getBoundingClientRect();
   const escala = pr.width > 0 ? pr.width / 1920 : 1;
@@ -245,7 +250,103 @@ export const MEDIR = (limites) => `(() => {
       anc = anc.parentElement;
     }
   }
-  return { red: red.slice(0, L.maximo), warn: warn.slice(0, L.maximo), medidos: itens.length };
+  // contraste: o que vai para a foto. A cor do texto passa por um canvas (oklch, color-mix…).
+  const tinta = document.createElement('canvas');
+  tinta.width = 1;
+  tinta.height = 1;
+  const ctx = tinta.getContext('2d', { willReadFrequently: true });
+  const cor = (c) => {
+    const s = String(c || '').trim();
+    if (!s || s === 'transparent') return { r: 0, g: 0, b: 0, a: 0 };
+    ctx.clearRect(0, 0, 1, 1);
+    ctx.fillStyle = 'rgba(0,0,0,0)';
+    ctx.fillStyle = s;
+    ctx.fillRect(0, 0, 1, 1);
+    const d = ctx.getImageData(0, 0, 1, 1).data;
+    if (d[3] === 0) return { r: 0, g: 0, b: 0, a: 0 };
+    return { r: d[0], g: d[1], b: d[2], a: d[3] / 255 };
+  };
+  const recuado = (el) => {
+    for (let e = el; e && e !== document.body; e = e.parentElement) {
+      const v = e.getAttribute('data-recua');
+      if (v !== null && v.trim() !== '' && Number(v) <= BEAT) return true;
+    }
+    return false;
+  };
+  const temFundo = (e) => {
+    const cs = getComputedStyle(e);
+    if (cor(cs.backgroundColor).a > 0.05) return true;
+    if (cs.backgroundImage && cs.backgroundImage !== 'none') return true;
+    return ['IMG', 'VIDEO', 'CANVAS', 'PICTURE', 'IFRAME', 'svg', 'OBJECT', 'EMBED'].includes(e.tagName);
+  };
+  const contraste = [];
+  for (const it of itens) {
+    if (!it.vis || it.op < 0.05) continue;
+    if (it.el.closest('[aria-hidden="true"]') || recuado(it.el)) continue;
+    const preenchimento = cor(it.cs.webkitTextFillColor || it.cs.color);
+    if (preenchimento.a < 0.05) {
+      warn.push({ tipo: 'contraste-nao-medido', detalhe: 'texto pintado com o fundo (transparente): ' + nomeDe(it) });
+      continue;
+    }
+    const caixas = [];
+    for (const n of it.el.childNodes) {
+      if (n.nodeType !== 3 || !n.textContent.trim()) continue;
+      const rg = document.createRange();
+      rg.selectNodeContents(n);
+      for (const q of rg.getClientRects()) {
+        const x0 = Math.max(q.left, pr.left); const y0 = Math.max(q.top, pr.top);
+        const x1 = Math.min(q.right, pr.right); const y1 = Math.min(q.bottom, pr.bottom);
+        if (x1 - x0 > 1 && y1 - y0 > 1) caixas.push({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
+      }
+    }
+    if (!caixas.length) continue;
+    const q = caixas[0];
+    let pilha = [];
+    try { pilha = document.elementsFromPoint(q.x + q.w / 2, q.y + q.h / 2); } catch (e) {}
+    const k = pilha.findIndex((e) => e === it.el || it.el.contains(e));
+    let tampado = k < 0;
+    for (let j = 0; !tampado && j < k; j += 1) if (temFundo(pilha[j])) tampado = true;
+    if (tampado) {
+      warn.push({ tipo: 'contraste-nao-medido', detalhe: 'outro elemento por cima do texto: ' + nomeDe(it) });
+      continue;
+    }
+    contraste.push({
+      nome: nomeDe(it),
+      cor: preenchimento,
+      op: it.op,
+      caixas,
+      px: parseFloat(it.cs.fontSize) * escala,
+      peso: parseInt(it.cs.fontWeight, 10) || 400,
+    });
+  }
+  return { red: red.slice(0, L.maximo), warn: warn.slice(0, L.maximo), medidos: itens.length, contraste: contraste.slice(0, L.contraste_maximo || 60) };
+})()`;
+
+// Esconde a letra de todo texto da tela (a sombra fica: ela é parte do fundo que dá leitura) para a
+// foto do fundo. Sem transição, para a cor não voltar aos poucos quando o estilo sai.
+export const ESCONDER_TEXTO = `(async () => {
+  let s = document.getElementById('__estudio_sem_texto');
+  if (!s) { s = document.createElement('style'); s.id = '__estudio_sem_texto'; (document.head || document.documentElement).appendChild(s); }
+  s.textContent = '*,*::before,*::after{color:transparent!important;-webkit-text-fill-color:transparent!important;'
+    + '-webkit-text-stroke-color:transparent!important;text-decoration-color:transparent!important;'
+    + 'caret-color:transparent!important;transition:none!important}';
+  void document.documentElement.offsetWidth;
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  return true;
+})()`;
+
+// Devolve a letra sem disparar transição de cor: primeiro tira as cores mantendo "sem transição",
+// força o cálculo do estilo e só então remove o estilo.
+export const MOSTRAR_TEXTO = `(async () => {
+  const s = document.getElementById('__estudio_sem_texto');
+  if (s) {
+    s.textContent = '*,*::before,*::after{transition:none!important}';
+    void document.documentElement.offsetWidth;
+    s.remove();
+    void document.documentElement.offsetWidth;
+  }
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  return true;
 })()`;
 
 // O texto que a plateia lê numa tela assentada, para a conferência de fatos: o innerText (que deixa

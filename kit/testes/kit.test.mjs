@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { lerArgs } from '../scripts/lib/args.mjs';
 import { nomeValido, sugerirNome, nomeReservadoDoWindows } from '../scripts/lib/caminhos.mjs';
 import { sanear } from '../scripts/lib/executar.mjs';
-import { montarResultado, resultadoDeErro, preencher, KitErro } from '../scripts/lib/saida.mjs';
+import { montarResultado, resultadoDeErro, preencher, textoDoCodigo, KitErro } from '../scripts/lib/saida.mjs';
 import { numeroDoNome, ehArquivoDeRoteiro, lerRoteiro } from '../scripts/lib/apresentacao.mjs';
 import { montarTeleprompter, jsonParaScript } from '../scripts/lib/teleprompter.mjs';
 import { conferirEspelhos, gerarEspelhos } from '../scripts/lib/espelho.mjs';
@@ -185,6 +185,18 @@ test('resumo: os {{campos}} do mensagens.json são os que o comando manda, e sae
   assert.equal(preencher('a {{constructor}} b {{toString}}', {}), 'a  b ', 'campo herdado não entra');
   assert.equal(preencher('sem fecho {{x', { x: 'y' }), 'sem fecho {{x');
   assert.equal(preencher('{{n}} páginas', { n: 0 }), '0 páginas');
+});
+
+test('textoDoCodigo: código herdado (constructor, __proto__) não acha nada e não quebra', () => {
+  for (const c of ['constructor', '__proto__', 'toString', 'hasOwnProperty', 'valueOf']) {
+    assert.equal(textoDoCodigo(c), '', c);
+    assert.equal(montarResultado('x', { ok: false, codigo: c }).resumo, '', c);
+    assert.equal(resultadoDeErro(new KitErro(c)).resumo, c, c);
+  }
+  assert.equal(textoDoCodigo(undefined), '');
+  assert.equal(preencher(undefined, {}), '');
+  assert.equal(preencher(42, {}), '');
+  assert.equal(textoDoCodigo('OK'), 'Pronto.');
 });
 
 test('resumo de verdade: versao e nova repetida saem com o valor no lugar do {{campo}}', () => {

@@ -44,6 +44,7 @@ export function mensagens() {
 // Troca cada {{campo}} do texto pelo valor de dados[campo]. Só texto e número entram; campo sem
 // valor some com o marcador, para a pessoa nunca ver "{{versao}}". Sem regex: split/indexOf.
 export function preencher(texto, dados) {
+  if (typeof texto !== 'string') return '';
   const partes = texto.split('{{');
   let saida = partes[0];
   for (const parte of partes.slice(1)) {
@@ -60,9 +61,12 @@ export function preencher(texto, dados) {
   return saida;
 }
 
+// Só código que é do próprio mensagens.json: "constructor" ou "__proto__" não acham nada herdado.
 export function textoDoCodigo(codigo, dados = {}) {
-  const m = mensagens()[codigo];
-  return m ? preencher(m.texto, dados) : '';
+  const todas = mensagens();
+  if (typeof codigo !== 'string' || !Object.hasOwn(todas, codigo)) return '';
+  const m = todas[codigo];
+  return m && typeof m === 'object' ? preencher(m.texto, dados) : '';
 }
 
 // Só o texto livre (vindo de processo filho, exceção ou rede) passa pelo sanear. Nome, título

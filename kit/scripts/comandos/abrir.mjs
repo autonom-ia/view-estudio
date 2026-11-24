@@ -48,7 +48,8 @@ export async function pegarTrava(arquivo, { esperaMs = ESPERA_TRAVA_MS } = {}) {
   }
 }
 
-async function subirServidor(deck, estado) {
+// Sobe (ou reaproveita) o servidor de uma pasta; o "comparar" usa o mesmo, para a página do antes e depois.
+export async function subirServidor(deck, estado) {
   const soltar = await pegarTrava(`${estado}.trava`);
   try {
     let porta = await servidorVivo(estado, deck);

@@ -43,6 +43,7 @@ Você entende o pedido. Não existe lista de palavras: decida pelo sentido.
 | Uma cena animada que vira vídeo dentro de uma tela | `cena-em-video` |
 | Uma nota, uma revisão, "está bom?" | `revisar` |
 | Mudar uma tela, corrigir algo que a revisão ou a pessoa apontou | `nova-apresentacao`, a partir da etapa certa |
+| Um pedido vago de mudança ("mais vida", "não gostei") | `nova-apresentacao`, seção "Pedido vago: antes e depois" |
 | O PDF, a pasta pronta, mandar para alguém, apresentar | `entregar` |
 | Algo deu erro, travou, sumiu | `consertar` |
 | Atualizar o estúdio | `atualizar-estudio` |
@@ -61,7 +62,7 @@ Rode tudo de dentro da pasta do estúdio.
 | Windows, Git Bash | `./estudio <comando>` | o mesmo instalador do Windows, com barra normal |
 
 - As skills escrevem `./estudio`. No PowerShell, troque por `.\estudio.cmd`.
-- Comandos: `nova`, `checar`, `fatos` (todo número, contato e @ das telas e da fala com fonte no brief), `acessibilidade`, `prints`, `revisao` (prepara a rodada da revisão), `pdf`, `teleprompter`, `cena`, `abrir`, `fonte` (baixa uma letra livre do Google Fonts, já leve e com licença), `verificar`, `espelhar`, `versao`, `atualizar`.
+- Comandos: `nova`, `checar`, `fatos` (todo número, contato e @ das telas e da fala com fonte no brief), `acessibilidade`, `prints`, `revisao` (prepara a rodada da revisão), `pdf`, `teleprompter`, `cena`, `abrir`, `antes`, `comparar` e `escolher` (o antes e o depois de um pedido vago, lado a lado), `fonte` (baixa uma letra livre do Google Fonts, já leve e com licença), `verificar`, `espelhar`, `versao`, `atualizar`.
 - Para mostrar a pasta de uma apresentação no Finder ou no Explorer, use `./estudio abrir <nome> --pasta`. Não chame `open` nem `explorer` direto.
 - **Leia só a última linha** de cada comando. Ela é um JSON numa linha só: `{"ok","comando","codigo","resumo","arquivos","avisos","dados"}`.
 - **Saída 0** é ok, **1** é erro de execução, **2** é reprovado na conferência (corrija pela causa e rode de novo).
@@ -69,7 +70,7 @@ Rode tudo de dentro da pasta do estúdio.
 - **Criar é livre; conferir é do comando.** Você escreve as telas (HTML, CSS, GSAP, `cena.js`), o brief e o roteiro. Estrutura, colisão, tamanho de letra, contraste, letras com licença, fato com fonte, acessibilidade, fotos, PDF e vídeo saem dos comandos. Nunca declare pronto sem `checar`, `fatos` e `acessibilidade` aprovados.
 - Comando que falha duas vezes: skill `consertar`.
 
-**Caixinhas de permissão.** O Claude Code e o Codex pedem licença antes de mexer no computador. Antes de cada ação que gera caixinha, avise em uma frase o que é e diga que pode aprovar. No Codex, peça para sair da área protegida (com `sandbox_permissions: "require_escalated"` no próprio comando) no instalador inteiro (ele baixa da internet), nos comandos que abrem o navegador escondido (`checar`, `fatos`, `acessibilidade`, `prints`, `pdf`, `cena`, `abrir`) e no `fonte` (ele baixa da internet). Os textos prontos estão em `instalar/mensagens.json` (`CODEX-INTERNET`, `CODEX-FORA-DA-AREA`).
+**Caixinhas de permissão.** O Claude Code e o Codex pedem licença antes de mexer no computador. Antes de cada ação que gera caixinha, avise em uma frase o que é e diga que pode aprovar. No Codex, peça para sair da área protegida (com `sandbox_permissions: "require_escalated"` no próprio comando) no instalador inteiro (ele baixa da internet), nos comandos que abrem o navegador escondido (`checar`, `fatos`, `acessibilidade`, `prints`, `pdf`, `cena`, `abrir`, `comparar`) e no `fonte` (ele baixa da internet). Os textos prontos estão em `instalar/mensagens.json` (`CODEX-INTERNET`, `CODEX-FORA-DA-AREA`).
 
 ## 5. Regras
 

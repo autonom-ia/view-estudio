@@ -310,5 +310,77 @@
   "RODADA_ILEGIVEL": {
     "texto": "Não consegui ler as anotações da conferência anterior. Vou arrumar antes de seguir.",
     "acao": "Leia dados.erro, corrija dados.arquivo no formato da skill revisar (rodada-N.json) e rode revisao de novo antes de chamar os revisores."
+  },
+  "ANTES_GUARDADO": {
+    "texto": "Guardei como a apresentação está agora, para mostrar o antes e o depois.",
+    "acao": "Faça 2 ou 3 mudanças concretas que se vejam (tela, fala, cena) e preencha arquivos.mudancas com {\"pedido\": \"as palavras da pessoa\", \"mudancas\": [{\"titulo\": \"o que mudou, em palavras do dia a dia\", \"porque\": \"como isso atende o pedido\", \"telas\": [2]}]}. Depois rode ./estudio comparar <nome>. Vídeo e arquivo pesado ficaram ligados ao original, sem cópia (dados.pesados_sem_duplicar): para mudar uma cena, use ./estudio cena, que grava o vídeo novo ao lado; nunca grave por cima do mesmo arquivo. dados.apagados diz o que da comparação anterior saiu (o antes, a versão vista e as fotos), quando havia uma."
+  },
+  "ANTES_EM_ABERTO": {
+    "texto": "Ainda falta você escolher entre o antes e o depois da última mudança.",
+    "acao": "A pessoa ainda não respondeu o \"Qual fica?\". Não guarde um antes novo por cima: rode ./estudio escolher <nome> com depois, antes ou outro, conforme a resposta. Só use --de-novo se a pessoa pediu para partir da apresentação como está agora."
+  },
+  "ANTES_NAO_GUARDADO": {
+    "texto": "Esqueci de guardar como a apresentação estava antes, então desta vez não dá para mostrar o antes e o depois. Daqui em diante, guardo antes de mudar.",
+    "acao": "Não desfaça de memória: o que você lembra não é o que estava. Diga à pessoa que desta vez não dá para comparar e siga a partir de agora: rode ./estudio antes <nome> para guardar a apresentação como está, refaça a mudança a partir daí e rode ./estudio comparar <nome>."
+  },
+  "ANTES_JA_RESOLVIDO": {
+    "texto": "Essa comparação já foi resolvida. Vou guardar a apresentação de agora antes de mudar de novo.",
+    "acao": "A pessoa já escolheu (dados.escolha) e a cópia do antes foi apagada. Para outra mudança, rode ./estudio antes <nome> primeiro."
+  },
+  "ANTES_VIDEO_MUDOU": {
+    "texto": "Um arquivo pesado guardado no antes foi substituído no meio do caminho, e o antes já não é o de antes. Vou refazer a comparação do jeito certo.",
+    "acao": "dados.arquivos foi gravado por cima do mesmo arquivo: o antes guarda arquivo pesado sem cópia, então o arquivo de antes foi substituído e não volta pelo antes. Não compare nem volte com esse antes. Se é o vídeo de uma cena (deck/assets/<cena>.mp4), dá para recriar o de antes a partir da cópia guardada da composição em revisao/antes-depois/antes/cenas/<cena>/: guarde com outro nome a pasta cenas/<cena>/ de agora (se a pessoa ainda pode querer a mudança), copie a de antes para cenas/<cena>/ e rode ./estudio cena <nome> <cena>, que grava ao lado e troca pelo nome. Depois rode ./estudio antes <nome> --de-novo e repita a mudança, renderizando sempre com ./estudio cena. Arquivo pesado que não é cena (foto grande, áudio): peça o original à pessoa."
+  },
+  "POUCAS_MUDANCAS": {
+    "texto": "Ainda falta mostrar pelo menos duas mudanças concretas.",
+    "acao": "Pedido vago vira 2 ou 3 mudanças que se veem (texto, letra, cor, foto, espaço, movimento, fala). Faça as que faltam e preencha dados.arquivo com cada uma (titulo, porque e telas). Rode comparar de novo."
+  },
+  "NADA_MUDOU": {
+    "texto": "Nas telas paradas, a apresentação ainda está igual à de antes. Vídeo e movimento não entram nesta comparação.",
+    "acao": "Nenhuma tela, clique ou fala mudou em relação ao antes. A comparação olha cada clique parado: vídeo de cena e movimento (entrada, transição, ritmo) não entram, e mudança só no brief.md também não. Se a mudança foi gravada no deck/ ou no roteiro/ e é visível parada, confira o arquivo e rode comparar de novo. Se ela é só de vídeo ou de movimento, diga à pessoa em uma frase o que mudou, rode ./estudio abrir <nome> para ela ver andando e faça o \"Qual fica?\" do mesmo jeito; ou junte uma mudança que se vê parada."
+  },
+  "MUDANCAS_DEMAIS": {
+    "texto": "Mudei mais coisas do que dá para comparar de uma vez.",
+    "acao": "Mostre no máximo 3 mudanças por vez (dados.maximo). Junte as pequenas numa só ou deixe as outras para a próxima comparação."
+  },
+  "MUDANCA_SEM_TITULO": {
+    "texto": "Uma das mudanças ficou sem nome. Vou completar.",
+    "acao": "Cada item de mudancas precisa de titulo. dados.ignoradas diz quantos ficaram de fora."
+  },
+  "COMPARACAO_PRONTA": {
+    "texto": "Abri o antes e o depois lado a lado, só nas telas que mudaram, com cada mudança numerada.",
+    "acao": "Diga em uma frase cada mudança de dados.mudancas, na ordem, e pergunte qual fica: \"O depois ★\", \"Voltar como estava\", \"Outro caminho\". Diga junto que a versão que ela está vendo fica guardada até a próxima mudança, qualquer que seja a escolha. Com a resposta, rode ./estudio escolher <nome> depois, antes ou outro. dados.telas diz que telas e cliques mudaram. Endereço em dados.endereco (só neste computador)."
+  },
+  "FICOU_O_DEPOIS": {
+    "texto": "Combinado, fica o depois.",
+    "acao": "Grave no andamento.md o pedido e as mudanças que ficaram. A cópia do antes foi apagada e, se havia uma versão guardada de um \"Outro caminho\" anterior (dados.tentativa_apagada), ela também saiu: diga isso à pessoa em uma frase. O próximo pedido vago começa com ./estudio antes <nome>. Rode checar, fatos e acessibilidade antes de entregar."
+  },
+  "VOLTOU_COMO_ESTAVA": {
+    "texto": "Voltei a apresentação para como estava antes. A versão que você viu fica guardada até a próxima mudança.",
+    "acao": "deck/, roteiro/, cenas/ e brief.md voltaram ao que o antes guardou (dados.restaurados) e a cópia do antes foi apagada. A versão vista ficou em arquivos.tentativa (vídeo sem cópia) até o próximo ./estudio antes: se a pessoa mudar de ideia antes disso, copie de lá os itens de dados.tentativa de volta para a apresentação. Rode ./estudio abrir <nome> para a pessoa ver."
+  },
+  "PRONTO_PARA_OUTRO_CAMINHO": {
+    "texto": "Voltei para o ponto de partida. Vou tentar outro caminho. A versão que você viu fica guardada até a próxima mudança.",
+    "acao": "A apresentação voltou ao original e o antes continua guardado. A versão vista ficou em arquivos.tentativa até a próxima escolha ou o próximo ./estudio antes. Só uma fica guardada: com dados.tentativa_substituida (aviso TENTATIVA_SUBSTITUIDA), a versão vista na tentativa anterior foi trocada por esta. Não rode ./estudio antes: faça 2 ou 3 mudanças diferentes, preencha arquivos.mudancas e rode ./estudio comparar <nome>."
+  },
+  "RESTAURACAO_FALHOU": {
+    "texto": "Não consegui voltar a apresentação agora. Nada se perdeu: a versão de antes e a que você viu continuam guardadas. Vou tentar de novo.",
+    "acao": "dados.item não trocou; dados.erro diz por quê (no Windows, quase sempre um arquivo aberto em outro programa, como o vídeo num player). Peça para fechar o que estiver usando os arquivos da apresentação e rode o mesmo ./estudio escolher <nome> dados.escolha de novo: ele continua de onde parou e não guarda a apresentação pela metade por cima da versão vista (dados.tentativa). Se a pessoa preferir ficar com a versão vista, rode escolher depois: ela volta inteira. Não desfaça de memória e não apague nada com final .trocando ou .descartando."
+  },
+  "ATALHO_VIROU_COPIA": {
+    "texto": "Um atalho dentro da apresentação foi guardado como cópia, porque este computador não deixou criar atalho. A apresentação continua igual.",
+    "acao": "No Windows sem modo de desenvolvedor, link simbólico de arquivo não pode ser criado. dados.arquivos foram guardados no antes como cópia do arquivo para onde apontavam (mesmo conteúdo). Se a pessoa voltar ao antes, eles voltam como cópia, não como atalho. Siga normalmente."
+  },
+  "TENTATIVA_SUBSTITUIDA": {
+    "texto": "Guardei a versão que você acabou de ver no lugar da que você tinha visto antes. Só a mais nova fica guardada.",
+    "acao": "Fica guardada uma versão vista só (dados.tentativa). A da tentativa anterior foi trocada pela desta. Diga isso à pessoa em uma frase junto com o texto da resposta."
+  },
+  "ATALHO_QUEBRADO_FORA": {
+    "texto": "Um atalho que já não apontava para nada ficou de fora. A apresentação continua igual.",
+    "acao": "No Windows sem modo de desenvolvedor, link simbólico não pode ser criado, e dados.arquivos apontavam para um arquivo que não existe mais (já não abriam). Ficaram fora do antes: se a pessoa voltar ao antes, eles somem. Siga normalmente."
+  },
+  "APRESENTACAO_POSTA_DE_VOLTA": {
+    "texto": "Uma troca anterior tinha parado no meio. Pus a apresentação de volta inteira antes de continuar.",
+    "acao": "dados.itens estavam fora do lugar (uma volta do antes e depois parou entre os dois passos) e voltaram como estavam antes dela. Se o antes e depois ainda está em aberto, rode o mesmo ./estudio escolher <nome> de novo para terminar a volta; nada se perdeu."
   }
 }

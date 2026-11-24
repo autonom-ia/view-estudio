@@ -1,11 +1,11 @@
 ---
 name: entregar
-description: Fecha uma apresentação do View Estúdio - confere que a checagem e a revisão passaram, gera o PDF 16:9 (uma página por tela, no estado final), o teleprompter e as fotos, e entrega a pasta pronta com instruções de como apresentar e de como enviar. Nada sobe para a internet. Use na última etapa da nova-apresentacao, ou quando a pessoa pedir "o PDF", "a pasta pronta", "como eu apresento", "quero mandar para alguém".
+description: Fecha uma apresentação do View Estúdio - confere que a checagem e a revisão passaram, gera o PDF 16:9 (uma página por tela, no estado final), o teleprompter e as fotos, e entrega a pasta pronta com instruções de como apresentar e de como enviar. No fim, oferece um link para mandar (skill por-no-ar); nada sobe sem a pessoa pedir e confirmar. Use na última etapa da nova-apresentacao, ou quando a pessoa pedir "o PDF", "a pasta pronta", "como eu apresento", "quero mandar para alguém".
 ---
 
 # Entregar
 
-A entrega é a pasta da apresentação mais o PDF. A pasta abre em qualquer computador com navegador, sem internet. O PDF vai por e-mail ou mensagem. Nada é publicado em lugar nenhum: quem envia é a pessoa.
+A entrega é a pasta da apresentação mais o PDF. A pasta abre em qualquer computador com navegador, sem internet. O PDF vai por e-mail ou mensagem. Nada vai para a internet sem a pessoa pedir e confirmar: o link é oferecido no fim (seção 4) e feito pela skill `por-no-ar`.
 
 Comandos: `./estudio <comando>` (no PowerShell, `.\estudio.cmd <comando>`). Leia só a última linha (JSON) e traduza o `codigo` por `kit/mensagens.json`. No Codex, `checar`, `fatos`, `acessibilidade`, `prints`, `pdf` e `abrir` rodam fora da área protegida.
 
@@ -31,10 +31,12 @@ Comandos: `./estudio <comando>` (no PowerShell, `.\estudio.cmd <comando>`). Leia
 ## 4. Fechar
 Atualize `andamento.md` com `etapa: entregue`, a data e onde estão o PDF e o teleprompter.
 
+Ofereça o link uma vez: "Quer também um link para mandar, que abre a apresentação com movimento no celular ou no computador de quem recebe?" com "Quero um link ★" e "Só o PDF basta". Se sim, siga a skill `por-no-ar` (ela pede a confirmação dela antes de pôr no ar). Se não, não insista.
+
 Pergunte uma vez: "Quer guardar algo desta apresentação como regra para as próximas? (por exemplo, um tom, uma cor, um tipo de tela que funcionou)" Se sim, acrescente em `minha-marca/marca.md`.
 
 ## Regras
 
-- Nunca publique, envie ou suba nada. Quem envia é a pessoa.
+- Nunca publique, envie ou suba nada por conta própria. O link só sai pela skill `por-no-ar`, com o sim da pessoa.
 - Nunca entregue com `checar`, `fatos` ou `acessibilidade` vermelhos.
 - Nunca entregue abaixo de 8,5 sem a escolha da pessoa ("Entregar assim").

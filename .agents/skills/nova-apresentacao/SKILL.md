@@ -7,7 +7,7 @@ description: Faz uma apresentação do começo ao fim no View Estúdio, pelo mé
 
 Uma apresentação boa parece filme: cada tela diz uma coisa só, o movimento conta a história e a fala completa o que a tela não diz. O caminho para chegar lá é sempre o mesmo, e a pessoa decide em dois portões: o brief e o piloto.
 
-Comandos: `./estudio <comando>` (no PowerShell, `.\estudio.cmd <comando>`), de dentro da pasta do estúdio. Leia só a última linha (JSON): `ok`, `codigo`, `resumo`, `arquivos`, `avisos`, `dados`. Saída 2 = reprovado: corrija pela causa e rode de novo. Traduza `codigo` por `kit/mensagens.json`. No Codex, `checar`, `fatos`, `acessibilidade`, `prints`, `pdf`, `cena` e `abrir` rodam fora da área protegida.
+Comandos: `./estudio <comando>` (no PowerShell, `.\estudio.cmd <comando>`), de dentro da pasta do estúdio. Leia só a última linha (JSON): `ok`, `codigo`, `resumo`, `arquivos`, `avisos`, `dados`. Saída 2 = reprovado: corrija pela causa e rode de novo. Traduza `codigo` por `kit/mensagens.json`. No Codex, `checar`, `fatos`, `acessibilidade`, `prints`, `pdf`, `cena`, `abrir`, `comparar` e `ler` rodam fora da área protegida.
 
 ## O andamento
 
@@ -46,9 +46,11 @@ Escolha um nome curto (letras minúsculas, números e hífen) e rode:
 - `APRESENTACAO_CRIADA`: a pasta está em `arquivos.pasta`. Aviso `MARCA_DE_EXEMPLO` (a marca não foi feita antes): faça a marca agora, sem perguntas, e copie para a apresentação como diz o aviso.
 - `APRESENTACAO_JA_EXISTE`: pergunte se é para continuar aquela ou criar com outro nome.
 
+**Apresentação sobre um negócio** (pitch, proposta comercial, apresentação institucional, de um negócio com site ou nome no Google): leia sozinho em vez de perguntar o que dá para ver. Logo depois do `nova`, rode `./estudio ler <nome> --negocio "Nome do negócio, cidade"` (some `--site <endereço>` ou `--google <link do Google Maps>` se a pessoa passou). Rode com timeout de 10 minutos (no Claude Code, `timeout` 600000). Sem entrar em conta nenhuma, ele lê o perfil do Google (endereço, telefone, horário de cada dia, nota e avaliações sem o nome de quem escreveu) e o site atual inteiro (achado pelo Google, se a pessoa não passou). Guarda tudo em `apresentacoes/<nome>/coleta/` e anota cada fato, com fonte e data, na parte "Lido pelo estúdio" da tabela de fatos do `brief.md`. Leia `coleta/google/lugar.json` e `coleta/site/texto.md`, e traduza cada aviso pelo código. Horário vem do perfil do Google ou da pessoa, nunca de trecho de resultado de busca. Ler a internet é permitido; publicar ou enviar qualquer coisa, não. O Instagram não é lido. As fotos lidas ficam em `coleta/site/fotos/`; só vão para `deck/assets/` com o sim da pessoa no portão 1. O que for lido não vira pergunta separada: endereço, número e avaliação que forem para a tela a pessoa confirma no brief, na mesma pergunta.
+
 ## Etapa 2. Brief (portão 1)
 
-Escreva `apresentacoes/<nome>/brief.md` por cima do molde, com:
+Escreva `apresentacoes/<nome>/brief.md` por cima do molde, com o que vem abaixo. Se o `ler` rodou, mantenha a parte "Lido pelo estúdio" (de `<!-- estudio:lido:inicio -->` a `<!-- estudio:lido:fim -->`) do jeito que está, logo abaixo da sua tabela de fatos: a próxima leitura troca só ela. Fato lido que a pessoa confirmar ou corrigir vai para a tabela de cima, com a fonte "a própria pessoa disse em <data>".
 - **Promessa**: o que a plateia ganha, numa frase. É a régua de tudo.
 - **Para quem** e **o que fazer depois** (da coleta).
 - **A história**: contexto, conflito e resolução, em três frases.

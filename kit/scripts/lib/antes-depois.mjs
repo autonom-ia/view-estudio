@@ -11,16 +11,15 @@
 // Linux. Isso é seguro porque o "cena" grava o vídeo novo ao lado e troca pelo nome (o arquivo antigo
 // continua inteiro no antes). O que não é seguro é gravar por cima do mesmo arquivo: então o
 // manifesto guarda a impressão digital (SHA-256) de cada pesado, e "comparar" e "escolher" recusam
-// (ANTES_VIDEO_MUDOU) em vez de comparar ou devolver um antes que já não é o antes. Além disso, o
-// arquivo ligado fica só para leitura enquanto o antes está em aberto (gravar por cima dá erro na
-// hora); o modo de antes volta quando o antes fecha. Sem link fixo (outro disco, disco sem esse
-// recurso), o arquivo é copiado; o resto é copiado com clonagem quando o disco sabe (APFS no Mac:
+// (ANTES_VIDEO_MUDOU) em vez de comparar ou devolver um antes que já não é o antes. O arquivo não
+// fica só para leitura: o link fixo é o mesmo arquivo da apresentação, e travá-lo travaria o vídeo
+// da própria pessoa. Sem link fixo (outro disco, disco sem esse recurso), o arquivo é copiado; o resto é copiado com clonagem quando o disco sabe (APFS no Mac:
 // cópia que não ocupa espaço até mudar).
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { listarArquivos, ehPasta, existe, recriarLink } from './caminhos.mjs';
-import { escreverJson, lerJson } from './json.mjs';
+import { escreverJson } from './json.mjs';
 
 export const MINIMO_DE_MUDANCAS = 2;
 export const MAXIMO_DE_MUDANCAS = 3;
@@ -30,10 +29,6 @@ export const ITENS_GUARDADOS = Object.freeze(['deck', 'roteiro', 'cenas', 'brief
 
 export const EXTENSOES_PESADAS = Object.freeze(['.mp4', '.webm', '.mov', '.m4v', '.mp3', '.m4a', '.wav', '.ogg']);
 export const PESADO_BYTES = 2 * 1024 * 1024;
-
-// Arquivo pesado ligado ao antes fica só para leitura enquanto o antes está em aberto.
-export const SO_LEITURA = 0o444;
-const MODO_PADRAO = 0o644;
 
 // Erros do link fixo que querem dizer "este disco não faz link fixo aqui": outro disco (EXDEV),
 // sistema sem o recurso (EPERM, ENOTSUP) ou arquivo com links demais (EMLINK). Nesses, copia.
@@ -141,8 +136,7 @@ function guardarLink(origem, destino, rel, ctx) {
 
 // Copia uma pasta (ou um arquivo) com a regra acima. Link simbólico não é seguido: o próprio link é
 // recriado com o mesmo alvo (voltar ao antes devolve o link, sem copiar o que está do outro lado).
-// ctx.pesados recebe os pesados guardados ({ rel, sha256, bytes, modo, permissao }); o pesado ligado
-// fica só para leitura (permissao guarda o modo de antes, para devolver ao fechar). ctx.atalhos
+// ctx.pesados recebe os pesados guardados ({ rel, sha256, bytes, modo }). ctx.atalhos
 // recebe os links que viraram cópia; ctx.criarLink é injetável para os testes.
 function guardarItem(origem, destino, rel, ctx = {}) {
   const info = fs.lstatSync(origem);
@@ -162,29 +156,7 @@ function guardarItem(origem, destino, rel, ctx = {}) {
   const modo = guardarArquivo(origem, destino, pesado);
   const { pesados } = ctx;
   if (!pesado || !pesados) return;
-  pesados.push({ rel, sha256: impressao(origem), bytes: info.size, modo, permissao: info.mode & 0o777 });
-  if (modo === 'link') fs.chmodSync(destino, SO_LEITURA);
-}
-
-// Os pesados ligados do antes, com o caminho de cada um.
-function pesadosLigados(antes, manifesto) {
-  const lista = Array.isArray(manifesto && manifesto.pesados) ? manifesto.pesados : [];
-  return lista.filter((p) => p.modo === 'link').map((p) => ({ ...p, arquivo: path.join(antes, ...String(p.rel).split('/')) }));
-}
-
-// Devolve aos pesados ligados o modo que tinham antes do "antes" (fechar, trocar ou apagar o antes).
-// O link fixo é o mesmo arquivo: o da apresentação volta junto.
-export function liberarPesados(antes, manifesto) {
-  for (const p of pesadosLigados(antes, manifesto)) {
-    if (fs.existsSync(p.arquivo)) fs.chmodSync(p.arquivo, Number.isInteger(p.permissao) ? p.permissao : MODO_PADRAO);
-  }
-}
-
-// Volta a deixar só para leitura (o antes continua em aberto depois de uma troca).
-export function protegerPesados(antes, manifesto) {
-  for (const p of pesadosLigados(antes, manifesto)) {
-    if (fs.existsSync(p.arquivo)) fs.chmodSync(p.arquivo, SO_LEITURA);
-  }
+  pesados.push({ rel, sha256: impressao(origem), bytes: info.size, modo });
 }
 
 // Guarda os ITENS_GUARDADOS da apresentação em "antes". Devolve o manifesto ({ itens, pesados,
@@ -219,7 +191,7 @@ export function pesadosAlterados(antes, manifesto) {
 // tentativa) sai. Ver restaurarDe.
 export function restaurarAntes(pastaDaApresentacao, antes, manifesto, opcoes = {}) {
   const itens = Array.isArray(manifesto && manifesto.itens) ? manifesto.itens : [];
-  return restaurarDe(pastaDaApresentacao, antes, itens, { ...opcoes, antes, manifesto });
+  return restaurarDe(pastaDaApresentacao, antes, itens, opcoes);
 }
 
 // Falha numa troca: diz qual item não trocou. A apresentação nunca fica sem o item (ver trocarItem).
@@ -233,27 +205,20 @@ export class ErroDeRestauracao extends Error {
 }
 
 // Devolve a apresentação ao que está em "origem" (o antes, ou a tentativa quando uma troca anterior
-// falhou), item por item. Os pesados ligados ao antes ficam graváveis só durante a troca (no
-// Windows, arquivo só para leitura não sai da pasta) e voltam a só leitura no fim. "renomear" é
-// injetável para os testes simularem uma troca que falha.
-export function restaurarDe(pastaDaApresentacao, origem, itens, { antes, manifesto, renomear = fs.renameSync } = {}) {
+// falhou), item por item. "renomear" é injetável para os testes simularem uma troca que falha.
+export function restaurarDe(pastaDaApresentacao, origem, itens, { renomear = fs.renameSync } = {}) {
   const tinha = new Set(itens);
-  if (antes) liberarPesados(antes, manifesto);
-  try {
-    const restaurados = [];
-    for (const item of ITENS_GUARDADOS) {
-      let feito;
-      try {
-        feito = trocarItem(pastaDaApresentacao, origem, item, tinha.has(item), renomear);
-      } catch (erro) {
-        throw new ErroDeRestauracao(item, erro);
-      }
-      if (feito) restaurados.push(feito);
+  const restaurados = [];
+  for (const item of ITENS_GUARDADOS) {
+    let feito;
+    try {
+      feito = trocarItem(pastaDaApresentacao, origem, item, tinha.has(item), renomear);
+    } catch (erro) {
+      throw new ErroDeRestauracao(item, erro);
     }
-    return restaurados;
-  } finally {
-    if (antes) protegerPesados(antes, manifesto);
+    if (feito) restaurados.push(feito);
   }
+  return restaurados;
 }
 
 const existeSemSeguir = (caminho) => {
@@ -297,25 +262,20 @@ function trocarItem(pasta, origem, item, existia, renomear) {
 // Guarda a versão que a pessoa viu (a tentativa) antes de voltar ao antes, em tentativa/, com o
 // vídeo ligado como no antes. Fica até o próximo "antes"; uma tentativa nova substitui a anterior.
 // Montada ao lado e trocada no fim. Devolve os itens guardados.
-export function guardarTentativa(pastaDaApresentacao, ad, manifesto) {
+export function guardarTentativa(pastaDaApresentacao, ad) {
   const montando = `${ad.tentativa}.guardando`;
-  liberarPesados(ad.antes, manifesto);
-  try {
-    fs.rmSync(montando, { recursive: true, force: true });
-    const itens = [];
-    for (const item of ITENS_GUARDADOS) {
-      const de = path.join(pastaDaApresentacao, item);
-      if (!existeSemSeguir(de)) continue;
-      itens.push(item);
-      guardarItem(de, path.join(montando, item), item);
-    }
-    fs.mkdirSync(montando, { recursive: true });
-    fs.rmSync(ad.tentativa, { recursive: true, force: true });
-    fs.renameSync(montando, ad.tentativa);
-    return itens;
-  } finally {
-    protegerPesados(ad.antes, manifesto);
+  fs.rmSync(montando, { recursive: true, force: true });
+  const itens = [];
+  for (const item of ITENS_GUARDADOS) {
+    const de = path.join(pastaDaApresentacao, item);
+    if (!existeSemSeguir(de)) continue;
+    itens.push(item);
+    guardarItem(de, path.join(montando, item), item);
   }
+  fs.mkdirSync(montando, { recursive: true });
+  fs.rmSync(ad.tentativa, { recursive: true, force: true });
+  fs.renameSync(montando, ad.tentativa);
+  return itens;
 }
 
 // Número escrito como texto ("2", " 3 "): vira número, para marcar a tela certa na página.
@@ -384,7 +344,6 @@ export function igualAoAntes(pastaDaApresentacao, antes, manifesto) {
 // o antes segurava não fica ocupando o disco. Ficam estado.json (para dizer que já foi resolvido),
 // mudancas.json (o que foi pedido e mudado) e tentativa/ (a versão vista, até o próximo "antes").
 export function fecharAntes(ad, escolha) {
-  liberarPesados(ad.antes, lerJson(ad.manifesto, { pesados: [] }));
   fs.rmSync(ad.antes, { recursive: true, force: true });
   fs.rmSync(ad.fotos, { recursive: true, force: true });
   fs.rmSync(ad.pagina, { force: true });

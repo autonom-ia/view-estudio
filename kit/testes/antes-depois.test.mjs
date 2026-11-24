@@ -69,8 +69,7 @@ test('antes-depois: guarda deck, roteiro e brief; vídeo vira link fixo (sem dup
   const video = fs.statSync(path.join(pasta, 'deck', 'assets', 'cena.mp4'));
   const guardado = fs.statSync(path.join(antes, 'deck', 'assets', 'cena.mp4'));
   assert.equal(guardado.ino, video.ino, 'o vídeo do antes é o mesmo arquivo no disco');
-  assert.equal(gravavel(path.join(pasta, 'deck', 'assets', 'cena.mp4')), false, 'vídeo ligado ao antes fica só para leitura');
-  assert.equal(gravavel(path.join(pasta, 'brief.md')), true, 'o que foi copiado continua gravável');
+  assert.equal(gravavel(path.join(pasta, 'deck', 'assets', 'cena.mp4')), true, 'o vídeo da apresentação não fica travado');
   assert.notEqual(fs.statSync(path.join(antes, 'deck', 'slides', 's01-capa.html')).ino, fs.statSync(path.join(pasta, 'deck', 'slides', 's01-capa.html')).ino);
   assert.deepEqual(m.atalhos, []);
   assert.equal(igualAoAntes(pasta, antes, m), true);
@@ -120,11 +119,8 @@ test('antes-depois: vídeo trocado pelo nome mantém o antes; gravado por cima d
   assert.deepEqual(pesadosAlterados(antes, m), []);
   assert.equal(fs.readFileSync(path.join(antes, 'deck', 'assets', 'cena.mp4'), 'utf8'), 'video-original');
   assert.equal(igualAoAntes(pasta, antes, m), false);
-  // gravar por cima do mesmo arquivo muda o antes junto: dá erro na hora (só para leitura) e, se
-  // alguém tirar a proteção e gravar mesmo assim, comparar e escolher precisam recusar
+  // gravar por cima do mesmo arquivo muda o antes junto: comparar e escolher precisam recusar
   const m2 = guardarAntes(pasta, antes);
-  if (!ehRoot) assert.throws(() => fs.writeFileSync(video, 'video-por-cima'), (e) => e.code === 'EACCES' || e.code === 'EPERM');
-  fs.chmodSync(video, 0o644);
   fs.writeFileSync(video, 'video-por-cima');
   assert.deepEqual(pesadosAlterados(antes, m2), ['deck/assets/cena.mp4']);
 });
@@ -145,7 +141,6 @@ test('antes-depois: restaurar volta cada item e tira o que a tentativa criou', (
   assert.equal(fs.existsSync(path.join(pasta, 'cenas')), false);
   assert.equal(fs.readFileSync(path.join(pasta, 'brief.md'), 'utf8'), '# Brief');
   assert.equal(fs.statSync(path.join(pasta, 'deck', 'assets', 'cena.mp4')).ino, fs.statSync(path.join(antes, 'deck', 'assets', 'cena.mp4')).ino, 'o vídeo volta sem cópia');
-  assert.equal(gravavel(path.join(pasta, 'deck', 'assets', 'cena.mp4')), false, 'o antes continua em aberto: o vídeo segue só para leitura');
   assert.equal(igualAoAntes(pasta, antes, m), true);
 });
 
@@ -165,7 +160,6 @@ test('antes-depois: troca que falha no meio não deixa a apresentação sem o it
   assert.equal(fs.readFileSync(path.join(pasta, 'deck', 'slides', 's01-capa.html'), 'utf8'), '<h1>Capa</h1>', 'o deck já tinha voltado');
   assert.equal(fs.readFileSync(path.join(roteiro, 'S01.json'), 'utf8'), '{"tela":1,"beats":[{"fala":"Fala nova."}]}', 'o roteiro volta ao que estava, inteiro');
   assert.deepEqual(fs.readdirSync(pasta).filter((n) => n.endsWith('.trocando') || n.endsWith('.descartando')), []);
-  assert.equal(gravavel(path.join(pasta, 'deck', 'assets', 'cena.mp4')), false, 'a proteção volta mesmo com a falha');
   // de novo, sem falha: termina
   assert.deepEqual(restaurarAntes(pasta, antes, m), ['deck', 'roteiro', 'brief.md']);
   assert.equal(igualAoAntes(pasta, antes, m), true);
@@ -196,25 +190,10 @@ test('antes-depois: a tentativa é guardada inteira, com o vídeo ligado, e uma 
   assert.equal(fs.existsSync(path.join(ad.tentativa, 'deck', 'slides', 's01-capa.html')), true);
 });
 
-test('antes-depois: fechar o antes devolve ao vídeo o modo que ele tinha', () => {
-  const pasta = apresentacaoDeBrinquedo('fechar');
-  const ad = caminhosDoAntesDepois({ revisao: path.join(pasta, 'revisao') });
-  const video = path.join(pasta, 'deck', 'assets', 'cena.mp4');
-  fs.chmodSync(video, 0o640);
-  const m = guardarAntes(pasta, ad.antes);
-  escrever(ad.manifesto, JSON.stringify(m));
-  assert.equal(gravavel(video), false);
-  fecharAntes(ad, 'depois');
-  assert.equal(fs.existsSync(ad.antes), false);
-  assert.equal(gravavel(video), true);
-  if (process.platform !== 'win32') assert.equal(fs.statSync(video).mode & 0o777, 0o640);
-  fs.writeFileSync(video, 'video-gravavel-de-novo');
-});
-
-test('antes-depois: "cena" troca pelo nome mesmo com o vídeo só para leitura, e o antes fica inteiro', async () => {
-  const pasta = apresentacaoDeBrinquedo('cena-protegida');
+test('antes-depois: "cena" troca pelo nome e o antes fica com o vídeo antigo inteiro', async () => {
+  const pasta = apresentacaoDeBrinquedo('cena-troca');
   const antes = path.join(pasta, 'revisao', 'antes-depois', 'antes');
-  guardarAntes(pasta, antes);
+  const m = guardarAntes(pasta, antes);
   const video = path.join(pasta, 'deck', 'assets', 'cena.mp4');
   const r = await renderizarSemPerderOAnterior(video, async (tmp) => {
     fs.writeFileSync(tmp, 'video-novo');
@@ -223,6 +202,7 @@ test('antes-depois: "cena" troca pelo nome mesmo com o vídeo só para leitura, 
   assert.equal(r.ok, true);
   assert.equal(fs.readFileSync(video, 'utf8'), 'video-novo');
   assert.equal(fs.readFileSync(path.join(antes, 'deck', 'assets', 'cena.mp4'), 'utf8'), 'video-original');
+  assert.deepEqual(pesadosAlterados(antes, m), []);
 });
 
 test('antes-depois: link fixo só cai na cópia quando o disco não faz link; outro erro sobe', () => {
@@ -563,7 +543,6 @@ test('antes, comparar e escolher: só a tela e o clique que mudaram, vídeo sem 
     // vídeo gravado por cima do mesmo arquivo: comparar e voltar recusam; ficar com o depois pode
     assert.equal(estudio(env, 'antes', 'cafe').json.codigo, 'ANTES_GUARDADO');
     assert.equal(fs.existsSync(path.join(ad, 'tentativa')), false, 'o próximo antes apaga a tentativa');
-    fs.chmodSync(video, 0o644);
     fs.writeFileSync(video, 'video-gravado-por-cima');
     fs.writeFileSync(mudancas, JSON.stringify({ pedido: 'x', mudancas: [{ titulo: 'um' }, { titulo: 'dois' }] }));
     const videoMudou = estudio(env, 'comparar', 'cafe', '--sem-navegador');

@@ -56,11 +56,11 @@ export default async function escolher(args) {
   if (escolha !== 'depois') {
     const alterados = pesadosAlterados(ad.antes, manifesto);
     if (alterados.length) falha('ANTES_VIDEO_MUDOU', { nome, arquivos: alterados });
-    if (!pendente) tentativa = guardarTentativa(c.pasta, ad, manifesto);
+    if (!pendente) tentativa = guardarTentativa(c.pasta, ad);
     restaurados = trocar(() => restaurarAntes(c.pasta, ad.antes, manifesto));
   } else if (pendente) {
     // uma volta anterior falhou no meio: "depois" é a versão vista inteira, guardada na tentativa
-    restaurados = trocar(() => restaurarDe(c.pasta, ad.tentativa, tentativa, { antes: ad.antes, manifesto }));
+    restaurados = trocar(() => restaurarDe(c.pasta, ad.tentativa, tentativa));
   }
   if (escolha === 'outro') {
     const { pedido } = lerJson(ad.mudancas, { pedido: '' });

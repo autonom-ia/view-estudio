@@ -13,7 +13,7 @@ import { abrirApresentacao } from '../lib/apresentacao.mjs';
 import { listarArquivos } from '../lib/caminhos.mjs';
 import { escreverJson, lerJson } from '../lib/json.mjs';
 import { aviso, reprovado } from '../lib/saida.mjs';
-import { caminhosDoAntesDepois, guardarAntes, lerMudancas, liberarPesados, temAntes } from '../lib/antes-depois.mjs';
+import { caminhosDoAntesDepois, guardarAntes, lerMudancas, temAntes } from '../lib/antes-depois.mjs';
 
 // O que da comparação anterior vai sair (o antes, a versão vista, as fotos e o pedido), para o
 // assistente saber o que foi apagado. null quando não havia nada.
@@ -42,8 +42,6 @@ export default async function antes(args) {
   const ad = caminhosDoAntesDepois(c);
   const estado = lerJson(ad.estado, { aberto: false });
   if (temAntes(ad) && estado.aberto === true && args.opcoes['de-novo'] !== true) reprovado('ANTES_EM_ABERTO', { nome });
-  // o antes anterior sai: os pesados ligados voltam ao modo de antes (são os da apresentação também)
-  if (temAntes(ad)) liberarPesados(ad.antes, lerJson(ad.manifesto, { pesados: [] }));
   const apagados = oQueSai(ad);
   fs.rmSync(ad.pasta, { recursive: true, force: true });
   const manifesto = guardarAntes(c.pasta, ad.antes);

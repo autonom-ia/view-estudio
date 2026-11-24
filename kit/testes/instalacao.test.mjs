@@ -3,6 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -65,4 +66,46 @@ test('instalador do Mac: ação desconhecida lista "tudo" (sem rede, sem instala
   assert.equal(r.status, 1);
   assert.equal(ultima.codigo, 'ACAO_DESCONHECIDA');
   assert.equal(ultima.dados.acoes[0], 'tudo');
+});
+
+// Ferramentas de verdade deste computador, sem o FFmpeg: uma pasta temporária com links para o Node
+// e o mesmo navegador.txt. Só roda no Mac com o estúdio instalado (não baixa nada).
+const FERR_REAL = path.join(RAIZ, '.ferramentas');
+const temInstalado = process.platform === 'darwin' && fs.existsSync(path.join(FERR_REAL, 'node', 'bin', 'node')) && fs.existsSync(path.join(FERR_REAL, 'navegador.txt')) && fs.existsSync(path.join(RAIZ, 'node_modules'));
+
+function verificarCom(montar) {
+  const ferr = fs.mkdtempSync(path.join(os.tmpdir(), 'estudio-verificar-'));
+  try {
+    fs.symlinkSync(path.join(FERR_REAL, 'node'), path.join(ferr, 'node'));
+    montar(ferr);
+    const r = spawnSync('bash', [path.join(RAIZ, 'instalar', 'instalar.sh'), 'verificar'], { encoding: 'utf8', env: { ...process.env, ESTUDIO_FERRAMENTAS: ferr }, timeout: 120000 });
+    return { status: r.status, json: JSON.parse(r.stdout.trim().split('\n').pop()) };
+  } finally {
+    fs.rmSync(ferr, { recursive: true, force: true });
+  }
+}
+
+test('verificar: só o FFmpeg faltando fica ok (o item sai opcional); obrigatório faltando reprova', { skip: !temInstalado && 'sem o estúdio instalado neste Mac' }, () => {
+  const semFfmpeg = verificarCom((ferr) => fs.copyFileSync(path.join(FERR_REAL, 'navegador.txt'), path.join(ferr, 'navegador.txt')));
+  assert.equal(semFfmpeg.status, 0, JSON.stringify(semFfmpeg.json));
+  assert.equal(semFfmpeg.json.ok, true);
+  assert.deepEqual(semFfmpeg.json.opcionais_faltando, ['ffmpeg']);
+  const ff = semFfmpeg.json.itens.find((i) => i.id === 'ffmpeg');
+  assert.deepEqual([ff.ok, ff.opcional, ff.passo], [false, true, 'ffmpeg']);
+  for (const i of semFfmpeg.json.itens) if (i.id !== 'ffmpeg') assert.equal(i.opcional, undefined, i.id);
+  // sem o navegador (obrigatório), a verificação reprova mesmo com o resto pronto
+  const semNavegador = verificarCom(() => {});
+  assert.equal(semNavegador.status, 1);
+  assert.equal(semNavegador.json.ok, false);
+  assert.equal(semNavegador.json.itens.find((i) => i.id === 'navegador').ok, false);
+});
+
+test('verificar no Windows espelha o Mac: ok só pelos obrigatórios, ffmpeg opcional no item', () => {
+  const ps1 = ler('instalar/instalar.ps1');
+  const v = ps1.slice(ps1.indexOf('function Invoke-AcaoVerificar'), ps1.indexOf('function Save-Instalacao'));
+  assert.ok(v.includes("$opcional = ($Id -eq 'ffmpeg' -or $Id -eq 'ffprobe')"));
+  assert.ok(v.includes('if ($opcional) { $o.opcional = $true }'));
+  assert.ok(v.includes('$ok = ($script:Falhas -eq 0)'));
+  assert.ok(v.includes('opcionais_faltando = $script:Opcionais.ToArray()'));
+  assert.ok(!v.includes('$ok = ($script:Prontos -eq $total)'), 'o Windows não pode exigir o ffmpeg para ficar ok');
 });

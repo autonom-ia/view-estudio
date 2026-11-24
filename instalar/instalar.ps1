@@ -917,9 +917,16 @@ function Invoke-AcaoVerificar {
     $itens = New-Object System.Collections.ArrayList
     $obrig = $true
     $script:Prontos = 0
+    # O ffmpeg e opcional (so para cena em video): faltando, o item sai com opcional = true e
+    # ok = false, mas a verificacao fica ok. Qualquer outro item que falha deixa a verificacao em ok = false.
+    $script:Falhas = 0
+    $script:Opcionais = New-Object System.Collections.ArrayList
     function Add-Item([string]$Id, [bool]$Ok, [string]$Texto, [string]$Codigo = '', [string]$Passo = '', $Dados = $null, [string]$Origem = '') {
         $o = [ordered]@{ id = $Id; ok = $Ok; texto = $Texto }
+        $opcional = ($Id -eq 'ffmpeg' -or $Id -eq 'ffprobe')
+        if (-not $Ok) { if ($opcional) { [void]$script:Opcionais.Add($Id) } else { $script:Falhas++ } }
         if ($Passo) { $o.passo = $Passo }
+        if ($opcional) { $o.opcional = $true }
         if ($Codigo) { $o.codigo = $Codigo }
         if ($null -ne $Dados) { $o.dados = $Dados }
         if ($Origem) { $o.origem = $Origem }
@@ -969,11 +976,13 @@ function Invoke-AcaoVerificar {
     }
 
     $total = $itens.Count
-    $ok = ($script:Prontos -eq $total)
+    $ok = ($script:Falhas -eq 0)
     $gravou = $false
     if ($obrig) { $gravou = Save-Instalacao }
-    if ($ok) { Diga ('Tudo pronto: ' + $script:Prontos + ' de ' + $total + '.') } else { Diga ('Ficou quase tudo pronto: ' + $script:Prontos + ' de ' + $total + '.') }
-    $o = [ordered]@{ ok = $ok; total = $total; prontos = $script:Prontos; instalacao_gravada = $gravou; itens = $itens.ToArray() }
+    if ($ok -and $script:Opcionais.Count -gt 0) { Diga ('Pronto para as apresentacoes: ' + $script:Prontos + ' de ' + $total + '. Faltou so o FFmpeg, que e opcional.') }
+    elseif ($ok) { Diga ('Tudo pronto: ' + $script:Prontos + ' de ' + $total + '.') }
+    else { Diga ('Ficou quase tudo pronto: ' + $script:Prontos + ' de ' + $total + '.') }
+    $o = [ordered]@{ ok = $ok; total = $total; prontos = $script:Prontos; instalacao_gravada = $gravou; opcionais_faltando = $script:Opcionais.ToArray(); itens = $itens.ToArray() }
     if ($ok) { Sair $o 0 } else { Sair $o 1 }
 }
 

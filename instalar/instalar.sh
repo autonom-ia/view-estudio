@@ -800,8 +800,10 @@ acao_plano() {
   exit 0
 }
 
+# O ffmpeg e opcional (so para cena em video): faltando, o item sai com "opcional":true e
+# ok:false, mas a verificacao fica ok. Qualquer outro item que falha deixa a verificacao em ok:false.
 acao_verificar() {
-  local itens="" total=0 prontos=0 v res livre obrig=1 kit_saida kit_ult kit_ok t nav
+  local itens="" total=0 prontos=0 v res livre obrig=1 kit_saida kit_ult kit_ok t nav falhas=0 opcionais=""
   add_item() {
     # add_item <id> <ok 1/0> <texto> [codigo] [extra json]
     total=$((total + 1))
@@ -810,9 +812,15 @@ acao_verificar() {
     itens="$itens{\"id\":$(js "$1"),\"ok\":$(jbool "$2"),\"texto\":$(js "$3")"
     case "$1" in
       node|npm) itens="$itens,\"passo\":\"node\"" ;;
-      ffmpeg|ffprobe) itens="$itens,\"passo\":\"ffmpeg\"" ;;
+      ffmpeg|ffprobe) itens="$itens,\"passo\":\"ffmpeg\",\"opcional\":true" ;;
       pacotes|navegador) itens="$itens,\"passo\":\"$1\"" ;;
     esac
+    if [ "$2" != "1" ]; then
+      case "$1" in
+        ffmpeg|ffprobe) [ -n "$opcionais" ] && opcionais="$opcionais,"; opcionais="$opcionais$(js "$1")" ;;
+        *) falhas=$((falhas + 1)) ;;
+      esac
+    fi
     [ -n "${4:-}" ] && itens="$itens,\"codigo\":$(js "$4")"
     [ -n "${5:-}" ] && itens="$itens,$5"
     itens="$itens}"
@@ -867,12 +875,14 @@ acao_verificar() {
   fi
 
   local gravou=0 ok=0
-  [ "$prontos" = "$total" ] && ok=1
+  [ "$falhas" = "0" ] && ok=1
   if [ "$obrig" = "1" ] && [ -x "$NODE_BIN" ]; then
     gravar_instalacao && gravou=1
   fi
-  if [ "$ok" = "1" ]; then diga "Tudo pronto: $prontos de $total."; else diga "Ficou quase tudo pronto: $prontos de $total."; fi
-  printf '{"ok":%s,"total":%s,"prontos":%s,"instalacao_gravada":%s,"itens":[%s]}\n' "$(jbool "$ok")" "$total" "$prontos" "$(jbool "$gravou")" "$itens"
+  if [ "$ok" = "1" ] && [ -n "$opcionais" ]; then diga "Pronto para as apresentacoes: $prontos de $total. Faltou so o FFmpeg, que e opcional."
+  elif [ "$ok" = "1" ]; then diga "Tudo pronto: $prontos de $total."
+  else diga "Ficou quase tudo pronto: $prontos de $total."; fi
+  printf '{"ok":%s,"total":%s,"prontos":%s,"instalacao_gravada":%s,"opcionais_faltando":[%s],"itens":[%s]}\n' "$(jbool "$ok")" "$total" "$prontos" "$(jbool "$gravou")" "$opcionais" "$itens"
   [ "$ok" = "1" ] && exit 0
   exit 1
 }

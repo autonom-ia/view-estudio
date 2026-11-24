@@ -52,7 +52,8 @@ No Codex, todo o instalador roda pedindo para sair da área protegida, o que tam
 
 ### 2. Deu certo (`ok:true`)
 1. Se `checar.problemas` tiver `POUCA_MEMORIA`, diga o texto dele numa frase.
-2. Diga o I-14, trocando `{{linha_voltar}}` pela linha do seu programa. Não pergunte nada sobre marca, cores ou letras agora: a marca nasce junto com a primeira apresentação.
+2. Se `resultado.opcionais_faltando` tiver o `ffmpeg` (ele é opcional, e a verificação fica ok sem ele), diga o `I-15-so-ffmpeg`. "Tentar de novo": rode `tudo` de novo. "Seguir assim": siga para o I-14.
+3. Diga o I-14, trocando `{{linha_voltar}}` pela linha do seu programa. Não pergunte nada sobre marca, cores ou letras agora: a marca nasce junto com a primeira apresentação.
 
 ### 3. Parou no meio (`ok:false`)
 Leia `resultado` como se a etapa tivesse rodado sozinha, e siga pelo `etapa`:
@@ -63,10 +64,10 @@ Leia `resultado` como se a etapa tivesse rodado sozinha, e siga pelo `etapa`:
   - `PASTA_NA_NUVEM` e `NOME_COM_ACENTO`: com o OK da pessoa, rode `mudar-pasta` e rode `tudo` da pasta do campo `para`.
   - `SISTEMA_ANTIGO`: pare a instalação com o texto.
 - `pasta`, `node`, `pacotes` ou `navegador`: o `tudo` já tentou de novo uma vez quando valia a pena. Mostre o texto do `resultado.codigo` em `erros` e siga as opções. Na hora de tentar de novo, rode `tudo` outra vez: o que já está pronto é pulado em segundos.
-- `verificar`: se o único item de `resultado.itens` com `ok:false` for o `ffmpeg` (ele é opcional, e o `tudo` não para por ele), diga o `I-15-so-ffmpeg`: o resto funciona. Com outro item, diga o I-15, listando em palavras simples os itens com `ok:false`. "Tentar de novo": rode `tudo` de novo. Item `kit` com `origem:"kit"`: o código está em `kit/mensagens.json`; chame a skill `consertar`.
+- `verificar`: algum item obrigatório falhou (o `ffmpeg` sozinho não deixa a verificação em `ok:false`). Diga o I-15, listando em palavras simples os itens com `ok:false`. "Tentar de novo": rode `tudo` de novo. Item `kit` com `origem:"kit"`: o código está em `kit/mensagens.json`; chame a skill `consertar`.
 
 ### 4. Um por um (só se a pessoa pedir)
-Se a pessoa quiser aprovar cada programa, ou se o `tudo` parar duas vezes no mesmo passo, faça à mão: `checar` (diga o I-02), `plano` (I-03, com `{{n}}` = `total_programas`), e para cada passo com estado `falta`, na ordem `pasta`, `node`, `pacotes`, `navegador`, `ffmpeg`: o I-05, `passo <id>` e o `pronto` do item (`{{i}}` = `numero` do passo, `{{n}}` = `total_programas`). Recusa: I-06 com a `consequencia`; nos obrigatórios (`pasta`, `node`, `pacotes`, `navegador`), a opção 2 é "Parar a instalação por agora". `FALTA_PASSO_ANTERIOR`: rode o passo de `dados.falta` e volte. Se `acao_automatica` for `tentar_de_novo`, rode o passo de novo uma vez sem perguntar. No fim, a verificação (`verificar.sh` ou `verificar.ps1`) e o I-14, o I-15 ou o `I-15-so-ffmpeg`. Passe `--modo um_por_um` em todos esses comandos.
+Se a pessoa quiser aprovar cada programa, ou se o `tudo` parar duas vezes no mesmo passo, faça à mão: `checar` (diga o I-02), `plano` (I-03, com `{{n}}` = `total_programas`), e para cada passo com estado `falta`, na ordem `pasta`, `node`, `pacotes`, `navegador`, `ffmpeg`: o I-05, `passo <id>` e o `pronto` do item (`{{i}}` = `numero` do passo, `{{n}}` = `total_programas`). Recusa: I-06 com a `consequencia`; nos obrigatórios (`pasta`, `node`, `pacotes`, `navegador`), a opção 2 é "Parar a instalação por agora". `FALTA_PASSO_ANTERIOR`: rode o passo de `dados.falta` e volte. Se `acao_automatica` for `tentar_de_novo`, rode o passo de novo uma vez sem perguntar. No fim, a verificação (`verificar.sh` ou `verificar.ps1`) e o I-14 (antes dele, o `I-15-so-ffmpeg` se `opcionais_faltando` tiver o `ffmpeg`) ou o I-15. Passe `--modo um_por_um` em todos esses comandos.
 
 ### 5. Skills de design (sugestão, uma vez)
 O estúdio desenha melhor com duas skills de design instaladas no seu programa: `frontend-design` e `ui-ux-pro-max`. Veja se elas aparecem na sua lista de skills. Se faltar alguma, diga em uma frase: "Para as telas ficarem mais bonitas, recomendo instalar duas ajudas de design no {{agente}}. Quer que eu mostre como?" Se sim, mostre o caminho em passos simples, sem palavra técnica. Para você: no Claude Code, é pelo gerenciador de plugins; no Codex, pela pasta de skills do usuário. Nunca instale nada sozinho e nunca trave a instalação por isso.

@@ -13,12 +13,12 @@
     "Leia só a última linha da saída: é um JSON. Se ok=false, procure o \"codigo\" em \"erros\" deste arquivo. Se o item tiver \"origem\":\"kit\", procure o código em kit/mensagens.json.",
     "Quando o erro tiver \"acao_automatica\":\"tentar_de_novo\", rode o mesmo comando mais uma vez sem falar nada. Só mostre o texto se falhar de novo.",
     "Nunca mostre o caminho do log nem o nome técnico do código, a não ser que a pessoa peça.",
-    "Entrada única (o caminho padrão): \"tudo\" roda checar, os cinco passos e verificar de uma vez, numa caixinha de licença só. O ffmpeg é opcional: se ele falhar, o \"tudo\" segue e a verificação diz o que faltou. A última linha traz \"etapa\" (onde parou) e \"resultado\" (o JSON daquela etapa, lido como se a etapa tivesse rodado sozinha). Use \"checar\", \"plano\" e \"passo\" um por um só quando a pessoa pedir para aprovar um por um ou para retomar o que o \"tudo\" não resolveu.",
+    "Entrada única (o caminho padrão): \"tudo\" roda checar, os cinco passos e verificar de uma vez, numa caixinha de licença só. O ffmpeg é opcional: se ele falhar, o \"tudo\" segue, a verificação fica ok=true e o item dele sai com \"opcional\":true e ok=false (lista em \"opcionais_faltando\"). A última linha traz \"etapa\" (onde parou) e \"resultado\" (o JSON daquela etapa, lido como se a etapa tivesse rodado sozinha). Use \"checar\", \"plano\" e \"passo\" um por um só quando a pessoa pedir para aprovar um por um ou para retomar o que o \"tudo\" não resolveu.",
     "Ordem dos passos: pasta, node, pacotes, navegador, ffmpeg.",
     "Numeração \"{{i}} de {{n}}\": {{i}} é o campo \"numero\" do passo no \"plano\" e {{n}} é \"total_programas\". A pasta tem numero 0: mostre o \"pronto\" do item, sem contador.",
     "Depois de \"checar\": se aparecer PASTA_NA_NUVEM ou NOME_COM_ACENTO, pergunte com o texto do erro e rode a ação \"mudar-pasta\". A partir daí use a pasta do campo \"para\" em todos os comandos.",
     "No Codex, rode o \"checar\" e todos os passos já pedindo internet (texto CODEX-INTERNET).",
-    "Depois de \"verificar\": cada item com ok=false traz \"passo\". Para tentar de novo, rode \"passo <passo>\" desse item.",
+    "Depois de \"verificar\": cada item com ok=false traz \"passo\". Para tentar de novo, rode \"passo <passo>\" desse item. Item com \"opcional\":true (o ffmpeg) não deixa a verificação em ok=false.",
     "Desinstalar: rode \"desinstalar\" sem --confirmar, mostre DESINSTALAR-PERGUNTA e, se a pessoa confirmar, rode \"desinstalar --confirmar\" e mostre DESINSTALAR-PRONTO."
   ],
   "textos": {
@@ -91,7 +91,7 @@
       ]
     },
     "I-15-so-ffmpeg": {
-      "quando": "\"verificar\" com ok=false e o único item que falhou é o ffmpeg",
+      "quando": "\"verificar\" com ok=true e o item ffmpeg com ok=false (ele é opcional: vem em \"opcionais_faltando\")",
       "texto": "Está tudo pronto para fazer apresentações. Só o FFmpeg não instalou: sem ele eu não transformo cena animada em vídeo, mas o resto funciona. Quer que eu tente de novo?",
       "opcoes": [
         "Tentar de novo ★",

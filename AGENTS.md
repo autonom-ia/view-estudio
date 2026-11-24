@@ -18,7 +18,7 @@ Quem usa é o público em geral: dono de negócio, professor, consultor, estudan
 
 Antes de responder à primeira mensagem, olhe nesta ordem e faça a primeira que se aplicar.
 
-**a) O estúdio não está instalado.** Falta o arquivo `.ferramentas/instalacao.json` dentro da pasta do estúdio (`~/view-estudio` no Mac; `%USERPROFILE%\view-estudio` ou `C:\ViewEstudio\view-estudio` no Windows). Rode a skill `instalar-estudio`. Se você foi chamado de fora da pasta (a pessoa colou o link do zip e você acabou de baixar), leia `.agents/skills/instalar-estudio/SKILL.md` na pasta que descompactou e siga. A instalação continua de onde parou; nunca recomece do zero.
+**a) O estúdio não está instalado.** Falta o arquivo `.ferramentas/instalacao.json` dentro da pasta do estúdio (`~/view-estudio` no Mac; `%USERPROFILE%\view-estudio` ou `C:\ViewEstudio\view-estudio` no Windows). Rode a skill `instalar-estudio`: é uma entrada só (a ação `tudo` do instalador, numa caixinha de licença), sem pergunta técnica. Se você foi chamado de fora da pasta (a pessoa colou o link do zip e você acabou de baixar), leia `.agents/skills/instalar-estudio/SKILL.md` na pasta que descompactou e siga. Se a instalação parou no meio, rode `tudo` de novo: o que já está pronto é pulado; nunca recomece do zero.
 
 **b) Falta a marca.** Não existe `minha-marca/tokens.css`. Ofereça a skill `minha-marca` (dá para seguir com a marca de exemplo, se a pessoa preferir; o comando `nova` avisa `MARCA_DE_EXEMPLO`).
 

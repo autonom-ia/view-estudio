@@ -9,10 +9,11 @@
     "- Windows, PowerShell: cd <pasta do estúdio>; powershell.exe -NoProfile -ExecutionPolicy Bypass -File instalar/instalar.ps1 <acao> [id] --agente <claude|codex> [--modo tudo|um_por_um]. Comandos: .\\estudio.cmd <comando>.",
     "- Windows, Git Bash: o mesmo instalador do Windows, com barra normal. Comandos: ./estudio <comando>. Nunca rode instalar.sh no Windows: ele recusa com USE_O_INSTALADOR_DO_WINDOWS.",
     "A pasta do estúdio é ~/view-estudio no Mac e %USERPROFILE%\\view-estudio no Windows (ou C:\\ViewEstudio\\view-estudio, depois de \"mudar-pasta\"). Os programas ficam dentro dela, em .ferramentas.",
-    "Sempre passe --agente. Depois da resposta ao I-03, passe também --modo tudo ou --modo um_por_um.",
+    "Sempre passe --agente. No um por um, depois da resposta ao I-03, passe também --modo tudo ou --modo um_por_um.",
     "Leia só a última linha da saída: é um JSON. Se ok=false, procure o \"codigo\" em \"erros\" deste arquivo. Se o item tiver \"origem\":\"kit\", procure o código em kit/mensagens.json.",
     "Quando o erro tiver \"acao_automatica\":\"tentar_de_novo\", rode o mesmo comando mais uma vez sem falar nada. Só mostre o texto se falhar de novo.",
     "Nunca mostre o caminho do log nem o nome técnico do código, a não ser que a pessoa peça.",
+    "Entrada única (o caminho padrão): \"tudo\" roda checar, os cinco passos e verificar de uma vez, numa caixinha de licença só. O ffmpeg é opcional: se ele falhar, o \"tudo\" segue e a verificação diz o que faltou. A última linha traz \"etapa\" (onde parou) e \"resultado\" (o JSON daquela etapa, lido como se a etapa tivesse rodado sozinha). Use \"checar\", \"plano\" e \"passo\" um por um só quando a pessoa pedir para aprovar um por um ou para retomar o que o \"tudo\" não resolveu.",
     "Ordem dos passos: pasta, node, pacotes, navegador, ffmpeg.",
     "Numeração \"{{i}} de {{n}}\": {{i}} é o campo \"numero\" do passo no \"plano\" e {{n}} é \"total_programas\". A pasta tem numero 0: mostre o \"pronto\" do item, sem contador.",
     "Depois de \"checar\": se aparecer PASTA_NA_NUVEM ou NOME_COM_ACENTO, pergunte com o texto do erro e rode a ação \"mudar-pasta\". A partir daí use a pasta do campo \"para\" em todos os comandos.",
@@ -23,21 +24,18 @@
   "textos": {
     "I-01": {
       "quando": "logo depois de ler o AGENTS.md, antes de qualquer comando",
-      "texto": "Oi! Vou montar o seu View Estúdio, o lugar onde a gente cria apresentações juntos. Vai ser assim:\n1. Eu olho se o seu computador tem espaço.\n2. Instalo 4 programas grátis. Você aprova.\n3. Pergunto sobre a sua marca (cores, letras, logo).\n\nLeva uns 10 minutos. Você não precisa digitar nada difícil.\n\nUm aviso: toda vez que eu for mexer no computador, o {{agente}} mostra uma caixinha pedindo licença. É normal. É para a sua segurança. Eu aviso antes, e você pode aprovar.\n{{linha_caixinha}}\n\nSe a janela fechar sem querer, abra o {{agente}} do mesmo jeito e cole o mesmo texto de novo: eu continuo de onde parou.\n\nPrimeiro vou só olhar o computador, sem instalar nada. Posso olhar?",
+      "texto": "Oi! Vou deixar o seu View Estúdio pronto, o lugar onde a gente cria apresentações juntos. É uma tacada só: eu confiro se cabe no computador e instalo 4 programas grátis, que ficam só no estúdio e não pedem a sua senha. Leva uns 5 minutos. Você não precisa digitar nada.\n\nAgora o {{agente}} vai mostrar uma caixinha pedindo licença. É normal, é para a sua segurança.\n{{linha_caixinha}}\n\nSe a janela fechar sem querer, abra o {{agente}} do mesmo jeito e cole o mesmo texto de novo: eu continuo de onde parou.",
+      "depois": "Sem esperar resposta, rode a ação \"tudo\" na mesma mensagem. O I-01 não é pergunta: a caixinha é o sim da pessoa.",
       "linha_caixinha_claude": "No app do Claude, a caixinha tem um botão para aprovar: clique nele. Se você abriu pelo Terminal, ela vem em inglês: aperte Enter na opção **1. Yes**. Quando eu for gravar um arquivo, escolha uma vez a opção que libera as edições durante a sessão (no Terminal: **Yes, allow all edits during this session**).",
-      "linha_caixinha_codex": "No app do Codex, a caixinha vem em português: clique no botão de aprovar. Se você abriu pelo Terminal, ela vem em inglês: aperte Enter na primeira opção, a que começa com **Yes**.",
-      "opcoes": [
-        "Pode olhar ★",
-        "Agora não"
-      ]
+      "linha_caixinha_codex": "No app do Codex, a caixinha vem em português: clique no botão de aprovar. Se você abriu pelo Terminal, ela vem em inglês: aperte Enter na primeira opção, a que começa com **Yes**."
     },
     "I-02": {
-      "quando": "depois de \"checar\" sem problema que bloqueia",
+      "quando": "no um por um, depois de \"checar\" sem problema que bloqueia",
       "texto": "Olhei. Está tudo certo:\n- Computador: {{nome_sistema}}\n- Espaço livre: {{espaco_gb}} GB (preciso de uns 3)\n- Memória: {{memoria_gb}} GB\n- Internet: funcionando",
       "variaveis": "nome_sistema, espaco_gb e memoria_gb vêm do JSON do checar."
     },
     "I-03": {
-      "quando": "depois do I-02",
+      "quando": "no um por um, depois do I-02",
       "texto": "Vou instalar {{n}} programas. Todos são grátis e ficam numa pasta só do estúdio. Nenhum pede a sua senha.\n1. **Node**: o motor dos comandos do estúdio. (uns 190 MB)\n2. **Peças do estúdio**: o motor que transforma uma cena animada em vídeo. (uns 250 MB)\n3. **Navegador escondido**: tira as fotos de cada tela e faz o PDF. Não mexe no seu Chrome. (uns 250 MB)\n4. **FFmpeg**: só para cena em vídeo. (uns 150 MB)\n\nTotal: menos de 1 GB. Com internet boa, uns 5 minutos.\n\nComo você prefere?",
       "variaveis": "n vem de \"total_programas\" do plano.",
       "opcoes": [

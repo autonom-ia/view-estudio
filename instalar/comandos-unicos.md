@@ -80,10 +80,28 @@ Igual à V1 longa, trocando o passo 3 por este:
 
 ## O que acontece depois do comando
 
-1. O assistente lê o `AGENTS.md` e mostra o I-01 (o que vai fazer, pede para olhar o computador).
-2. Roda `checar`. Se o estúdio caiu dentro do OneDrive ou do iCloud, fora da pasta pessoal, ou se o nome do usuário do Windows tem acento, o assistente pede licença e muda a pasta de lugar (`mudar-pasta`).
-3. Mostra o plano (I-03) e instala um programa por vez, avisando antes de cada um: Node, peças do estúdio, navegador escondido e FFmpeg.
-4. Roda `verificar` e diz "Tudo pronto" ou o que faltou.
-5. Chama a skill `minha-marca` para registrar cores, letras e logo.
+1. O assistente baixa e descompacta o estúdio na pasta pessoal, num comando só.
+2. Lê o `AGENTS.md`, diz o I-01 (o que vai fazer, sem pergunta) e roda a entrada única: `bash instalar/instalar.sh tudo --agente <claude|codex>` (no Windows, `instalar.ps1 tudo`). Ela olha o computador (`checar`), instala Node, peças do estúdio, navegador escondido e FFmpeg (`passo` de cada um, com uma segunda chance automática quando a falha é passageira; o FFmpeg é opcional e não para o resto) e confere (`verificar`). O assistente roda essa chamada com o tempo máximo da ferramenta (no Claude Code, `timeout: 600000`) ou em segundo plano, porque com internet lenta ela passa dos 2 minutos que a ferramenta dá por padrão. Se o estúdio caiu dentro do OneDrive ou do iCloud, fora da pasta pessoal, ou se o nome do usuário do Windows tem acento, o `tudo` para no `checar`; o assistente pede licença, muda a pasta de lugar (`mudar-pasta`) e roda o `tudo` de novo.
+3. Diz "Tudo pronto" (I-14) e mostra como abrir o programa direto no estúdio. A marca não é perguntada agora: ela nasce junto com a primeira apresentação.
 
-Os textos de cada momento estão em `instalar/mensagens.json`.
+Os textos de cada momento estão em `instalar/mensagens.json`. Um por um (`checar`, `plano`, `passo <id>`, `verificar`) continua existindo, para quem pedir para aprovar cada programa.
+
+## Caixinhas de licença (meta: no máximo 3)
+
+Do link colado até "Tudo pronto":
+
+| # | Quando | O que a caixinha libera |
+|---|---|---|
+| 1 | Logo depois de colar o link | Baixar e descompactar o estúdio (um comando só) |
+| 2 | Depois do I-01 | A entrada única `instalar.sh tudo` (ou `instalar.ps1 tudo`) |
+| 3 | Ao abrir o programa direto no estúdio (I-14) | Confiar no estúdio (o Terminal pergunta; o app pode não perguntar) |
+
+**Situação da medição: ainda não medido numa conta nova.** As 3 acima são a contagem esperada, não a medida. Antes da primeira sessão aberta no estúdio, o `.claude/settings.json` dele ainda não vale (o programa está aberto noutro lugar), por isso a caixinha 2 existe. Caixinhas a mais já conhecidas, fora do caminho comum:
+
+- Lugar errado na parte Code: se a pessoa escolhe a Mesa ou Documentos (no Mac, muitas vezes dentro do iCloud), o estúdio cai lá. O `tudo` para em `checar` com `PASTA_NA_NUVEM`, o assistente pede o OK da pessoa (uma pergunta) e roda `mudar-pasta` (uma caixinha) e o `tudo` de novo (outra caixinha). Por isso a "Comece aqui" do `README.md` manda escolher o lugar com o nome da pessoa.
+- Zip descompactado em Downloads: `mudar-pasta` sem perguntar, mais uma caixinha.
+- Codex: cada comando do instalador pede para sair da área protegida.
+
+Dentro do estúdio, `.claude/settings.json` já libera, sem caixinha: `./estudio` (e `estudio.cmd`), as ações `tudo`, `checar`, `plano`, `passo` e `verificar` do instalador e a escrita em `apresentacoes/`, `minha-marca/` e `referencias/`. Ficam de fora de propósito, e pedem caixinha: `mudar-pasta`, `desinstalar` e qualquer comando que não seja do estúdio. No Codex não há lista de liberação por projeto: cada comando do instalador pede para sair da área protegida (textos `CODEX-INTERNET` e `CODEX-FORA-DA-AREA`).
+
+Medido em 24/11/2026 num Mac com chip Apple, com tudo já instalado: `tudo` levou 3 s do começo ao "Tudo pronto: 7 de 7". A instalação do zero ainda não foi cronometrada com a entrada única.

@@ -1,6 +1,6 @@
 # View Estúdio
 
-> **Assistente (Claude Code ou Codex): se você chegou aqui porque alguém pediu para instalar,** leia o `AGENTS.md` inteiro e siga a skill `instalar-estudio` (em `.agents/skills/instalar-estudio/SKILL.md`). Antes do primeiro comando, diga à pessoa em uma frase como aprovar as caixinhas de licença. Fale simples, um passo por vez.
+> **Assistente (Claude Code ou Codex): se você chegou aqui porque alguém pediu para instalar,** leia o `AGENTS.md` inteiro e siga a skill `instalar-estudio` (em `.agents/skills/instalar-estudio/SKILL.md`). A instalação é uma entrada só, numa caixinha de licença: `bash instalar/instalar.sh tudo --agente <claude|codex>` (no Windows, `instalar/instalar.ps1 tudo`), rodada com o tempo máximo da ferramenta (no Claude Code, `timeout: 600000`) ou em segundo plano: com internet lenta ela passa dos 2 minutos padrão. Antes dela, diga o I-01, que já explica a caixinha. Nenhuma pergunta técnica. Fale simples, um passo por vez.
 
 Apresentações que parecem filme, feitas por conversa, no seu computador.
 
@@ -13,19 +13,23 @@ Você conta para o assistente (Claude Code ou Codex) para quem é a apresentaç�
 - **Com a sua marca.** Cores, letras e logo ficam guardados uma vez e valem para todas as apresentações.
 - **Mac e Windows.** No Mac está testado de ponta a ponta. No Windows está **em validação**: o instalador, o `estudio.cmd` e a atualização ainda não rodaram numa máquina Windows de verdade.
 
-## Como instalar
+<!-- porta-de-entrada: texto para quem nunca usou o Claude. Sem palavra técnica (o teste confere). -->
+## Comece aqui
 
-1. Instale o **Claude Code** ou o **Codex** (no app ou no Terminal) e entre com a sua conta.
-2. Abra o programa e cole este texto:
+Você vai conversar com um assistente, do mesmo jeito que conversa no WhatsApp. Ele faz a apresentação. Você só responde e aprova.
+
+1. **Baixe o app do Claude** no site **claude.ai/download** e entre com a sua conta. (Já usa o Codex? Pode ser ele também.)
+2. **Abra o app e entre na parte Code.** Quando ele pedir um lugar para trabalhar, escolha o que tem o seu nome (no Mac, ao lado do desenho de uma casinha). Não escolha a Mesa nem Documentos.
+3. **Copie o texto do quadro abaixo, cole na conversa e aperte Enter.**
+4. **Aprove as caixinhas.** O app pede licença antes de mexer no computador. Costumam ser três: uma para baixar o estúdio, uma para instalar e uma para confiar nele quando você abrir de novo. É só clicar em aprovar.
+5. **Espere uns 5 minutos.** Quando aparecer *Tudo pronto*, faça o que ele mostrar para abrir o estúdio e escreva: **quero fazer uma apresentação**.
 
 ```
 instale: https://github.com/autonom-ia/view-estudio/releases/latest/download/view-estudio.zip
 ```
 
-3. Responda ao assistente. Ele olha o computador, pede licença antes de cada coisa e instala tudo numa pasta só, `view-estudio`, dentro da sua pasta pessoal. Leva uns 10 minutos e ocupa menos de 1 GB.
-4. No fim, abra o programa direto na pasta `view-estudio` (o assistente mostra como). É lá que ele sabe fazer as suas apresentações.
-
-Se o seu programa não conseguir baixar pelo link, veja as alternativas em [`instalar/comandos-unicos.md`](instalar/comandos-unicos.md).
+Ocupa menos de 1 GB no computador. Se o app não conseguir baixar pelo link, veja [outros jeitos de instalar](instalar/comandos-unicos.md).
+<!-- /porta-de-entrada -->
 
 ## Como usar
 

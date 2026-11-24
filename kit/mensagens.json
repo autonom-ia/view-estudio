@@ -197,7 +197,7 @@
   },
   "DEPENDENCIAS_MUDARAM": {
     "texto": "A versão nova trocou peças do estúdio (pacotes, ou a versão do Node, do navegador ou do FFmpeg). Em dados.quais: pacotes, versoes.",
-    "acao": "Rode o instalador de novo (skill instalar-estudio), passo a passo como na primeira vez, antes de continuar. Ele só refaz o que mudou."
+    "acao": "Rode o instalador de novo (skill instalar-estudio, a entrada única tudo) antes de continuar. Ele só refaz o que mudou."
   },
   "ATUALIZACAO_DOWNLOAD_FALHOU": {
     "texto": "Não consegui baixar a versão nova.",

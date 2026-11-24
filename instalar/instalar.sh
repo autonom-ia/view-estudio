@@ -6,6 +6,9 @@
 #   bash instalar/instalar.sh <acao> [id] [--agente claude|codex] [--modo tudo|um_por_um]
 #
 # Acoes:
+#   tudo          A entrada unica: checar, os cinco passos e verificar, em sequencia. Para na primeira
+#                 etapa obrigatoria que nao der certo e devolve o JSON dela em "resultado". O ffmpeg
+#                 e opcional: se falhar, segue e a verificacao diz o que faltou.
 #   checar        So olha o computador (sistema, espaco, memoria, internet, pasta). Nao instala nada.
 #   plano         Diz o estado de cada passo (falta, pronto).
 #   passo <id>    Instala ou executa um passo. Rodar de novo nao baixa de novo.
@@ -940,9 +943,62 @@ acao_desinstalar() {
   exit 0
 }
 
+# Uma entrada so (uma caixinha de licenca): checar, os cinco passos e verificar, cada um num
+# processo filho deste mesmo script. Passo que falha por motivo passageiro ganha uma segunda chance.
+# Passo opcional (ffmpeg) que falha nao para o resto: a verificacao diz o que faltou.
+# Ultima linha: {"acao":"tudo","ok":...,"etapa":"<checar|id do passo|verificar>","checar":{...},"resultado":{...}}.
+rodar_etapa() {
+  local extra=""
+  [ -n "$AGENTE" ] && extra="--agente $AGENTE"
+  # shellcheck disable=SC2086 # extra vazio ou "--agente <nome>", sem espaco no nome
+  ETAPA_SAIDA="$(bash "$AQUI/instalar.sh" "$@" $extra --modo tudo)"
+  ETAPA_RC=$?
+  printf '%s\n' "$ETAPA_SAIDA" | sed '$d'
+  ETAPA_ULTIMA="$(ultima_linha "$ETAPA_SAIDA")"
+  [ -n "$ETAPA_ULTIMA" ] || ETAPA_ULTIMA='{"ok":false,"codigo":"DESCONHECIDO","dados":{}}'
+}
+
+vale_tentar_de_novo() {
+  case "$1" in
+    *'"codigo":"DOWNLOAD_FALHOU"'*|*'"codigo":"ARQUIVO_DIFERENTE"'*|*'"codigo":"MAC_BLOQUEOU"'*) return 0 ;;
+    *'"codigo":"PACOTES_FALHOU"'*|*'"codigo":"NAVEGADOR_FALHOU"'*|*'"codigo":"DESCONHECIDO"'*) return 0 ;;
+  esac
+  return 1
+}
+
+saida_tudo() {
+  printf '{"acao":"tudo","ok":%s,"etapa":%s,"checar":%s,"resultado":%s}\n' "$(jbool "$1")" "$(js "$2")" "$3" "$4"
+  [ "$1" = "1" ] && exit 0
+  exit 1
+}
+
+acao_tudo() {
+  local id checar
+  diga "Etapa 1 de 3: olhando o computador."
+  rodar_etapa checar
+  checar="$ETAPA_ULTIMA"
+  [ "$ETAPA_RC" = "0" ] || saida_tudo 0 checar "$checar" "$checar"
+  diga "Etapa 2 de 3: instalando os programas do estudio."
+  for id in $PASSOS; do
+    rodar_etapa passo "$id"
+    if [ "$ETAPA_RC" != "0" ] && vale_tentar_de_novo "$ETAPA_ULTIMA"; then
+      diga "Nao deu na primeira vez. Tentando de novo."
+      rodar_etapa passo "$id"
+    fi
+    if [ "$ETAPA_RC" != "0" ] && [ "$(obrigatorio "$id")" = "true" ]; then
+      saida_tudo 0 "$id" "$checar" "$ETAPA_ULTIMA"
+    fi
+  done
+  diga "Etapa 3 de 3: conferindo tudo."
+  rodar_etapa verificar
+  [ "$ETAPA_RC" = "0" ] || saida_tudo 0 verificar "$checar" "$ETAPA_ULTIMA"
+  saida_tudo 1 verificar "$checar" "$ETAPA_ULTIMA"
+}
+
 # ---------------------------------------------------------------- despacho
 
 case "$ACAO" in
+  tudo) acao_tudo ;;
   checar) acao_checar ;;
   plano) acao_plano ;;
   passo) acao_passo "$ID" ;;
@@ -950,6 +1006,6 @@ case "$ACAO" in
   mudar-pasta) acao_mudar_pasta ;;
   desinstalar) acao_desinstalar ;;
   *)
-    printf '{"acao":%s,"ok":false,"codigo":"ACAO_DESCONHECIDA","dados":{"acoes":["checar","plano","passo","verificar","mudar-pasta","desinstalar"]}}\n' "$(js "$ACAO")"
+    printf '{"acao":%s,"ok":false,"codigo":"ACAO_DESCONHECIDA","dados":{"acoes":["tudo","checar","plano","passo","verificar","mudar-pasta","desinstalar"]}}\n' "$(js "$ACAO")"
     exit 1 ;;
 esac

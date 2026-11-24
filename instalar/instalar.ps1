@@ -5,6 +5,9 @@
 #   powershell.exe -NoProfile -ExecutionPolicy Bypass -File instalar/instalar.ps1 <acao> [id] [--agente claude|codex] [--modo tudo|um_por_um]
 #
 # Acoes:
+#   tudo          A entrada unica: checar, os cinco passos e verificar, em sequencia. Para na primeira
+#                 etapa obrigatoria que nao der certo e devolve o JSON dela em "resultado". O ffmpeg
+#                 e opcional: se falhar, segue e a verificacao diz o que faltou.
 #   checar        So olha o computador (sistema, espaco, memoria, internet, pasta, nome do usuario). Nao instala nada.
 #   plano         Diz o estado de cada passo (falta, pronto).
 #   passo <id>    Instala ou executa um passo. Rodar de novo nao baixa de novo.
@@ -26,6 +29,7 @@ $ProgressPreference = 'SilentlyContinue'
 try { [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false } catch { }
 
 $script:Aqui = Split-Path -Parent $MyInvocation.MyCommand.Path
+$script:EsteArquivo = $MyInvocation.MyCommand.Path
 if (-not $env:ESTUDIO_REPO) {
     $env:ESTUDIO_REPO = (Resolve-Path -LiteralPath (Join-Path $script:Aqui '..')).Path
 }
@@ -1069,9 +1073,55 @@ function Invoke-AcaoDesinstalar {
     Sair ([ordered]@{ acao = 'desinstalar'; ok = $true; confirmado = $true; apagou = $lista.ToArray(); pasta_do_estudio = $script:Repo }) 0
 }
 
+# Uma entrada so (uma caixinha de licenca): checar, os cinco passos e verificar, cada um num
+# processo filho deste mesmo script. Passo que falha por motivo passageiro ganha uma segunda chance.
+# Passo opcional (ffmpeg) que falha nao para o resto: a verificacao diz o que faltou.
+# Ultima linha: {"acao":"tudo","ok":...,"etapa":"<checar|id do passo|verificar>","checar":{...},"resultado":{...}}.
+$script:CodigosDeNovo = @('DOWNLOAD_FALHOU', 'ARQUIVO_DIFERENTE', 'PACOTES_FALHOU', 'NAVEGADOR_FALHOU', 'DESCONHECIDO')
+
+function Invoke-Etapa([string[]]$Argumentos) {
+    $exe = (Get-Process -Id $PID).Path
+    $lista = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $script:EsteArquivo) + $Argumentos + @('--modo', 'tudo')
+    if ($script:Agente) { $lista += @('--agente', $script:Agente) }
+    $r = Invoke-Nativo -Exe $exe -Argumentos $lista -Pasta $script:Repo
+    $texto = [string]$r.so
+    $ultima = Get-UltimaLinha $texto
+    foreach ($l in $texto.Replace("`r", '').Split([char[]]@("`n"))) {
+        if ($l.Trim() -and $l.Trim() -ne $ultima) { Write-Host $l }
+    }
+    $obj = ConvertFrom-JsonSeguro $ultima
+    if ($null -eq $obj) { $obj = [ordered]@{ ok = $false; codigo = 'DESCONHECIDO'; dados = @{} } }
+    return @{ ok = ($r.codigo -eq 0); json = $obj }
+}
+
+function Exit-Tudo([bool]$Ok, [string]$Etapa, $Checar, $Resultado) {
+    $codigo = 1
+    if ($Ok) { $codigo = 0 }
+    Sair ([ordered]@{ acao = 'tudo'; ok = $Ok; etapa = $Etapa; checar = $Checar; resultado = $Resultado }) $codigo
+}
+
+function Invoke-AcaoTudo {
+    Diga 'Etapa 1 de 3: olhando o computador.'
+    $c = Invoke-Etapa @('checar')
+    if (-not $c.ok) { Exit-Tudo $false 'checar' $c.json $c.json }
+    Diga 'Etapa 2 de 3: instalando os programas do estudio.'
+    foreach ($id in $script:Passos) {
+        $r = Invoke-Etapa @('passo', $id)
+        if (-not $r.ok -and ($script:CodigosDeNovo -contains [string]$r.json.codigo)) {
+            Diga 'Nao deu na primeira vez. Tentando de novo.'
+            $r = Invoke-Etapa @('passo', $id)
+        }
+        if (-not $r.ok -and (Test-Obrigatorio $id)) { Exit-Tudo $false $id $c.json $r.json }
+    }
+    Diga 'Etapa 3 de 3: conferindo tudo.'
+    $v = Invoke-Etapa @('verificar')
+    Exit-Tudo $v.ok 'verificar' $c.json $v.json
+}
+
 # ---------------------------------------------------------------- despacho
 
 switch ($script:Acao) {
+    'tudo' { Invoke-AcaoTudo }
     'checar' { Invoke-AcaoChecar }
     'plano' { Invoke-AcaoPlano }
     'passo' { Invoke-AcaoPasso $script:Id }
@@ -1079,6 +1129,6 @@ switch ($script:Acao) {
     'mudar-pasta' { Invoke-AcaoMudarPasta }
     'desinstalar' { Invoke-AcaoDesinstalar }
     default {
-        Sair ([ordered]@{ acao = $script:Acao; ok = $false; codigo = 'ACAO_DESCONHECIDA'; dados = @{ acoes = @('checar', 'plano', 'passo', 'verificar', 'mudar-pasta', 'desinstalar') } }) 1
+        Sair ([ordered]@{ acao = $script:Acao; ok = $false; codigo = 'ACAO_DESCONHECIDA'; dados = @{ acoes = @('tudo', 'checar', 'plano', 'passo', 'verificar', 'mudar-pasta', 'desinstalar') } }) 1
     }
 }

@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import zlib from 'node:zlib';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { acharNavegador } from '../scripts/lib/chrome.mjs';
@@ -17,7 +18,7 @@ import {
   ErroDeRestauracao,
 } from '../scripts/lib/antes-depois.mjs';
 import { renderizarSemPerderOAnterior } from '../scripts/lib/hyperframes.mjs';
-import { telasMudadas, paginaDeComparacao, nomeDaFoto } from '../scripts/lib/comparacao.mjs';
+import { telasMudadas, paginaDeComparacao, nomeDaFoto, fotosDiferentes, NOTA_SEM_MOVIMENTO } from '../scripts/lib/comparacao.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const DESPACHANTE = path.join(RAIZ, 'kit', 'scripts', 'estudio.mjs');
@@ -261,6 +262,50 @@ test('antes-depois: só mudança com título conta; telas aceita número e nome 
   assert.deepEqual(lerMudancas(null), { pedido: '', mudancas: [], ignoradas: 0 });
 });
 
+// PNG de verdade (8 bits, RGB), ponto a ponto: cor(x, y) devolve [r, g, b].
+function png(w, h, cor) {
+  const pedaco = (tipo, dados) => {
+    const t = Buffer.concat([Buffer.from(tipo, 'ascii'), dados]);
+    const tam = Buffer.alloc(4);
+    tam.writeUInt32BE(dados.length);
+    const crc = Buffer.alloc(4);
+    crc.writeUInt32BE(zlib.crc32(t) >>> 0);
+    return Buffer.concat([tam, t, crc]);
+  };
+  const cab = Buffer.alloc(13);
+  cab.writeUInt32BE(w, 0);
+  cab.writeUInt32BE(h, 4);
+  cab[8] = 8;
+  cab[9] = 2;
+  const linhas = [];
+  for (let y = 0; y < h; y += 1) {
+    const linha = Buffer.alloc(1 + w * 3);
+    for (let x = 0; x < w; x += 1) linha.set(cor(x, y), 1 + x * 3);
+    linhas.push(linha);
+  }
+  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), pedaco('IHDR', cab), pedaco('IDAT', zlib.deflateSync(Buffer.concat(linhas))), pedaco('IEND', Buffer.alloc(0))]);
+}
+const hex = (h) => [Number.parseInt(h.slice(1, 3), 16), Number.parseInt(h.slice(3, 5), 16), Number.parseInt(h.slice(5, 7), 16)];
+const liso = (cor, w = 4, h = 4) => png(w, h, () => hex(cor));
+
+test('comparação: troca de cor de 20 e de 6 no canal muda a foto', () => {
+  assert.equal(fotosDiferentes(liso('#FFA000'), liso('#FF8C00')), true, 'âmbar para âmbar mais escuro (20)');
+  assert.equal(fotosDiferentes(liso('#F6F4EF'), liso('#F4F1E8')), true, 'creme para creme (7)');
+  assert.equal(fotosDiferentes(liso('#F6F4EF'), liso('#F0F4EF')), true, 'diferença de 6');
+  assert.equal(fotosDiferentes(liso('#F6F4EF'), liso('#F6F4EF')), false);
+});
+
+test('comparação: diferença mínima de desenho não vira mudança', () => {
+  const texto = (x, y) => ((x + y) % 7 === 0 ? [40, 40, 40] : [246, 244, 239]);
+  const a = png(100, 100, texto);
+  // serrilhado que varia 1 ou 2 em toda a borda das letras
+  const b = png(100, 100, (x, y) => texto(x, y).map((v) => ((x + y) % 7 === 0 ? v + 2 : v)));
+  assert.equal(fotosDiferentes(a, b), false);
+  // dois pontos soltos muito diferentes em 10 mil
+  const c = png(100, 100, (x, y) => ((x === 3 && y === 3) || (x === 90 && y === 50) ? [0, 0, 0] : texto(x, y)));
+  assert.equal(fotosDiferentes(a, c), false);
+});
+
 const beat = (texto, cor = 0) => ({ texto, jpeg: Buffer.from('x'), png: Buffer.from([cor]) });
 const roteiro = (falas) => ({ telas: falas.map((f, k) => ({ tela: k + 1, beats: f.map((fala) => ({ fala })) })) });
 
@@ -286,6 +331,14 @@ test('comparação: entra só a tela que mudou, no clique que mudou; tela nova e
   ]);
 });
 
+test('comparação: estilo diferente no mesmo clique (cor de um detalhe) conta como mudança', () => {
+  const comEstilo = (estilo) => ({ texto: 'Fonte', jpeg: Buffer.from('x'), png: Buffer.from([0]), estilo });
+  const antes = [{ arquivo: 's02-numero.html', numero: 2, titulo: 'Número', beats: [comEstilo(['P rgb(93, 89, 117)']), comEstilo(['P rgb(93, 89, 117)'])] }];
+  const depois = [{ arquivo: 's02-numero.html', numero: 2, titulo: 'Número', beats: [comEstilo(['P rgb(93, 89, 117)']), comEstilo(['P rgb(113, 89, 117)'])] }];
+  const telas = telasMudadas(antes, depois, roteiro([[]]), roteiro([[]]));
+  assert.deepEqual(telas.map((t) => t.cliques.filter((c) => c.mudou).map((c) => c.beat)), [[1]]);
+});
+
 test('comparação: a página numera as mudanças, marca as telas, não tem <select> e escapa o texto', () => {
   const telas = [{
     arquivo: 's02-numero.html', numero: 2, titulo: 'Número <b>', situacao: 'mudou',
@@ -308,7 +361,12 @@ test('comparação: a página numera as mudanças, marca as telas, não tem <sel
   assert.ok(html.includes('Igual ao de antes.'));
   assert.ok(html.includes('fala velha') && html.includes('fala nova'));
   assert.ok(!html.includes('<select'));
+  assert.ok(html.includes(NOTA_SEM_MOVIMENTO), 'a página diz que vídeo e movimento não entram');
   assert.equal(nomeDaFoto('antes', 's02-numero.html', 1), 'antes-s02-numero-b1.jpg');
+  // nome de arquivo com espaço, # ou acento vai codificado no endereço da foto
+  const estranha = paginaDeComparacao({ pedido: '', mudancas: [], telas: [{ ...telas[0], arquivo: 's02 número#1.html' }] });
+  assert.ok(estranha.includes(`fotos/${encodeURIComponent(nomeDaFoto('antes', 's02 número#1.html', 1))}`));
+  assert.ok(!estranha.includes('fotos/antes-s02 número#1'));
 });
 
 // --- pelos comandos ---
@@ -456,6 +514,13 @@ test('antes, comparar e escolher: só a tela e o clique que mudaram, vídeo sem 
     assert.ok(fs.readFileSync(path.join(ad, 'tentativa', 'roteiro', 'S03.json'), 'utf8').includes('Logo em março,'));
     assert.equal(fs.statSync(path.join(ad, 'tentativa', 'deck', 'assets', 'abertura.mp4')).ino, fs.statSync(video).ino);
     assert.equal(fs.statSync(video).ino, fs.statSync(path.join(ad, 'antes', 'deck', 'assets', 'abertura.mp4')).ino);
+
+    // troca de cor pequena (20 no vermelho) num texto pequeno: aparece nos cliques em que ele está
+    trocarNoArquivo(path.join(pasta, 'deck', 'slides', 's02-numero.html'), '.fonte{position:absolute;left:130px;bottom:80px;font-size:20px;color:var(--cor-apoio)}', '.fonte{position:absolute;left:130px;bottom:80px;font-size:20px;color:#715975}');
+    fs.writeFileSync(mudancas, JSON.stringify({ pedido: 'mais vida', mudancas: [{ titulo: 'Fonte em outro tom', telas: [2] }, { titulo: 'Só isso', telas: [2] }] }));
+    const cor = estudio(env, 'comparar', 'cafe', '--sem-navegador');
+    assert.equal(cor.json.codigo, 'COMPARACAO_PRONTA', JSON.stringify(cor.json) + cor.erro);
+    assert.deepEqual(cor.json.dados.telas.map((t) => [t.tela, t.situacao, t.cliques_mudados]), [[2, 'mudou', [1, 2]]]);
 
     // voltar como estava: fecha o antes e apaga a cópia
     trocarNoArquivo(path.join(pasta, 'deck', 'slides', 's02-numero.html'), 'A manhã já é nossa.', 'Outra tentativa.');

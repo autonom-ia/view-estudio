@@ -336,8 +336,8 @@
     "acao": "Pedido vago vira 2 ou 3 mudanças que se veem (texto, letra, cor, foto, espaço, movimento, fala). Faça as que faltam e preencha dados.arquivo com cada uma (titulo, porque e telas). Rode comparar de novo."
   },
   "NADA_MUDOU": {
-    "texto": "A apresentação ainda está igual à de antes. Vou aplicar as mudanças.",
-    "acao": "Nenhuma tela, clique ou fala mudou em relação ao antes. Confira se a mudança foi gravada no deck/ ou no roteiro/ desta apresentação (mudança só no brief.md não aparece na comparação) e rode comparar de novo."
+    "texto": "Nas telas paradas, a apresentação ainda está igual à de antes. Vídeo e movimento não entram nesta comparação.",
+    "acao": "Nenhuma tela, clique ou fala mudou em relação ao antes. A comparação olha cada clique parado: vídeo de cena e movimento (entrada, transição, ritmo) não entram, e mudança só no brief.md também não. Se a mudança foi gravada no deck/ ou no roteiro/ e é visível parada, confira o arquivo e rode comparar de novo. Se ela é só de vídeo ou de movimento, diga à pessoa em uma frase o que mudou, rode ./estudio abrir <nome> para ela ver andando e faça o \"Qual fica?\" do mesmo jeito; ou junte uma mudança que se vê parada."
   },
   "MUDANCAS_DEMAIS": {
     "texto": "Mudei mais coisas do que dá para comparar de uma vez.",

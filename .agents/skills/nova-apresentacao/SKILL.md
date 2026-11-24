@@ -7,7 +7,7 @@ description: Faz uma apresentação do começo ao fim no View Estúdio, pelo mé
 
 Uma apresentação boa parece filme: cada tela diz uma coisa só, o movimento conta a história e a fala completa o que a tela não diz. O caminho para chegar lá é sempre o mesmo, e a pessoa decide em dois portões: o brief e o piloto.
 
-Comandos: `./estudio <comando>` (no PowerShell, `.\estudio.cmd <comando>`), de dentro da pasta do estúdio. Leia só a última linha (JSON): `ok`, `codigo`, `resumo`, `arquivos`, `avisos`, `dados`. Saída 2 = reprovado: corrija pela causa e rode de novo. Traduza `codigo` por `kit/mensagens.json`. No Codex, `checar`, `prints`, `pdf`, `cena` e `abrir` rodam fora da área protegida.
+Comandos: `./estudio <comando>` (no PowerShell, `.\estudio.cmd <comando>`), de dentro da pasta do estúdio. Leia só a última linha (JSON): `ok`, `codigo`, `resumo`, `arquivos`, `avisos`, `dados`. Saída 2 = reprovado: corrija pela causa e rode de novo. Traduza `codigo` por `kit/mensagens.json`. No Codex, `checar`, `fatos`, `acessibilidade`, `prints`, `pdf`, `cena` e `abrir` rodam fora da área protegida.
 
 ## O andamento
 
@@ -54,7 +54,7 @@ Escreva `apresentacoes/<nome>/brief.md` por cima do molde, com:
 - **A história**: contexto, conflito e resolução, em três frases.
 - **Sequência de telas** (o beat-sheet), uma linha por tela: número, mensagem única da tela (uma frase), papel (abertura, conceito, número, caso, virada, pico, fecho), passos da tela (o que entra a cada clique) e a transição de entrada (dissolve é o padrão; corte, empurra ou match quando a história pede).
 - **Os 2 ou 3 picos**: as telas que a plateia vai lembrar. Pelo menos um vira cena em movimento (skill `cena-em-video`) quando o tempo permitir.
-- **Fatos e números**: a tabela com fato, fonte e data. Só entra na tela o que está aqui.
+- **Fatos e números**: a tabela com as colunas Fato, Fonte e Data (troque as linhas do exemplo do molde, que têm a fonte "Exemplo fictício do View Estúdio" e não valem). Só entra na tela e na fala o que está aqui; o `./estudio fatos` confere número, contato e @.
 - **Tese visual**: uma frase que diz como a apresentação vai parecer (luz, tipo de foto, ritmo), ligada à marca e ao assunto.
 - **Insumos faltando**: o que você assumiu por falta de material, e o que melhora se a pessoa mandar.
 
@@ -81,11 +81,14 @@ O que faz a tela ser boa:
 - Hierarquia por tipografia grande, foto, luz, cor e movimento. **Nada de grade de cartões com borda e fundo**, nada de lista de tópicos com ícone. Teste anti-genérico: troque o nome da empresa; se a tela serve para outra, refaça.
 - Texto visível com 18 px ou mais. Título que se lê do fundo da sala.
 - Número com a fonte escrita na própria tela, em letra pequena (mas 18 px ou mais).
+- Texto que se lê sobre o fundo: sobre foto, degradê ou vídeo, ponha véu, sombra ou outro enquadramento. O `checar` mede o contraste contra o fundo de verdade. Texto só decorativo (marca d'água) leva `aria-hidden="true"`.
+- Imagem com texto alternativo (`alt`); imagem só de enfeite, `alt=""`.
 - O movimento tem sentido: entra o que a fala vai explicar, na ordem da fala.
 - Sem `<select>` nativo. Respeite movimento reduzido (o `cena.js` já cuida, se você não forçar animação fora dele).
 
 Conferir antes de mostrar:
 1. `./estudio checar <nome>`. Saída 2: leia `dados.vermelhos` (cada um com `tela`, `beat`, `tipo`, `detalhe`), corrija pela causa e rode de novo até `ok:true`. Leia também `dados.amarelos`; roteiro ausente é normal nesta etapa.
+   Depois, `./estudio fatos <nome>` (código `FATOS_OK`) e `./estudio acessibilidade <nome>` (código `ACESSIBILIDADE_OK` ou `ACESSIBILIDADE_COM_AVISOS`). Saída 2: leia `dados.vermelhos` e corrija. Fato sem fonte: confirme com a pessoa e registre no brief, ou tire da tela; nunca invente a fonte.
 2. `./estudio prints <nome>` (código `PRINTS_PRONTOS`; a lista das fotos vem em `dados.fotos`). Abra **cada** imagem com a ferramenta de ler arquivo, uma a uma, e procure: texto cortado, encostado ou sobreposto; contraste fraco; tela vazia ou genérica; algo que não bate com a mensagem da tela. Corrija e tire as fotos de novo.
 3. `./estudio abrir <nome>` (código `DECK_ABERTO`; o endereço vem em `dados.endereco`) e diga: "Abri as 3 primeiras telas. Use as setas: para baixo avança o passo, para os lados troca de tela."
 
@@ -95,7 +98,7 @@ Pergunte: "É esse o visual?" com "É esse ★", "Quero mudar algo". Ajuste até
 
 Faça as outras telas seguindo a sequência do brief, no mesmo idioma visual do piloto. Copie a anatomia das telas do piloto, não as do molde.
 - Picos com cena em movimento: skill `cena-em-video`.
-- Depois de cada 4 ou 5 telas, rode `./estudio checar <nome>` e corrija os vermelhos antes de seguir.
+- Depois de cada 4 ou 5 telas, rode `./estudio checar <nome>` e `./estudio fatos <nome>` e corrija os vermelhos antes de seguir.
 - Se uma tela pedir algo que o brief não previu (número novo, caso novo), pare e pergunte à pessoa; atualize o brief.
 
 ## Etapa 5. Roteiro por passo
@@ -105,6 +108,8 @@ Skill `roteiro-e-teleprompter`. Ela escreve `roteiro/SNN.json` para cada tela, c
 ## Etapa 6. Checagem mecânica
 
 `./estudio checar <nome>` com `ok:true` e sem amarelo de roteiro (`roteiro-ausente`, `roteiro-descasado`). Os outros amarelos: leia um por um, corrija o que for defeito e anote no `andamento.md` o que ficou de propósito.
+
+`./estudio fatos <nome>` com `ok:true`: agora ele também lê a fala do roteiro. E `./estudio acessibilidade <nome>` com `ok:true` (os amarelos dele: corrija os simples).
 
 ## Etapa 7. Fotos lidas
 

@@ -61,29 +61,32 @@ Rode tudo de dentro da pasta do estúdio.
 | Windows, Git Bash | `./estudio <comando>` | o mesmo instalador do Windows, com barra normal |
 
 - As skills escrevem `./estudio`. No PowerShell, troque por `.\estudio.cmd`.
-- Comandos: `nova`, `checar`, `prints`, `revisao` (prepara a rodada da revisão), `pdf`, `teleprompter`, `cena`, `abrir`, `verificar`, `espelhar`, `versao`, `atualizar`.
+- Comandos: `nova`, `checar`, `fatos` (todo número, contato e @ das telas e da fala com fonte no brief), `acessibilidade`, `prints`, `revisao` (prepara a rodada da revisão), `pdf`, `teleprompter`, `cena`, `abrir`, `fonte` (baixa uma letra livre do Google Fonts, já leve e com licença), `verificar`, `espelhar`, `versao`, `atualizar`.
 - Para mostrar a pasta de uma apresentação no Finder ou no Explorer, use `./estudio abrir <nome> --pasta`. Não chame `open` nem `explorer` direto.
 - **Leia só a última linha** de cada comando. Ela é um JSON numa linha só: `{"ok","comando","codigo","resumo","arquivos","avisos","dados"}`.
 - **Saída 0** é ok, **1** é erro de execução, **2** é reprovado na conferência (corrija pela causa e rode de novo).
 - **Traduza o código.** Os do instalador estão em `instalar/mensagens.json`; os dos comandos, em `kit/mensagens.json`. Diga à pessoa o `texto` (trocando os `{{ }}` pelos `dados`) e faça a `acao`. O `resumo` do `./estudio` já vem com eles preenchidos. Exceção: durante a revisão, só as frases `ANDAMENTO_*` vão à pessoa; o `texto` de `REVISAO_PRONTA` é interno. Cada aviso em `avisos` também tem `codigo`.
-- **Criar é livre; conferir é do comando.** Você escreve as telas (HTML, CSS, GSAP, `cena.js`), o brief e o roteiro. Estrutura, colisão, tamanho de letra, fotos, PDF e vídeo saem dos comandos. Nunca declare pronto sem o `checar` aprovado.
+- **Criar é livre; conferir é do comando.** Você escreve as telas (HTML, CSS, GSAP, `cena.js`), o brief e o roteiro. Estrutura, colisão, tamanho de letra, contraste, letras com licença, fato com fonte, acessibilidade, fotos, PDF e vídeo saem dos comandos. Nunca declare pronto sem `checar`, `fatos` e `acessibilidade` aprovados.
 - Comando que falha duas vezes: skill `consertar`.
 
-**Caixinhas de permissão.** O Claude Code e o Codex pedem licença antes de mexer no computador. Antes de cada ação que gera caixinha, avise em uma frase o que é e diga que pode aprovar. No Codex, peça para sair da área protegida (com `sandbox_permissions: "require_escalated"` no próprio comando) no instalador inteiro (ele baixa da internet) e nos comandos que abrem o navegador escondido: `checar`, `prints`, `pdf`, `cena`, `abrir`. Os textos prontos estão em `instalar/mensagens.json` (`CODEX-INTERNET`, `CODEX-FORA-DA-AREA`).
+**Caixinhas de permissão.** O Claude Code e o Codex pedem licença antes de mexer no computador. Antes de cada ação que gera caixinha, avise em uma frase o que é e diga que pode aprovar. No Codex, peça para sair da área protegida (com `sandbox_permissions: "require_escalated"` no próprio comando) no instalador inteiro (ele baixa da internet), nos comandos que abrem o navegador escondido (`checar`, `fatos`, `acessibilidade`, `prints`, `pdf`, `cena`, `abrir`) e no `fonte` (ele baixa da internet). Os textos prontos estão em `instalar/mensagens.json` (`CODEX-INTERNET`, `CODEX-FORA-DA-AREA`).
 
 ## 5. Regras
 
 - **Brief antes do pixel.** Nenhuma tela é desenhada antes de a pessoa aprovar o brief (promessa e sequência de telas).
 - **Piloto antes da leva.** Três telas (capa, uma tela comum e o pico) aprovadas pela pessoa antes de fazer as outras.
-- **Fato com fonte.** Todo número, data, nome ou citação que vai para a tela está no `brief.md`, na tabela de fatos, com a fonte. Sem fonte, não entra. Nunca invente dado, cliente, depoimento ou resultado.
+- **Fato com fonte.** Todo número, data, nome ou citação que vai para a tela ou para a fala está no `brief.md`, na tabela de fatos (Fato, Fonte, Data), com a fonte. Sem fonte, não entra. Nunca invente dado, cliente, depoimento ou resultado. O `./estudio fatos` reprova número de 3 ou mais dígitos, telefone, e-mail e @ que aparece em alguma tela, em algum clique, ou na fala do roteiro sem linha com fonte; nome, citação e data por extenso ficam com o revisor de fatos.
 - **Autor nunca é o revisor.** Quem fez a apresentação não dá a nota. A skill `revisar` chama 4 revisores independentes, que dão a nota pela régua de `kit/regua-revisao.md` e recebem o que a rodada anterior aceitou e recusou; meta 8,5 em até 3 rodadas.
 - **Use as skills de design.** Antes de desenhar qualquer tela, se estiverem instaladas, carregue `frontend-design` e `ui-ux-pro-max`. A skill `instalar-estudio` sugere instalá-las.
 - **Sem caixa genérica.** Nada de grade de cartões com borda e fundo. Hierarquia por tipografia, foto, luz, cor e movimento. Teste: "trocando o nome da empresa, esta tela serve para outra?" Se serve, está genérica.
 - **Sem `<select>` nativo** em nenhuma tela. Escolha usa componente próprio acessível.
 - **Texto visível com 18 px ou mais** na tela de 1920 por 1080. O `checar` reprova abaixo disso.
+- **Texto que se lê sobre o fundo.** Contraste mínimo de 4,5:1 (3:1 no texto de 24 px ou mais), medido pelo `checar` em cada clique contra o fundo de verdade (degradê, luz, foto, vídeo). Texto sobre foto pede véu, sombra ou outro enquadramento, não letra mais clara. Texto só decorativo (marca d'água) leva `aria-hidden="true"` e fica fora da medida; texto recuado de propósito (`data-recua`) é medido nos cliques em que está em foco.
+- **Acessível.** O `./estudio acessibilidade` roda as regras da WCAG em cada tela e clique: imagem com texto alternativo, tela com título e idioma, botão com nome. Grave reprova.
 - **Sem regex no código.** Nunca use expressão regular, nem para interpretar o que a pessoa escreveu (quem entende é você), nem em código que você escrever. Use métodos de texto (dividir, começa com, contém), `URL` e leitura de JSON.
 - **Nada pago, nada sobe.** Sem API paga, sem conta, sem publicar em lugar nenhum. Tudo fica no computador da pessoa. Se ela pedir algo pago (voz sintética, imagem gerada por serviço), diga que o estúdio não faz isso e ofereça o caminho local.
 - **Tudo local na tela.** Fontes, GSAP e imagens ficam dentro de `deck/assets/`. Nenhum endereço externo (o `checar` reprova).
+- **Letra com licença.** Só letra livre, com a licença ao lado e com o nome da família (`OFL-<Família>.txt`); o `checar` reprova letra sem a sua licença. Para baixar do Google Fonts já leve, use `./estudio fonte "<Família>"` (skill `minha-marca`).
 - **Nunca peça senha, chave ou cartão.** Nunca instale nada fora do instalador do estúdio.
 
 ## 6. Mapa de pastas

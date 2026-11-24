@@ -129,8 +129,20 @@ Skill `entregar`: PDF, teleprompter, pasta pronta e como apresentar. Marque `eta
 
 1. Leia `andamento.md`, `brief.md` e as fotos em `prints/`.
 2. Mudança de conteúdo (texto, número, tela nova): atualize o brief primeiro, depois a tela, o roteiro daquela tela, `checar`, `prints` (leia as telas mexidas) e, se mudou mais de 3 telas, uma rodada de `revisar`.
-3. Mudança de visual geral: mostre uma tela de teste e peça aprovação antes de mexer nas outras.
+3. Mudança de visual geral, ou pedido vago: siga o "Pedido vago: antes e depois" numa tela de teste e peça aprovação antes de mexer nas outras.
+
+## Pedido vago: antes e depois
+
+"Mais vida", "mais elegante", "mais impacto", "não sei, não gostei": você traduz em 2 ou 3 mudanças concretas, que se veem ou se ouvem (o texto, a letra, a cor, a foto, o espaço, o movimento, a fala), e mostra o antes e o depois. Nunca pergunte "o que você quer dizer com isso?": proponha e mostre.
+1. `./estudio antes <nome>` (`ANTES_GUARDADO`): guarda `deck/`, `roteiro/`, `cenas/` e `brief.md` como estão, antes de mexer. Vídeo e arquivo pesado não são copiados: ficam ligados ao original. Por isso, para mudar uma cena, use sempre `./estudio cena` (grava o vídeo novo ao lado e só então troca); nunca grave por cima do mesmo arquivo. `ANTES_EM_ABERTO` (saída 2): a pessoa ainda não escolheu na comparação anterior; rode o `escolher` do passo 5 com a resposta dela, nunca um antes novo por cima.
+2. Faça as 2 ou 3 mudanças, cada uma ligada ao pedido, nas telas e no roteiro. Mudou a tela, ajuste a fala daquela tela.
+3. Escreva `arquivos.mudancas` (`revisao/antes-depois/mudancas.json`) com as palavras da pessoa em `pedido` e cada mudança com `titulo` (o que mudou, em palavras do dia a dia), `porque` (como atende o pedido) e `telas` (os números das telas em que ela aparece).
+4. `./estudio comparar <nome>` (`COMPARACAO_PRONTA`): abre o antes e o depois lado a lado, só nas telas que mudaram, clique por clique, com as mudanças numeradas. Saída 2: `POUCAS_MUDANCAS` (menos de 2) ou `NADA_MUDOU` (nenhuma tela, clique ou fala mudou); corrija e rode de novo. Saída 1 com `ANTES_VIDEO_MUDOU`: um vídeo foi gravado por cima; siga a ação da mensagem.
+5. Diga em uma frase cada mudança e pergunte: "Qual fica?" com "O depois ★", "Voltar como estava" e "Outro caminho". Com a resposta, rode `./estudio escolher <nome> depois`, `antes` ou `outro`. Nunca desfaça de memória:
+   - "O depois": `FICOU_O_DEPOIS`. Grave no `andamento.md` o que ficou e rode `checar`, `fatos` e `acessibilidade`.
+   - "Voltar como estava": `VOLTOU_COMO_ESTAVA`. Tudo voltou ao que o passo 1 guardou; abra a apresentação de novo.
+   - "Outro caminho": `PRONTO_PARA_OUTRO_CAMINHO`. A apresentação voltou ao original e o antes continua guardado. Pule o passo 1: faça outra leitura do pedido a partir do passo 2, e a nova comparação mostra o original contra a tentativa nova.
 
 ## Onde você para e pergunta
 
-Na coleta (só as duas perguntas e a opcional), no brief (portão 1), no piloto (portão 2), quando aparece fato novo sem fonte, e quando a revisão não bate a meta na terceira rodada. Nada mais: o resto é com você.
+Na coleta (só as duas perguntas e a opcional), no brief (portão 1), no piloto (portão 2), no antes e depois, quando aparece fato novo sem fonte, e quando a revisão não bate a meta na terceira rodada. Nada mais: o resto é com você.

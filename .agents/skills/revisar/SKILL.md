@@ -87,6 +87,10 @@ São duas metas, medidas em separado. Depois de gravar o `rodada-N.json`, rode `
 - **Passar em até 2 rodadas** (indicador interno do estúdio, para medir o método; a regra da revisão continua sendo até 3 rodadas): `dados.passou_na_rodada` é 1 ou 2 (`dados.metas.em_ate_2_rodadas` é `true`). A média é comparada sem arredondar: 8,45 não passa.
 - **Estabilidade (cada lente varia no máximo 0,3):** não se mede entre rodadas, porque entre elas houve conserto. Mede-se reavaliando o **mesmo estado** da apresentação: na rodada que você quer medir, sem mexer em nada, abra mais 4 revisores novos, com o mesmo pacote e o mesmo `contexto-rN.md`, e grave as notas deles em `reavaliacao.notas` do `rodada-N.json`. `dados.estabilidade` traz a maior diferença de cada lente entre as duas avaliações; `dados.metas.estabilidade` é `true` quando nenhuma lente passa de 0,3, e `null` enquanto não houver reavaliação. Os revisores da reavaliação não sabem que são reavaliação nem veem a nota dos primeiros.
 
+## Quando a pessoa responde com um pedido vago
+
+Depois de ver a apresentação ou a revisão, a pessoa diz "mais vida", "não gostei", "falta impacto": não pergunte o que ela quis dizer. Siga o "Pedido vago: antes e depois" da skill `nova-apresentacao` (`./estudio antes`, 2 ou 3 mudanças concretas, `./estudio comparar` e "Qual fica?"). Só depois da escolha a apresentação volta para a revisão, se mudou mais de 3 telas.
+
 ## Quando a pessoa pede só uma nota
 
 Rode uma rodada. Conte à pessoa, em até 3 frases, como a apresentação está em palavras do dia a dia ("está quase pronta", "falta pouco", "ainda precisa de ajustes"), o que está melhor e o maior problema (com a tela), sem dizer o número. Pergunte se ela quer que você corrija.

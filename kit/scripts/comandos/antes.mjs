@@ -22,7 +22,7 @@ import { abrirApresentacao } from '../lib/apresentacao.mjs';
 import { listarArquivos, relativoARaiz } from '../lib/caminhos.mjs';
 import { escreverJson, lerJson } from '../lib/json.mjs';
 import { aviso, reprovado } from '../lib/saida.mjs';
-import { caminhosDoAntesDepois, guardarAntes, lerMudancas, recuperarComparacao, temAntes, trocarPasta } from '../lib/antes-depois.mjs';
+import { caminhosDoAntesDepois, guardarAntes, lerMudancas, temAntes, trocarPasta } from '../lib/antes-depois.mjs';
 
 // O que da comparação anterior vai sair (o antes, a versão vista, as fotos e o pedido), para o
 // assistente saber o que foi apagado. null quando não havia nada.
@@ -54,24 +54,33 @@ export function avisosDosAtalhos({ atalhos = [], quebrados = [] }) {
 }
 
 // A comparação nova (antes/, manifesto.json, mudancas.json e estado.json), montada ao lado e trocada
-// inteira. Devolve { manifesto, sobra }.
+// inteira. Se falhar, a montagem pela metade sai (não ocupa o disco até o próximo "antes"). Devolve
+// { manifesto, sobras }.
 function trocarComparacao(c, ad) {
   const montando = `${ad.pasta}.guardando`;
   const em = (arquivo) => path.join(montando, path.relative(ad.pasta, arquivo));
   fs.rmSync(montando, { recursive: true, force: true });
-  const manifesto = guardarAntes(c.pasta, em(ad.antes));
-  escreverJson(em(ad.manifesto), manifesto);
-  escreverJson(em(ad.mudancas), { pedido: '', mudancas: [] });
-  escreverJson(em(ad.estado), { aberto: true });
-  const { sobra } = trocarPasta(montando, ad.pasta, fs.renameSync, { mover: true });
-  return { manifesto, sobra };
+  try {
+    const manifesto = guardarAntes(c.pasta, em(ad.antes));
+    escreverJson(em(ad.manifesto), manifesto);
+    escreverJson(em(ad.mudancas), { pedido: '', mudancas: [] });
+    escreverJson(em(ad.estado), { aberto: true });
+    const { sobras } = trocarPasta(montando, ad.pasta, fs.renameSync, { mover: true });
+    return { manifesto, sobras };
+  } catch (erro) {
+    try {
+      fs.rmSync(montando, { recursive: true, force: true });
+    } catch {
+      // A causa é o erro de cima, que sobe; a montagem que ficou sai no próximo "antes".
+    }
+    throw erro;
+  }
 }
 
 export default async function antes(args) {
   const nome = nomeDaApresentacao(args);
   const c = abrirApresentacao(nome);
   const ad = caminhosDoAntesDepois(c);
-  recuperarComparacao(ad);
   const estado = lerJson(ad.estado, { aberto: false });
   const pendente = estado.restauracao_pendente === true;
   if (temAntes(ad) && estado.aberto === true && (pendente || args.opcoes['de-novo'] !== true)) {
@@ -88,8 +97,8 @@ export default async function antes(args) {
     if (typeof erro?.code !== 'string' || typeof erro.syscall !== 'string') throw erro;
     reprovado('ANTES_NAO_TROCADO', { nome, erro: erro.code });
   }
-  const { manifesto, sobra } = troca;
-  const avisos = [...avisosDosAtalhos(manifesto), ...(sobra ? [aviso('SOBRA_DA_TROCA', { sobra: relativoARaiz(sobra) })] : [])];
+  const { manifesto, sobras } = troca;
+  const avisos = [...avisosDosAtalhos(manifesto), ...sobras.map((sobra) => aviso('SOBRA_DA_TROCA', { sobra: relativoARaiz(sobra) }))];
   return {
     ok: true,
     codigo: 'ANTES_GUARDADO',

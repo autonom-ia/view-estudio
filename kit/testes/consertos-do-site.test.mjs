@@ -9,6 +9,10 @@
 //    apaga tentativa/ com uma volta parada no meio;
 // 4. arquivo sem uso compara o nome inteiro ("foto.png" não é citado por "minhafoto.png");
 // 5. o painel aceita 3D (glb, gltf, bin, wasm), e a conferência antes de enviar também.
+// Achados da revisão do PR #9: envio aberto não desfaz o registro (o concluir pode ter publicado);
+// no-ar.json com o nome que a pasta usa; sobra presa não trava a troca seguinte; rollback que falha
+// não esconde a causa; a comparação fora do lugar volta ao abrir; guardar a tentativa e fechar o
+// antes que falham viram código e aviso; montagem pela metade sai.
 // Serviço falso só em 127.0.0.1.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -95,6 +99,63 @@ test('1d. a mesma pasta escrita com outra caixa é a mesma dona (disco que não 
   assert.deepEqual([r.json.codigo, r.json.dados.versao], ['PUBLICADO', 2], r.saida);
 });
 
+test('1e. concluir publica e responde com erro fora da lista: o pendente fica, e a próxima publicação segue', async (t) => {
+  const ctx = await preparar(t);
+  darChave(ctx);
+  const e = ctx.servico.estado;
+  assert.equal((await ctx.publicar()).json.dados.versao, 1);
+  e.erroAoConcluir = { status: 500, codigo: 'FALHA_QUE_NINGUEM_LISTOU' };
+  escrever(capaDe(ctx), '<h1>Segunda</h1><img src="../assets/foto.txt">');
+  conferirTudo(ctx.c);
+  const falhou = await ctx.publicar();
+  assert.equal(falhou.json.ok, false, falhou.saida);
+  assert.equal(e.noAr.get(NOME), 2, 'o painel publicou mesmo assim');
+  assert.equal(lerDonos(ctx)[fs.realpathSync.native(ctx.c.pasta)][NOME].pendente, true, 'o registro não foi desfeito');
+  e.erroAoConcluir = null;
+  escrever(capaDe(ctx), '<h1>Terceira</h1><img src="../assets/foto.txt">');
+  conferirTudo(ctx.c);
+  const r = await ctx.publicar();
+  assert.deepEqual([r.json.codigo, r.json.dados.versao], ['PUBLICADO', 3], r.saida);
+});
+
+test('1f. concluir publica e a resposta vem estranha (sem endereço que sirva): a próxima publicação segue', async (t) => {
+  const ctx = await preparar(t);
+  darChave(ctx);
+  const e = ctx.servico.estado;
+  assert.equal((await ctx.publicar()).json.dados.versao, 1);
+  e.enderecoDoSite = 'javascript:alert(1)';
+  escrever(capaDe(ctx), '<h1>Segunda</h1><img src="../assets/foto.txt">');
+  conferirTudo(ctx.c);
+  assert.equal((await ctx.publicar()).json.codigo, 'PUBLICAR_RESPOSTA_ESTRANHA');
+  assert.equal(e.noAr.get(NOME), 2);
+  e.enderecoDoSite = null;
+  escrever(capaDe(ctx), '<h1>Terceira</h1><img src="../assets/foto.txt">');
+  conferirTudo(ctx.c);
+  const r = await ctx.publicar();
+  assert.deepEqual([r.json.codigo, r.json.dados.versao], ['PUBLICADO', 3], r.saida);
+});
+
+test('1g. recusa do painel ao abrir o envio desfaz o registro: nada foi enviado', async (t) => {
+  const ctx = await preparar(t);
+  darChave(ctx);
+  ctx.servico.estado.erroAoAbrir = { status: 409, codigo: 'LIMITE_DE_SITES' };
+  assert.equal((await ctx.publicar()).json.codigo, 'PUBLICAR_LIMITE_DE_SITES');
+  const donos = path.join(ctx.ferr, 'publicar', 'donos.json');
+  assert.equal(fs.existsSync(donos) ? (lerDonos(ctx)[fs.realpathSync.native(ctx.c.pasta)] ?? null) : null, null);
+});
+
+test('1h. o painel devolve outro nome no concluir: no-ar.json guarda o nome que esta pasta usa, e a próxima vai ao mesmo endereço', async (t) => {
+  const ctx = await preparar(t);
+  darChave(ctx);
+  const e = ctx.servico.estado;
+  e.slugNaResposta = 'outro-nome';
+  assert.equal((await ctx.publicar()).json.codigo, 'PUBLICADO');
+  assert.equal(JSON.parse(ler(path.join(ctx.c.pasta, 'no-ar.json'))).nome, NOME);
+  e.slugNaResposta = null;
+  const r = await ctx.publicar();
+  assert.deepEqual([r.json.codigo, r.json.dados.versao, e.publicados.map((p) => p.slug)], ['PUBLICADO', 2, [NOME, NOME]], r.saida);
+});
+
 // --- 2 e 3. antes e depois ---
 
 function estudio(env, ...args) {
@@ -154,17 +215,17 @@ test('2a. troca: falha na entrada do novo devolve o atual inteiro e não deixa s
   assert.throws(() => trocarPasta(origem, destino, travado), { code: 'EPERM' });
   assert.equal(ler(path.join(destino, 'a.txt')), 'visto');
   assert.deepEqual(fs.readdirSync(base).sort(), ['antes', 'deck']);
-  assert.deepEqual(trocarPasta(origem, destino), { sobra: null });
+  assert.deepEqual(trocarPasta(origem, destino), { sobras: [] });
   assert.equal(ler(path.join(destino, 'a.txt')), 'antes');
   // brief.md é arquivo, não pasta; com "mover", a origem entra pelo nome
   escrever(path.join(base, 'brief.md'), '# visto');
   escrever(path.join(base, 'brief.md.novo'), '# antes');
-  assert.deepEqual(trocarPasta(path.join(base, 'brief.md.novo'), path.join(base, 'brief.md'), fs.renameSync, { mover: true }), { sobra: null });
+  assert.deepEqual(trocarPasta(path.join(base, 'brief.md.novo'), path.join(base, 'brief.md'), fs.renameSync, { mover: true }), { sobras: [] });
   assert.equal(ler(path.join(base, 'brief.md')), '# antes');
   assert.deepEqual(fs.readdirSync(base).sort(), ['antes', 'brief.md', 'deck']);
 });
 
-test('2b. troca feita com a cópia velha presa: vale e devolve a sobra, em vez de falhar', { skip: SEM_CHMOD }, (t) => {
+test('2b. troca feita com a cópia velha presa: vale e devolve a sobra; com ela ainda presa, a troca seguinte a põe de lado e segue', { skip: SEM_CHMOD }, (t) => {
   const base = fs.mkdtempSync(path.join(os.tmpdir(), 'estudio-troca-sobra-'));
   t.after(() => {
     destravar(base);
@@ -175,11 +236,38 @@ test('2b. troca feita com a cópia velha presa: vale e devolve a sobra, em vez d
   escrever(path.join(origem, 'a.txt'), 'antes');
   escrever(path.join(destino, 'a.txt'), 'visto');
   travar(destino);
-  assert.deepEqual(trocarPasta(origem, destino), { sobra: `${destino}.descartando` });
+  assert.deepEqual(trocarPasta(origem, destino), { sobras: [`${destino}.descartando`] });
   assert.equal(ler(path.join(destino, 'a.txt')), 'antes', 'a troca valeu');
+  // a trava continua: a próxima troca não falha, põe a sobra de lado com outro nome e segue
+  escrever(path.join(origem, 'a.txt'), 'de novo');
+  const segunda = trocarPasta(origem, destino);
+  assert.equal(segunda.sobras.length, 1, JSON.stringify(segunda));
+  assert.ok(path.basename(segunda.sobras[0]).startsWith('deck.descartando.presa-'), segunda.sobras[0]);
+  assert.equal(ler(path.join(destino, 'a.txt')), 'de novo');
+  // ainda presa: continua sobra, sem falhar
+  assert.deepEqual(trocarPasta(origem, destino), { sobras: segunda.sobras });
   destravar(base);
-  assert.deepEqual(trocarPasta(origem, destino), { sobra: null });
-  assert.equal(fs.existsSync(`${destino}.descartando`), false, 'a troca seguinte apaga a sobra');
+  assert.deepEqual(trocarPasta(origem, destino), { sobras: [] });
+  assert.deepEqual(fs.readdirSync(base).sort(), ['antes', 'deck'], 'solta a trava, a troca seguinte apaga tudo');
+});
+
+test('2d. entrada do novo e volta do atual falhando: sobe o primeiro erro, e a troca seguinte põe o atual de volta e termina', (t) => {
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'estudio-troca-volta-'));
+  t.after(() => fs.rmSync(base, { recursive: true, force: true }));
+  const origem = path.join(base, 'antes');
+  const destino = path.join(base, 'deck');
+  escrever(path.join(origem, 'a.txt'), 'antes');
+  escrever(path.join(destino, 'a.txt'), 'visto');
+  const tudoTravado = (de, para) => {
+    if (de.endsWith('.trocando')) throw Object.assign(new Error('arquivo aberto'), { code: 'EPERM' });
+    if (de.endsWith('.descartando') && para === destino) throw Object.assign(new Error('volta presa'), { code: 'EBUSY' });
+    fs.renameSync(de, para);
+  };
+  assert.throws(() => trocarPasta(origem, destino, tudoTravado), { code: 'EPERM' }, 'a causa, não o erro da volta');
+  assert.equal(ler(path.join(`${destino}.descartando`, 'a.txt')), 'visto', 'o atual está inteiro ao lado');
+  assert.deepEqual(trocarPasta(origem, destino), { sobras: [] });
+  assert.equal(ler(path.join(destino, 'a.txt')), 'antes');
+  assert.deepEqual(fs.readdirSync(base).sort(), ['antes', 'deck']);
 });
 
 test('2c. escolher com a cópia velha presa: volta com aviso, e a tentativa seguinte guarda a versão no lugar, nunca a sobra', { skip: SEM_CHMOD }, (t) => {
@@ -233,13 +321,19 @@ test('3b. "antes" troca a comparação inteira de uma vez e não deixa nada ao l
   assert.deepEqual(soltos, []);
 });
 
-test('3c. comparação que ficou fora numa troca parada no meio volta ao lugar no "antes" seguinte', (t) => {
-  const { env, ad } = bolo(t);
+test('3c. comparação que ficou fora numa troca parada no meio volta ao lugar ao abrir a apresentação, em qualquer comando', (t) => {
+  const { env, ad, marcar } = bolo(t);
   assert.equal(estudio(env, 'antes', 'bolo').json.codigo, 'ANTES_GUARDADO');
+  marcar('vista');
+  fs.renameSync(ad, `${ad}.descartando`);
+  const outro = estudio(env, 'escolher', 'bolo', 'outro');
+  assert.equal(outro.json.codigo, 'PRONTO_PARA_OUTRO_CAMINHO', 'o escolher acha a comparação, nunca ANTES_NAO_GUARDADO');
+  assert.deepEqual(outro.json.avisos.map((a) => [a.codigo, a.dados.itens]), [['APRESENTACAO_POSTA_DE_VOLTA', ['revisao/antes-depois']]]);
+  assert.equal(fs.existsSync(`${ad}.descartando`), false);
+  assert.ok(MENSAGENS.APRESENTACAO_POSTA_DE_VOLTA.acao.includes('revisao/antes-depois'));
   fs.renameSync(ad, `${ad}.descartando`);
   const r = estudio(env, 'antes', 'bolo');
   assert.equal(r.json.codigo, 'ANTES_EM_ABERTO', 'a comparação de antes voltou e continua em aberto');
-  assert.equal(fs.existsSync(`${ad}.descartando`), false);
   const denovo = estudio(env, 'antes', 'bolo', '--de-novo');
   assert.equal(denovo.json.codigo, 'ANTES_GUARDADO');
   assert.ok(denovo.json.dados.apagados.antes > 0, 'diz o que da comparação anterior saiu');
@@ -259,6 +353,53 @@ test('3d. "antes" que não consegue trocar reprova com código, a apresentação
   assert.ok(ler(slide).endsWith('<!-- mudou -->'), 'a apresentação não mudou');
   assert.equal(estudio(env, 'escolher', 'bolo', 'antes').json.codigo, 'ANTES_JA_RESOLVIDO', 'a comparação anterior não é usada');
   assert.equal(estudio(env, 'antes', 'bolo').json.codigo, 'ANTES_GUARDADO', 'rodar de novo termina');
+});
+
+test('2e. escolher que não consegue guardar a versão vista: RESTAURACAO_FALHOU com item "tentativa", nada volta, e a segunda vez termina', { skip: SEM_CHMOD }, (t) => {
+  const { env, slide, marcar, ad } = bolo(t);
+  t.after(() => fs.existsSync(ad) && fs.chmodSync(ad, 0o700));
+  assert.equal(estudio(env, 'antes', 'bolo').json.codigo, 'ANTES_GUARDADO');
+  marcar('vista');
+  fs.chmodSync(ad, 0o500);
+  const r = estudio(env, 'escolher', 'bolo', 'antes');
+  fs.chmodSync(ad, 0o700);
+  assert.deepEqual([r.codigo, r.json.codigo, r.json.dados.item, r.json.dados.erro], [1, 'RESTAURACAO_FALHOU', 'tentativa', 'EACCES'], JSON.stringify(r.json) + r.erro);
+  assert.ok(ler(slide).endsWith('<!-- vista -->'), 'nada voltou');
+  assert.equal(JSON.parse(ler(path.join(ad, 'estado.json'))).restauracao_pendente, undefined, 'a volta nem começou');
+  const volta = estudio(env, 'escolher', 'bolo', 'antes');
+  assert.equal(volta.json.codigo, 'VOLTOU_COMO_ESTAVA', JSON.stringify(volta.json));
+  assert.ok(ler(path.join(ad, 'tentativa', 'deck', 'slides', 's02-numero.html')).endsWith('<!-- vista -->'));
+  assert.ok(MENSAGENS.RESTAURACAO_FALHOU.acao.includes('"tentativa"'));
+});
+
+test('2f. escolher com a cópia do antes presa ao fechar: a escolha vale e fica gravada, e o que não saiu vira aviso', { skip: SEM_CHMOD }, (t) => {
+  const { env, pasta, slide, marcar, ad } = bolo(t);
+  assert.equal(estudio(env, 'antes', 'bolo').json.codigo, 'ANTES_GUARDADO');
+  marcar('vista');
+  travar(path.join(ad, 'antes', 'deck'));
+  const r = estudio(env, 'escolher', 'bolo', 'antes');
+  assert.deepEqual([r.codigo, r.json.codigo], [0, 'VOLTOU_COMO_ESTAVA'], JSON.stringify(r.json) + r.erro);
+  assert.deepEqual(r.json.avisos.map((a) => a.codigo), ['SOBRA_DA_TROCA']);
+  assert.ok(r.json.avisos[0].dados.sobra.endsWith('antes-depois/antes'), r.json.avisos[0].dados.sobra);
+  assert.ok(ler(slide).endsWith('<!-- original -->'));
+  assert.deepEqual(JSON.parse(ler(path.join(ad, 'estado.json'))), { aberto: false, escolha: 'antes' });
+  assert.equal(estudio(env, 'escolher', 'bolo', 'antes').json.codigo, 'ANTES_JA_RESOLVIDO');
+  destravar(pasta);
+  assert.equal(estudio(env, 'antes', 'bolo').json.codigo, 'ANTES_GUARDADO', 'o próximo antes leva a sobra junto');
+  assert.deepEqual(fs.readdirSync(path.join(pasta, 'revisao')).filter((n) => n.startsWith('antes-depois.')), []);
+});
+
+test('3e. "antes" que falha no meio da montagem não deixa a cópia pela metade ocupando o disco', { skip: SEM_CHMOD }, (t) => {
+  const { env, pasta } = bolo(t);
+  const trancada = path.join(pasta, 'deck', 'trancada');
+  escrever(path.join(trancada, 'x.txt'), 'x');
+  fs.chmodSync(trancada, 0o000);
+  t.after(() => fs.existsSync(trancada) && fs.chmodSync(trancada, 0o700));
+  const r = estudio(env, 'antes', 'bolo');
+  fs.chmodSync(trancada, 0o700);
+  assert.deepEqual([r.codigo, r.json.codigo], [2, 'ANTES_NAO_TROCADO'], JSON.stringify(r.json) + r.erro);
+  assert.deepEqual(fs.readdirSync(path.join(pasta, 'revisao')).filter((n) => n.startsWith('antes-depois')), []);
+  assert.ok(MENSAGENS.ANTES_NAO_TROCADO.acao.includes('não o repita à pessoa'));
 });
 
 // --- 4. arquivo sem uso ---

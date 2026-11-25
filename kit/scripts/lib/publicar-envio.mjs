@@ -139,8 +139,10 @@ async function confirmarOuGuardar(cfg, chave, nome, versaoAntes, pacote, ferr) {
   }
 }
 
-// Publica o pacote montado (lib/pacote.mjs). Devolve { slug, versao, endereco, partes }.
-export async function enviarPacote(cfg, chave, nome, pacote, ferr = FERR) {
+// Publica o pacote montado (lib/pacote.mjs). Devolve { slug, versao, endereco, partes }. aoAbrir é
+// chamado quando o painel aceita abrir o envio: daí em diante a apresentação pode chegar ao ar mesmo
+// com erro (o concluir publica e a resposta vem estranha, por exemplo).
+export async function enviarPacote(cfg, chave, nome, pacote, ferr = FERR, { aoAbrir } = {}) {
   const antes = await semFalhaDeRede(() => lerSite(cfg, chave, nome));
   // Só pula o envio se a versão nova que apareceu é deste mesmo conteúdo (pacote.impressao: nomes e
   // bytes, sem as datas que mudam o zip): a apresentação pode ter mudado entre o envio sem resposta e
@@ -158,6 +160,7 @@ export async function enviarPacote(cfg, chave, nome, pacote, ferr = FERR) {
       json: { bytes, sha256: pacote.sha256, arquivos: pacote.arquivos },
     }));
   const envio = conferirAbertura(exigir(aberto, 201, 200), bytes);
+  if (aoAbrir) aoAbrir();
   for (let n = 0; n < envio.partes; n += 1) {
     await mandarParte(cfg, chave, envio, n, pacote.zip.subarray(n * envio.max, Math.min(bytes, (n + 1) * envio.max)));
   }

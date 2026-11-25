@@ -48,6 +48,7 @@ export async function subirServicoFalso({ parteMax = 1000 } = {}) {
     erroAoConcluir: null,
     erroAoVoltar: null,
     enderecoDoSite: null,
+    slugNaResposta: null, // slug que o concluir devolve, quando difere do enviado
     expiraDelta: 600000, // expira_em = agora + expiraDelta; negativo simula relógio local adiantado
     aprovarNaConsulta: 0, // aprova os pendentes quando a contagem de consultas chegar a este número
     concluirCai: null, // 'socket' publica e derruba; '504' publica e responde como proxy; 'sem_publicar' derruba e deixa pendente
@@ -131,7 +132,7 @@ export async function subirServicoFalso({ parteMax = 1000 } = {}) {
       return res.end('<html>Gateway Timeout</html>');
     }
     if (e.erroAoConcluir) return erro(res, e.erroAoConcluir.status, e.erroAoConcluir.codigo);
-    return responder(res, 200, { ok: true, slug: envio.slug, versao, endereco: enderecoDe(envio.slug) });
+    return responder(res, 200, { ok: true, slug: e.slugNaResposta || envio.slug, versao, endereco: enderecoDe(envio.slug) });
   }
 
   // GET /api/estudio/sites: versão no ar = a última publicada de cada site.

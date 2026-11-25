@@ -21,13 +21,14 @@
 // O envio é registrado como "pendente" antes de mandar, com as versões que o endereço já tinha e o
 // tamanho do pacote: se o processo cair no meio, a próxima vez sabe que a única versão nova que
 // apareceu ali, com o tamanho do pacote deste envio, é desta pasta (de outro tamanho, ou duas ou mais
-// novas: alguém mais publicou, e a conferência reprova). Recusa do painel antes de publicar desfaz o
-// registro; --voltar registra a versão que ficou no ar. no-ar.json, na pasta da apresentação, guarda
-// o nome do endereço e o link (lembrete, não prova: vai junto numa cópia da pasta).
+// novas: alguém mais publicou, e a conferência reprova). Recusa do painel antes de abrir o envio desfaz
+// o registro (depois de aberto, o concluir pode ter publicado mesmo com erro, e o pendente fica);
+// --voltar registra a versão que ficou no ar. no-ar.json, na pasta da apresentação, guarda o nome que
+// esta pasta usa no endereço e o link (lembrete, não prova: vai junto numa cópia da pasta).
 // Login, chave recusada, --voltar e --sair seguem o Site Estúdio, do qual este comando foi portado.
 import { nomeDaApresentacao } from '../lib/args.mjs';
 import { abrirApresentacao } from '../lib/apresentacao.mjs';
-import { nomeValido, sugerirNome } from '../lib/caminhos.mjs';
+import { FERR, nomeValido, sugerirNome } from '../lib/caminhos.mjs';
 import { montarPacote } from '../lib/pacote.mjs';
 import { conferenciasQueFaltam } from '../lib/conferencias.mjs';
 import { aviso, falha, reprovado, KitErro } from '../lib/saida.mjs';
@@ -83,17 +84,21 @@ async function comAcesso(cfg, fazer) {
 // Erros depois dos quais a apresentação pode já estar no ar: a anotação do endereço fica.
 const TALVEZ_NO_AR = Object.freeze(['PUBLICAR_CONCLUSAO_INCERTA', 'PUBLICAR_NO_AR_AJUSTANDO', 'PUBLICAR_ENVIO_EM_ANDAMENTO']);
 
-// Envia com o endereço registrado antes ("pendente"); desfaz o registro e o lembrete se o painel
-// recusou antes de publicar.
+// Envia com o endereço registrado antes ("pendente"); desfaz o registro e o lembrete só se o painel
+// recusou antes de abrir o envio. Depois de aberto, o concluir pode ter publicado mesmo com erro (resposta
+// estranha, código fora da lista): o pendente fica, e é inofensivo se nada entrou no ar (sem versão
+// nova, a conferência compara com a versão que a pasta tinha).
 async function enviarRegistrando(cfg, chave, c, noAr, pacote, situacao) {
   const lembrete = lembreteAtual(c);
   const registro = lerDono(c, noAr);
   anotarNoAr(c, { ...(lembrete && lembrete.nome === noAr ? lembrete : {}), nome: noAr, em: new Date().toISOString() });
   anotarDono(c, noAr, { ...(registro || {}), pendente: true, versoes_antes: situacao.versoes, envio_bytes: pacote.zip.length });
+  let aberto = false;
   try {
-    return await enviarPacote(cfg, chave, noAr, pacote);
+    return await enviarPacote(cfg, chave, noAr, pacote, FERR, { aoAbrir: () => { aberto = true; } });
   } catch (erro) {
-    if (!(erro instanceof KitErro) || !TALVEZ_NO_AR.includes(erro.codigo)) {
+    const talvezNoAr = aberto || (erro instanceof KitErro && TALVEZ_NO_AR.includes(erro.codigo));
+    if (!talvezNoAr) {
       anotarNoAr(c, lembrete);
       anotarDono(c, noAr, registro);
     }
@@ -112,7 +117,8 @@ async function publicarApresentacao(cfg, c, noAr, porCima) {
     const r = await enviarRegistrando(cfg, chave, c, noAr, pacote, situacao);
     // O registro fica pelo nome que esta pasta usa (noAr), o mesmo que a conferência procura.
     anotarDono(c, noAr, { versao: r.versao });
-    anotarNoAr(c, { nome: r.slug, endereco: r.endereco, versao: r.versao, em: new Date().toISOString() });
+    // nome: o que esta pasta usa (noAr), o mesmo do registro; o endereço é o que o painel devolveu
+    anotarNoAr(c, { nome: noAr, endereco: r.endereco, versao: r.versao, em: new Date().toISOString() });
     const estaNoAr = await esperarSiteNoAr(cfg, r.endereco);
     const resultado = {
       ok: true,

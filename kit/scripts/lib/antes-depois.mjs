@@ -251,7 +251,7 @@ export function restaurarDe(pastaDaApresentacao, origem, itens, { renomear = fs.
       throw new ErroDeRestauracao(item, erro);
     }
     if (troca.feito) restaurados.push(troca.feito);
-    if (troca.sobra) sobras.push(troca.sobra);
+    sobras.push(...troca.sobras);
   }
   return { restaurados, sobras };
 }
@@ -284,26 +284,94 @@ export function recuperarSobras(pastaDaApresentacao, renomear = fs.renameSync) {
   return ITENS_GUARDADOS.filter((item) => devolverSeFora(path.join(pastaDaApresentacao, item), renomear));
 }
 
-// A comparação anterior que um "antes" parado no meio da troca deixou fora volta ao lugar, para o
-// "antes" seguinte conferir o estado dela e dizer o que apaga. Devolve se voltou.
+// A comparação anterior que um "antes" parado no meio da troca deixou fora volta ao lugar. Chamado ao
+// abrir qualquer apresentação (lib/apresentacao.mjs), junto com recuperarSobras. Devolve se voltou.
 export const recuperarComparacao = (ad, renomear = fs.renameSync) => devolverSeFora(ad.pasta, renomear);
+
+// Final do nome com que uma sobra presa é posta de lado (ver tirarDoCaminho).
+export const POSTA_DE_LADO = '.presa-';
+
+// Tira do caminho a sobra de uma troca anterior (o .trocando ou o .descartando). Se ela não sai (no
+// Windows, um arquivo dela aberto em outro programa), é posta de lado com um nome único
+// (<nome>.presa-<número>), para esta troca seguir, e volta como sobra. Se nem isso der, o erro sobe e
+// a troca nem começa (nada mudou). Devolve o caminho que sobrou, ou null.
+function tirarDoCaminho(caminho, renomear) {
+  if (!existeSemSeguir(caminho)) return null;
+  try {
+    fs.rmSync(caminho, { recursive: true, force: true });
+    return null;
+  } catch {
+    const deLado = `${caminho}${POSTA_DE_LADO}${process.pid}-${Date.now()}`;
+    renomear(caminho, deLado);
+    return deLado;
+  }
+}
+
+// Sobras postas de lado por trocas anteriores: sai a que já soltou; a que continua presa volta como
+// sobra. Devolve as que ficaram.
+function limparPostasDeLado(caminho) {
+  const pasta = path.dirname(caminho);
+  if (!ehPasta(pasta)) return [];
+  const comeco = `${path.basename(caminho)}${POSTA_DE_LADO}`;
+  const ficaram = [];
+  for (const nome of fs.readdirSync(pasta)) {
+    if (!nome.startsWith(comeco)) continue;
+    const deLado = path.join(pasta, nome);
+    try {
+      fs.rmSync(deLado, { recursive: true, force: true });
+    } catch {
+      ficaram.push(deLado);
+    }
+  }
+  return ficaram;
+}
+
+// Antes de uma troca: o item volta ao lugar se uma troca anterior parou no meio (devolverSeFora), e
+// as sobras dela saem do caminho (tirarDoCaminho). Devolve as sobras que não saíram.
+function prepararTroca(destino, renomear) {
+  const { novo, velho } = sobrasDaTroca(destino);
+  devolverSeFora(destino, renomear);
+  return [
+    ...limparPostasDeLado(novo),
+    ...limparPostasDeLado(velho),
+    tirarDoCaminho(novo, renomear),
+    tirarDoCaminho(velho, renomear),
+  ].filter(Boolean);
+}
+
+// Depois de uma entrada do novo que falhou: o atual volta e o novo sai. Se isso também falhar, a causa
+// continua sendo o erro da entrada (quem chama o sobe): o atual está inteiro no .descartando e volta
+// ao lugar na próxima abertura (recuperarSobras, recuperarComparacao) ou na próxima troca; o
+// .trocando sai na próxima troca.
+function desfazerEntrada(destino, tinha, renomear) {
+  const { novo, velho } = sobrasDaTroca(destino);
+  try {
+    if (tinha) renomear(velho, destino);
+  } catch {
+    // ver acima: fica para a próxima abertura
+  }
+  try {
+    fs.rmSync(novo, { recursive: true, force: true });
+  } catch {
+    // ver acima: fica para a próxima troca
+  }
+}
 
 // Troca o conteúdo de destino (pasta ou arquivo) pelo de origem sem deixar a apresentação sem ele: o
 // novo é montado ao lado (.trocando), o atual vai para .descartando, o novo entra no lugar e só então
 // o descartado sai. Se a entrada do novo falhar (no Windows, um arquivo aberto em outro programa), o
-// atual volta e o erro sobe. Sobra de uma troca anterior: o item volta ao lugar primeiro
-// (devolverSeFora); o .trocando de antes é só uma cópia montada e sai; um .descartando que sobra com o
-// item no lugar é o que uma troca já concluída tirou (a versão vista já estava em tentativa/, que o
+// atual volta e o erro sobe; se até a volta falhar, sobe o primeiro erro (a causa), e o atual, inteiro
+// no .descartando, volta ao lugar quando a apresentação for aberta de novo (recuperarSobras e
+// recuperarComparacao). Sobra de uma troca anterior: ver prepararTroca. Um .descartando que sobra com
+// o item no lugar é o que uma troca já concluída tirou (a versão vista já estava em tentativa/, que o
 // "escolher" grava antes de qualquer troca), nunca a única cópia. Sem "mover", o novo é guardado como
 // no antes (vídeo ligado, sem cópia: guardarItem); com "mover", origem é uma pasta montada só para a
 // troca e entra pelo nome. "renomear" é injetável para os testes.
-// Devolve { sobra }: o .descartando que não saiu depois da troca feita (arquivo aberto no Windows), ou
-// null. A troca valeu; quem chama avisa, e a próxima troca apaga a sobra.
+// Devolve { sobras }: o que não saiu (o .descartando desta troca, ou sobra presa de uma anterior). A
+// troca valeu; quem chama avisa (SOBRA_DA_TROCA), e a próxima troca tenta apagar de novo.
 export function trocarPasta(origem, destino, renomear = fs.renameSync, { mover = false } = {}) {
   const { novo, velho } = sobrasDaTroca(destino);
-  devolverSeFora(destino, renomear);
-  fs.rmSync(novo, { recursive: true, force: true });
-  fs.rmSync(velho, { recursive: true, force: true });
+  const sobras = prepararTroca(destino, renomear);
   if (mover) renomear(origem, novo);
   else guardarItem(origem, novo, path.basename(destino));
   const tinha = existeSemSeguir(destino);
@@ -311,34 +379,30 @@ export function trocarPasta(origem, destino, renomear = fs.renameSync, { mover =
   try {
     renomear(novo, destino);
   } catch (erro) {
-    if (tinha) renomear(velho, destino);
-    fs.rmSync(novo, { recursive: true, force: true });
+    desfazerEntrada(destino, tinha, renomear);
     throw erro;
   }
   try {
     fs.rmSync(velho, { recursive: true, force: true });
-    return { sobra: null };
+    return { sobras };
   } catch {
-    return { sobra: velho };
+    return { sobras: [...sobras, velho] };
   }
 }
 
 // Um item da apresentação volta ao que está em origem (trocarPasta). Item que não existia no antes
-// (uma cena criada na tentativa) sai. Devolve { feito, sobra }: feito é o item, "-item" quando saiu,
+// (uma cena criada na tentativa) sai. Devolve { feito, sobras }: feito é o item, "-item" quando saiu,
 // ou null quando não havia nada a fazer.
 function trocarItem(pasta, origem, item, existia, renomear) {
   const atual = path.join(pasta, item);
   if (existia) {
-    const { sobra } = trocarPasta(path.join(origem, item), atual, renomear);
-    return { feito: item, sobra };
+    const { sobras } = trocarPasta(path.join(origem, item), atual, renomear);
+    return { feito: item, sobras };
   }
-  const { novo, velho } = sobrasDaTroca(atual);
-  devolverSeFora(atual, renomear);
-  fs.rmSync(novo, { recursive: true, force: true });
-  fs.rmSync(velho, { recursive: true, force: true });
-  if (!existeSemSeguir(atual)) return { feito: null, sobra: null };
+  const sobras = prepararTroca(atual, renomear);
+  if (!existeSemSeguir(atual)) return { feito: null, sobras };
   fs.rmSync(atual, { recursive: true, force: true });
-  return { feito: `-${item}`, sobra: null };
+  return { feito: `-${item}`, sobras };
 }
 
 // Guarda a versão que a pessoa viu (a tentativa) antes de voltar ao antes, em tentativa/, com o
@@ -431,16 +495,22 @@ export function igualAoAntes(pastaDaApresentacao, antes, manifesto) {
 // o antes segurava não fica ocupando o disco. Ficam estado.json (para dizer que já foi resolvido),
 // mudancas.json (o que foi pedido e mudado) e tentativa/ (a versão vista, até o próximo "antes").
 // Com "depois", sai também a tentativa/ de um "outro" anterior: a pessoa ficou com a versão de agora.
-// Devolve se havia tentativa e ela saiu.
+// O estado é gravado primeiro: a escolha já foi aplicada, e o que não sai (no Windows, um arquivo
+// aberto em outro programa) fica como sobra, apagado junto com a comparação no próximo "antes".
+// Devolve { tentativaApagada, sobras }.
 export function fecharAntes(ad, escolha) {
-  const tentativaSaiu = escolha === 'depois' && existeSemSeguir(ad.tentativa);
-  if (tentativaSaiu) fs.rmSync(ad.tentativa, { recursive: true, force: true });
-  fs.rmSync(ad.antes, { recursive: true, force: true });
-  fs.rmSync(ad.fotos, { recursive: true, force: true });
-  fs.rmSync(ad.pagina, { force: true });
-  fs.rmSync(ad.manifesto, { force: true });
   escreverJson(ad.estado, { aberto: false, escolha });
-  return tentativaSaiu;
+  const tinhaTentativa = escolha === 'depois' && existeSemSeguir(ad.tentativa);
+  const saem = [...(tinhaTentativa ? [ad.tentativa] : []), ad.antes, ad.fotos, ad.pagina, ad.manifesto];
+  const sobras = [];
+  for (const caminho of saem) {
+    try {
+      fs.rmSync(caminho, { recursive: true, force: true });
+    } catch {
+      sobras.push(caminho);
+    }
+  }
+  return { tentativaApagada: tinhaTentativa && !sobras.includes(ad.tentativa), sobras };
 }
 
 export const temAntes = (ad) => ehPasta(ad.antes);

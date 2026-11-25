@@ -96,27 +96,32 @@ export function arquivosPrivados(pasta, rel = '') {
   return achados;
 }
 
-// O .gltf cita os arquivos dele como endereço ("roda%20dianteira.bin"): vale também o nome decodificado
-// de cada uri (buffers e imagens), um por um, para um "%" solto em outro campo não estragar os outros.
-function comoCita(rel, texto) {
-  if (extensao(rel) !== '.gltf') return texto;
-  let modelo;
+// O .gltf cita os arquivos dele como endereço ("roda%20dianteira.bin"): vale também o nome decodificado.
+// Cada texto do JSON é decodificado sozinho (buffers, imagens e extensões), para um "%" solto num campo
+// não estragar os outros. O BOM do começo não conta; JSON quebrado tenta o texto inteiro.
+const BOM = '\uFEFF';
+const decodificado = (texto) => {
   try {
-    modelo = JSON.parse(texto);
+    return decodeURIComponent(texto);
   } catch {
     return texto;
   }
-  const listas = modelo && typeof modelo === 'object' ? [modelo.buffers, modelo.images] : [];
-  const uris = listas.flatMap((lista) => (Array.isArray(lista) ? lista : []))
-    .map((item) => (item && typeof item.uri === 'string' ? item.uri : ''))
-    .filter((uri) => uri !== '' && !uri.startsWith('data:'));
-  const nomes = uris.map((uri) => {
-    try {
-      return decodeURIComponent(uri);
-    } catch {
-      return uri;
-    }
-  });
+};
+const textosDoJson = (valor) => {
+  if (typeof valor === 'string') return [valor];
+  if (valor && typeof valor === 'object') return Object.values(valor).flatMap(textosDoJson);
+  return [];
+};
+function comoCita(rel, texto) {
+  if (extensao(rel) !== '.gltf') return texto;
+  const semBom = texto.startsWith(BOM) ? texto.slice(BOM.length) : texto;
+  let modelo;
+  try {
+    modelo = JSON.parse(semBom);
+  } catch {
+    return `${texto}\n${decodificado(semBom)}`;
+  }
+  const nomes = textosDoJson(modelo).filter((t) => t.includes('%') && !t.startsWith('data:')).map(decodificado);
   return [texto, ...nomes].join('\n');
 }
 

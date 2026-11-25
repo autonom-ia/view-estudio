@@ -585,19 +585,19 @@
   },
   "PUBLICAR_PACOTE_RECUSADO": {
     "texto": "O serviço recusou a apresentação por causa de um arquivo que não pode ir para a internet.",
-    "acao": "Veja dados.arquivo (o arquivo recusado, dentro de deck/), dados.detalhe e dados.codigo_do_servico, mostre à pessoa o arquivo e tire-o de deck/ (guarde fora de deck/, se for dela). Depois rode as conferências e pergunte de novo antes de publicar."
+    "acao": "Veja dados.arquivo (o arquivo recusado, dentro de deck/), dados.detalhe e dados.codigo_do_servico. Se dados.arquivo não vier, ou não for o nome de um arquivo de deck/, mostre à pessoa a frase de dados.detalhe e pergunte qual arquivo é. Mostre à pessoa o arquivo e tire-o de deck/ (guarde fora de deck/, se for dela). Depois rode as conferências e pergunte de novo antes de publicar."
   },
   "PUBLICAR_3D_INVALIDO": {
     "texto": "Um arquivo de 3D da apresentação não é o que o nome diz, e o serviço recusou a apresentação.",
-    "acao": "Veja dados.arquivo: é o arquivo recusado, dentro de deck/. Não tire da apresentação, porque o modelo precisa dele. Se é .glb ou .gltf, exporte o modelo de novo pela ferramenta de 3D e troque em deck/. Se é .wasm, copie de novo o decodificador original da biblioteca de onde ele veio (nunca renomeie outro arquivo para .wasm). Depois rode as conferências e pergunte de novo antes de publicar."
+    "acao": "Veja dados.arquivo: é o arquivo recusado, dentro de deck/. Se dados.arquivo não vier, ou não for o nome de um arquivo de deck/, procure em deck/ o arquivo do tipo da recusa e pergunte à pessoa qual é. Não tire da apresentação, porque o modelo precisa dele. Se é .glb ou .gltf, exporte o modelo de novo pela ferramenta de 3D e troque em deck/. Se é .wasm, copie de novo o decodificador original da biblioteca de onde ele veio (nunca renomeie outro arquivo para .wasm). Depois rode as conferências e pergunte de novo antes de publicar."
   },
   "PUBLICAR_3D_GRANDE": {
     "texto": "Um modelo 3D da apresentação passa do tamanho que o serviço aceita nesse formato.",
-    "acao": "Veja dados.arquivo: é o modelo .gltf grande demais, dentro de deck/. Exporte esse modelo como .glb (um arquivo só, menor), troque o nome dele na tela que o carrega e tire de deck/ o .gltf antigo e os .bin dele (guarde fora de deck/). Depois rode as conferências e pergunte de novo antes de publicar."
+    "acao": "Veja dados.arquivo: é o modelo .gltf grande demais, dentro de deck/. Se dados.arquivo não vier, ou não for o nome de um arquivo de deck/, procure em deck/ o arquivo do tipo da recusa e pergunte à pessoa qual é. Exporte esse modelo como .glb (um arquivo só, menor), troque o nome dele na tela que o carrega e tire de deck/ o .gltf antigo (guarde fora de deck/). Tire também os .bin que só ele usa: os que ele cita e que nenhum outro .gltf de deck/ cita. Depois rode as conferências e pergunte de novo antes de publicar."
   },
   "PUBLICAR_BIN_SOLTO": {
     "texto": "O serviço recusou um arquivo de dados de 3D que nenhum modelo da apresentação usa.",
-    "acao": "Veja dados.arquivo: é o arquivo .bin recusado, dentro de deck/. Se ele é de um modelo .gltf da apresentação, exporte o modelo de novo, porque o modelo tem que citar esse nome e o tamanho certo do arquivo. Se não é de nenhum modelo, tire-o de deck/ (guarde fora de deck/, se for dela). Depois rode as conferências e pergunte de novo antes de publicar."
+    "acao": "Veja dados.arquivo: é o arquivo .bin recusado, dentro de deck/. Se dados.arquivo não vier, ou não for o nome de um arquivo de deck/, procure em deck/ o arquivo do tipo da recusa e pergunte à pessoa qual é. Se ele é de um modelo .gltf da apresentação, exporte o modelo de novo, porque o modelo tem que citar esse nome e o tamanho certo do arquivo. Se não é de nenhum modelo, tire-o de deck/ (guarde fora de deck/, se for dela). Depois rode as conferências e pergunte de novo antes de publicar."
   },
   "PUBLICAR_RECUSADO": {
     "texto": "O serviço de publicação não aceitou o pedido agora.",

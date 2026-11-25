@@ -555,4 +555,14 @@ test('5. modelo 3D e decodificador (glb, gltf, bin, wasm) passam na conferência
   assert.deepEqual(montarPacote(deck).naoCitados, []);
   escrever(path.join(deck, 'assets', '3d', 'cena.gltf'), 'não é modelo, cita peca a.bin');
   assert.deepEqual(montarPacote(deck).naoCitados, []);
+  // BOM no começo e uri dentro de extensões também contam
+  escrever(path.join(deck, 'assets', '3d', 'cena.gltf'), '\uFEFF{"asset":{"version":"2.0"},"extensions":{"x":{"uri":"peca%20a.bin"}}}');
+  assert.deepEqual(montarPacote(deck).naoCitados, []);
+  // texto quebrado, mas com o nome como endereço: vale o texto inteiro decodificado
+  escrever(path.join(deck, 'assets', '3d', 'cena.gltf'), '{"buffers":[{"uri":"peca%20a.bin"');
+  assert.deepEqual(montarPacote(deck).naoCitados, []);
+  for (const codigo of ['PUBLICAR_PACOTE_RECUSADO', 'PUBLICAR_3D_INVALIDO', 'PUBLICAR_3D_GRANDE', 'PUBLICAR_BIN_SOLTO']) {
+    assert.ok(MENSAGENS[codigo].acao.includes('Se dados.arquivo não vier'), codigo);
+  }
+  assert.ok(MENSAGENS.PUBLICAR_3D_GRANDE.acao.includes('nenhum outro .gltf'));
 });

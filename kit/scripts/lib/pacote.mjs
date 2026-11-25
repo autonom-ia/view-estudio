@@ -96,9 +96,19 @@ export function arquivosPrivados(pasta, rel = '') {
   return achados;
 }
 
+// O .gltf cita os arquivos dele como endereço ("roda%20dianteira.bin"): vale também o nome decodificado.
+function comoCita(rel, texto) {
+  if (extensao(rel) !== '.gltf') return texto;
+  try {
+    return `${texto}\n${decodeURIComponent(texto)}`;
+  } catch {
+    return texto;
+  }
+}
+
 const lerTextos = (pasta, arquivos) => arquivos
   .filter((rel) => TEXTOS_QUE_CITAM.includes(extensao(rel)))
-  .map((rel) => ({ rel, texto: fs.readFileSync(path.join(pasta, ...rel.split('/')), 'utf8') }));
+  .map((rel) => ({ rel, texto: comoCita(rel, fs.readFileSync(path.join(pasta, ...rel.split('/')), 'utf8')) }));
 
 // Letra que continua um nome de arquivo ou pasta (o resto, como aspas, parêntese, espaço, "?" e "#",
 // termina o nome).

@@ -115,6 +115,9 @@ test('códigos de erro do serviço viram frase simples do estúdio', async (t) =
     [429, 'LIMITE_DO_DIA', 'PUBLICAR_LIMITE_DO_DIA'],
     [503, 'PUBLICACAO_DESLIGADA', 'PUBLICAR_DESLIGADA'],
     [422, 'PACOTE_ATALHO', 'PUBLICAR_PACOTE_RECUSADO'],
+    [422, 'PACOTE_3D_INVALIDO', 'PUBLICAR_3D_INVALIDO'],
+    [422, 'PACOTE_3D_GRANDE', 'PUBLICAR_3D_GRANDE'],
+    [422, 'PACOTE_BIN_SOLTO', 'PUBLICAR_BIN_SOLTO'],
     [418, 'NOVO_CODIGO', 'PUBLICAR_RECUSADO'],
   ];
   for (const [status, codigoServico, codigo] of casos) {

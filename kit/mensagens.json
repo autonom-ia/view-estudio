@@ -587,6 +587,18 @@
     "texto": "O serviço recusou a apresentação por causa de um arquivo que não pode ir para a internet.",
     "acao": "Veja dados.detalhe e dados.codigo_do_servico, mostre à pessoa o arquivo citado e tire-o de deck/ (guarde fora de deck/, se for dela). Depois rode as conferências e pergunte de novo antes de publicar."
   },
+  "PUBLICAR_3D_INVALIDO": {
+    "texto": "Um arquivo de 3D da apresentação não é o que o nome diz, e o serviço recusou a apresentação.",
+    "acao": "Veja dados.detalhe: é o arquivo citado. Não tire da apresentação, porque o modelo precisa dele. Exporte esse arquivo de novo pela ferramenta de 3D (o .glb tem que ser glTF binário; o .gltf, o texto do modelo como a ferramenta exportou; o .wasm, o decodificador original, sem mudar o nome de outro arquivo para .wasm) e troque em deck/. Depois rode as conferências e pergunte de novo antes de publicar."
+  },
+  "PUBLICAR_3D_GRANDE": {
+    "texto": "Um modelo 3D da apresentação passa do tamanho que o serviço aceita nesse formato.",
+    "acao": "Veja dados.detalhe: é o modelo .gltf citado. Exporte esse modelo como .glb (um arquivo só, menor) e troque o nome dele na tela que o carrega. Depois rode as conferências e pergunte de novo antes de publicar."
+  },
+  "PUBLICAR_BIN_SOLTO": {
+    "texto": "O serviço recusou um arquivo de dados de 3D que nenhum modelo da apresentação usa.",
+    "acao": "Veja dados.detalhe: é o arquivo .bin citado. Se ele é de um modelo .gltf da apresentação, exporte o modelo de novo, porque o modelo tem que citar esse nome e o tamanho certo do arquivo. Se não é de nenhum modelo, tire-o de deck/ (guarde fora de deck/, se for dela). Depois rode as conferências e pergunte de novo antes de publicar."
+  },
   "PUBLICAR_RECUSADO": {
     "texto": "O serviço de publicação não aceitou o pedido agora.",
     "acao": "Veja dados.detalhe (a frase do serviço) e dados.status e diga à pessoa em palavras simples. Antes de tentar de novo, abra o endereço e confira se a mudança já está no ar; se não estiver, tente mais tarde."

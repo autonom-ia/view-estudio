@@ -8,7 +8,8 @@
 // 3. "antes" monta a comparação nova ao lado e troca inteira (ANTES_NAO_TROCADO se não der), e nunca
 //    apaga tentativa/ com uma volta parada no meio;
 // 4. arquivo sem uso compara o nome inteiro ("foto.png" não é citado por "minhafoto.png");
-// 5. o painel aceita 3D (glb, gltf, bin, wasm), e a conferência antes de enviar também.
+// 5. o painel aceita 3D (glb, gltf, bin, wasm), e a conferência antes de enviar também; o .gltf cita
+//    pelo nome decodificado; a recusa de 3D do painel tem mensagem própria (view_autonomia#126).
 // Achados da revisão do PR #9: envio aberto não desfaz o registro (o concluir pode ter publicado);
 // no-ar.json com o nome que a pasta usa; sobra presa não trava a troca seguinte; rollback que falha
 // não esconde a causa; a comparação fora do lugar volta ao abrir; guardar a tentativa e fechar o
@@ -436,4 +437,11 @@ test('5. modelo 3D e decodificador (glb, gltf, bin, wasm) passam na conferência
   assert.doesNotThrow(() => conferirParaOPainel(pacote));
   assert.deepEqual(pacote.naoCitados, []);
   assert.ok(MENSAGENS.PUBLICAR_TIPO_NAO_ACEITO.acao.includes('glb'));
+  // o .gltf cita como endereço: "peca%20a.bin" é o arquivo "peca a.bin"
+  escrever(path.join(deck, 'assets', '3d', 'cena.gltf'), '{"asset":{"version":"2.0"},"buffers":[{"uri":"peca%20a.bin"}]}');
+  fs.renameSync(path.join(deck, 'assets', '3d', 'cena.bin'), path.join(deck, 'assets', '3d', 'peca a.bin'));
+  assert.deepEqual(montarPacote(deck).naoCitados, []);
+  // endereço malformado no .gltf ("%E0%A4%A") não derruba o pacote: vale o texto como está
+  escrever(path.join(deck, 'assets', '3d', 'cena.gltf'), '{"buffers":[{"uri":"peca a.bin"}],"x":"%E0%A4%A"}');
+  assert.deepEqual(montarPacote(deck).naoCitados, []);
 });

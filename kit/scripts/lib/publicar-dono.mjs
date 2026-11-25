@@ -20,6 +20,10 @@
 // Migração de quem publicou antes deste registro: sem nenhum registro do endereço neste computador, o
 // no-ar.json que bate com a versão no ar vale uma vez e vira registro.
 // --por-cima pula a conferência. Endereço só reservado (nenhuma versão guardada) não conta.
+// --voltar registra o pedido antes de mandar (voltar: { de, para, versoes }), para uma resposta perdida
+// não fazer a próxima publicação pedir --por-cima. Risco aceito: se, enquanto a resposta daqui se
+// perdeu, outro computador voltar o endereço para a MESMA versão pedida, as duas coisas são
+// indistinguíveis daqui, e a versão vale como desta pasta.
 import fs from 'node:fs';
 import path from 'node:path';
 import { FERR, relativoARaiz } from './caminhos.mjs';
@@ -85,7 +89,8 @@ export function anotarDono(c, endereco, registro, ferr = FERR) {
 // Um --voltar registrado antes de pedir ({ de, para, versoes }: a versão no ar, a pedida ou null para
 // "a anterior", e as versões que existiam): se a resposta se perdeu, vale a versão pedida, desde que já
 // existisse (volta não cria versão). "A anterior" é a maior guardada abaixo da que estava no ar, como o
-// painel decide.
+// painel decide (publicacao/servico.mjs: a seguinte à do ar na lista do disco, da mais nova para a mais
+// velha).
 function voltouParaOPedido(volta, situacao) {
   if (!volta || typeof volta !== 'object' || !Array.isArray(volta.versoes)) return false;
   if (!volta.versoes.includes(situacao.versao)) return false;

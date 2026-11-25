@@ -84,6 +84,13 @@ async function comAcesso(cfg, fazer) {
 // Erros depois dos quais a apresentação pode já estar no ar: a anotação do endereço fica.
 const TALVEZ_NO_AR = Object.freeze(['PUBLICAR_CONCLUSAO_INCERTA', 'PUBLICAR_NO_AR_AJUSTANDO', 'PUBLICAR_ENVIO_EM_ANDAMENTO']);
 
+// O pedido de voltar ficou sem a resposta do painel: queda de conexão, proxy que respondeu no lugar dele
+// (5xx sem código do painel) ou volta feita com o passo final falho. O painel pode ter voltado.
+const voltaTalvezFeita = (erro) => !(erro instanceof KitErro)
+  || erro.codigo === 'PUBLICAR_SEM_CONEXAO'
+  || TALVEZ_NO_AR.includes(erro.codigo)
+  || (Number.isInteger(erro.dados?.status) && erro.dados.status >= 500 && !erro.dados.codigo_do_servico);
+
 // Envia com o endereço registrado antes ("pendente"); desfaz o registro e o lembrete só se o painel
 // recusou antes de abrir o envio. Depois de aberto, o concluir pode ter publicado mesmo com erro (resposta
 // estranha, código fora da lista): o pendente fica, e é inofensivo se nada entrou no ar (sem versão
@@ -153,10 +160,21 @@ export default async function publicar(args) {
   return comAcesso(cfg, async (chave) => {
     const situacao = await conferirDono(cfg, chave, c, noAr, porCima);
     // Registrado antes de pedir: se a resposta se perder (o painel pode ter voltado), a próxima
-    // conferência aceita a versão pedida (lib/publicar-dono.mjs, voltouParaOPedido).
-    const volta = { de: situacao.versao, para: Number.isInteger(v.versao) ? v.versao : null, versoes: situacao.versoes };
-    anotarDono(c, noAr, { ...(lerDono(c, noAr) || {}), voltar: volta });
-    const r = await voltarVersao(cfg, chave, noAr, v.versao);
+    // conferência aceita a versão pedida (lib/publicar-dono.mjs, voltouParaOPedido). Só quando a pasta
+    // já tem registro: sem ele, um pedido sozinho bloquearia a migração pelo no-ar.json. Se o painel
+    // respondeu recusando, o registro volta ao que era.
+    const registro = lerDono(c, noAr);
+    if (registro) {
+      const volta = { de: situacao.versao, para: Number.isInteger(v.versao) ? v.versao : null, versoes: situacao.versoes };
+      anotarDono(c, noAr, { ...registro, voltar: volta });
+    }
+    let r;
+    try {
+      r = await voltarVersao(cfg, chave, noAr, v.versao);
+    } catch (erro) {
+      if (registro && !voltaTalvezFeita(erro)) anotarDono(c, noAr, registro);
+      throw erro;
+    }
     anotarDono(c, noAr, { versao: r.versao });
     const lembrete = lerNoAr(c);
     anotarNoAr(c, { ...(lembrete.nome === noAr ? lembrete : {}), nome: noAr, versao: r.versao, em: new Date().toISOString() });

@@ -15,7 +15,8 @@
 // não esconde a causa; a comparação fora do lugar volta ao abrir; guardar a tentativa e fechar o
 // antes que falham viram código e aviso; montagem pela metade sai.
 // Revisão do site-estudio#20: queda ao abrir o envio desfaz tudo; --voltar registra o pedido antes de
-// mandar, e a resposta perdida não faz a próxima publicação pedir --por-cima.
+// mandar, e a resposta perdida não faz a próxima publicação pedir --por-cima; recusa do painel desfaz
+// o pedido, e sem registro da pasta o pedido nem é gravado.
 // Serviço falso só em 127.0.0.1.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -218,6 +219,48 @@ test('1k. --voltar sem número com a resposta perdida: vale a anterior; outra ve
   e.noAr.set(NOME, 1);
   const r = await ctx.publicar();
   assert.deepEqual([r.json.codigo, r.json.dados.versao_no_ar], ['PUBLICAR_ENDERECO_JA_EM_USO', 1], r.saida);
+});
+
+test('1l. --voltar recusado pelo painel: o registro volta ao que era, e outra volta depois não vale como desta pasta', async (t) => {
+  const ctx = await preparar(t);
+  darChave(ctx);
+  const e = ctx.servico.estado;
+  for (const titulo of ['Um', 'Dois']) {
+    novoConteudo(ctx, titulo);
+    assert.equal((await ctx.publicar()).json.codigo, 'PUBLICADO');
+  }
+  const registro = () => {
+    const daPasta = lerDonos(ctx)[fs.realpathSync.native(ctx.c.pasta)];
+    return daPasta ? semEm(daPasta[NOME]) : null;
+  };
+  const antes = registro();
+  assert.equal((await ctx.publicar('--voltar', '99')).json.codigo, 'PUBLICAR_VERSAO_INEXISTENTE');
+  assert.deepEqual(registro(), antes);
+  e.erroAoVoltar = { status: 500, codigo: 'FALHA_DO_PAINEL' };
+  assert.equal((await ctx.publicar('--voltar', '1')).json.ok, false);
+  assert.deepEqual(registro(), antes, '5xx com o código do painel também é resposta');
+  e.erroAoVoltar = null;
+  e.noAr.set(NOME, 1); // outro computador voltou para a 1
+  const r = await ctx.publicar();
+  assert.deepEqual([r.json.codigo, r.json.dados.versao_no_ar], ['PUBLICAR_ENDERECO_JA_EM_USO', 1], r.saida);
+});
+
+test('1m. --voltar --por-cima sem registro desta pasta e com a resposta perdida: não deixa registro que bloqueie', async (t) => {
+  const ctx = await preparar(t);
+  darChave(ctx);
+  const e = ctx.servico.estado;
+  e.publicados.push({ slug: NOME, versao: 1, zip: Buffer.from('um') }, { slug: NOME, versao: 2, zip: Buffer.from('dois') });
+  e.noAr.set(NOME, 2);
+  // publicado por esta pasta antes de existir o registro de dono: só o no-ar.json
+  fs.writeFileSync(path.join(ctx.c.pasta, 'no-ar.json'), JSON.stringify({ nome: NOME, versao: 2 }));
+  e.voltarCai = true;
+  assert.equal((await ctx.publicar('--voltar', '1', '--por-cima')).json.codigo, 'PUBLICAR_SEM_CONEXAO');
+  e.noAr.set(NOME, 2); // a volta não chegou a valer
+  const donos = path.join(ctx.ferr, 'publicar', 'donos.json');
+  const daPasta = fs.existsSync(donos) ? lerDonos(ctx)[fs.realpathSync.native(ctx.c.pasta)] : undefined;
+  assert.equal(daPasta, undefined, 'nenhum pedido sozinho no registro');
+  const r = await ctx.publicar();
+  assert.deepEqual([r.json.codigo, r.json.dados.versao], ['PUBLICADO', 3], 'a migração pelo no-ar.json segue valendo');
 });
 
 // --- 2 e 3. antes e depois ---

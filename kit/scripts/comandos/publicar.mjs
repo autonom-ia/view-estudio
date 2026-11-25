@@ -151,7 +151,11 @@ export default async function publicar(args) {
   const porCima = args.opcoes['por-cima'] === true;
   if (!v.voltar) return publicarApresentacao(cfg, c, noAr, porCima);
   return comAcesso(cfg, async (chave) => {
-    await conferirDono(cfg, chave, c, noAr, porCima);
+    const situacao = await conferirDono(cfg, chave, c, noAr, porCima);
+    // Registrado antes de pedir: se a resposta se perder (o painel pode ter voltado), a próxima
+    // conferência aceita a versão pedida (lib/publicar-dono.mjs, voltouParaOPedido).
+    const volta = { de: situacao.versao, para: Number.isInteger(v.versao) ? v.versao : null, versoes: situacao.versoes };
+    anotarDono(c, noAr, { ...(lerDono(c, noAr) || {}), voltar: volta });
     const r = await voltarVersao(cfg, chave, noAr, v.versao);
     anotarDono(c, noAr, { versao: r.versao });
     const lembrete = lerNoAr(c);

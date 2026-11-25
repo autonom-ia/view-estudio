@@ -47,6 +47,8 @@ export async function subirServicoFalso({ parteMax = 1000 } = {}) {
     erroAoAbrir: null,
     erroAoConcluir: null,
     erroAoVoltar: null,
+    voltarCai: false, // volta a versão e derruba a conexão antes de responder
+    abrirCai: false, // derruba a conexão ao abrir o envio, sem abrir
     enderecoDoSite: null,
     slugNaResposta: null, // slug que o concluir devolve, quando difere do enviado
     expiraDelta: 600000, // expira_em = agora + expiraDelta; negativo simula relógio local adiantado
@@ -162,10 +164,18 @@ export async function subirServicoFalso({ parteMax = 1000 } = {}) {
       if (dados.versao === 99) return erro(res, 404, 'VERSAO_INEXISTENTE');
       const versao = dados.versao ?? 1;
       if (e.publicados.some((p) => p.slug === partes[1] && p.versao === versao)) e.noAr.set(partes[1], versao);
+      if (e.voltarCai) {
+        e.voltarCai = false;
+        return req.socket.destroy();
+      }
       return responder(res, 200, { ok: true, versao });
     }
     if (partes[0] === 'sites' && partes[2] === 'envios') {
       e.aberturas += 1;
+      if (e.abrirCai) {
+        e.abrirCai = false;
+        return req.socket.destroy();
+      }
       if (e.erroAoAbrir) return erro(res, e.erroAoAbrir.status, e.erroAoAbrir.codigo);
       const id = crypto.randomBytes(8).toString('hex');
       const total = Math.max(1, Math.ceil(dados.bytes / parteMax));

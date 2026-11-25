@@ -82,6 +82,19 @@ export function anotarDono(c, endereco, registro, ferr = FERR) {
   gravarPrivado(arquivoDonos(ferr), novo);
 }
 
+// Um --voltar registrado antes de pedir ({ de, para, versoes }: a versão no ar, a pedida ou null para
+// "a anterior", e as versões que existiam): se a resposta se perdeu, vale a versão pedida, desde que já
+// existisse (volta não cria versão). "A anterior" é a maior guardada abaixo da que estava no ar, como o
+// painel decide.
+function voltouParaOPedido(volta, situacao) {
+  if (!volta || typeof volta !== 'object' || !Array.isArray(volta.versoes)) return false;
+  if (!volta.versoes.includes(situacao.versao)) return false;
+  if (Number.isInteger(volta.para)) return situacao.versao === volta.para;
+  if (!Number.isInteger(volta.de)) return false;
+  const anteriores = volta.versoes.filter((v) => v < volta.de);
+  return anteriores.length > 0 && situacao.versao === Math.max(...anteriores);
+}
+
 // O que está no ar é o que esta pasta pôs? Com envio pendente (o processo pode ter caído no meio),
 // vale a versão que ela tinha ou a ÚNICA versão nova desde que o envio começou, se tiver o tamanho do
 // pacote deste envio (envio_bytes): uma versão nova de outro tamanho é de outro lugar, e duas ou mais
@@ -89,6 +102,7 @@ export function anotarDono(c, endereco, registro, ferr = FERR) {
 // que ela tinha.
 function bate(registro, situacao) {
   if (situacao.versao === null) return true;
+  if (voltouParaOPedido(registro.voltar, situacao)) return true;
   const antes = registro.pendente === true && Array.isArray(registro.versoes_antes) ? registro.versoes_antes : null;
   if (!antes) return registro.versao === situacao.versao;
   const novas = situacao.versoes.filter((v) => !antes.includes(v));

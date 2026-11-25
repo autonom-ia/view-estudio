@@ -59,10 +59,12 @@ export async function situacaoDoEndereco(cfg, chave, nome) {
   const c = exigir(await semFalhaDeRede(() => chamar(cfg, 'GET', '/api/estudio/sites', { chave })), 200);
   if (!Array.isArray(c.sites)) throw new KitErro('PUBLICAR_RESPOSTA_ESTRANHA', { etapa: 'listar sites' });
   const site = c.sites.find((s) => s && s.slug === nome);
-  if (!site) return { teveVersao: false, versao: null };
+  if (!site) return { teveVersao: false, versao: null, versoes: [], tamanhos: {} };
   const versao = Number.isInteger(site.versao) ? site.versao : null;
-  const guardadas = Array.isArray(site.versoes) ? site.versoes.length : 0;
-  return { teveVersao: versao !== null || guardadas > 0, versao };
+  const lista = Array.isArray(site.versoes) ? site.versoes.filter((v) => v && Number.isInteger(v.versao)) : [];
+  // tamanhos: os bytes do pacote de cada versão, quando o painel sabe (null quando não).
+  const tamanhos = Object.fromEntries(lista.map((v) => [v.versao, Number.isInteger(v.bytes) ? v.bytes : null]));
+  return { teveVersao: versao !== null || lista.length > 0, versao, versoes: lista.map((v) => v.versao), tamanhos };
 }
 
 const versaoNova = (site, antes) => site.versao !== null && site.versao !== antes;

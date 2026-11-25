@@ -23,6 +23,9 @@ export const TIPOS_ACEITOS = Object.freeze([
   'woff', 'woff2', 'ttf', 'otf',
   'mp4', 'webm', 'mp3', 'ogg', 'wav',
   'pdf', 'webmanifest', 'map',
+  // 3D: modelo (glb, ou gltf com o bin dele) e o decodificador (wasm), aceitos pelo painel desde
+  // autonom-ia/view_autonomia#125.
+  'glb', 'gltf', 'bin', 'wasm',
 ]);
 
 export const tipoAceito = (rel) => {

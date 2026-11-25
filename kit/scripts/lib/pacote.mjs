@@ -32,7 +32,8 @@ export const TELEPROMPTER = 'teleprompter.html';
 const SEM_COMPRIMIR = Object.freeze(['.mp4', '.webm', '.mov', '.m4v', '.mp3', '.m4a', '.wav', '.ogg', '.woff2', '.jpg', '.jpeg', '.png', '.webp', '.avif']);
 // Arquivos que os serviços de hospedagem leem pelo nome, sem nenhuma página citar.
 const LIDOS_PELO_SERVIDOR = Object.freeze(['robots.txt', 'favicon.ico', 'cname', '_headers', '_redirects', '404.html']);
-const TEXTOS_QUE_CITAM = Object.freeze(['.html', '.css', '.js', '.mjs', '.json', '.webmanifest', '.xml', '.svg']);
+// Textos que citam outros arquivos. O .gltf (modelo 3D em texto) cita os .bin e as texturas dele.
+const TEXTOS_QUE_CITAM = Object.freeze(['.html', '.css', '.js', '.mjs', '.json', '.webmanifest', '.xml', '.svg', '.gltf']);
 
 const extensao = (rel) => {
   const nome = rel.split('/').pop().toLowerCase();
@@ -122,6 +123,18 @@ export function citaCaminho(texto, caminho) {
   return false;
 }
 
+// O texto cita este nome de arquivo inteiro, e não só um pedaço de outro ("data.png" não cita
+// "a.png"; "a.png.bak" também não)? Antes e depois do nome só vale o que termina um nome, inclusive a
+// "/" da pasta.
+export function citaNome(texto, nome) {
+  let i = texto.indexOf(nome);
+  while (i !== -1) {
+    if (!continuaNome(texto[i - 1]) && !continuaNome(texto[i + nome.length])) return true;
+    i = texto.indexOf(nome, i + 1);
+  }
+  return false;
+}
+
 // Arquivos que ficam fora do pacote e que uma página, estilo ou script do pacote cita, pelo caminho a
 // partir da raiz de deck/ ou a partir da pasta de quem cita ("../_lab/foto.png"). [{ arquivo, citado_em }]
 export function citadosForaDoPacote(pasta, arquivos, fora) {
@@ -137,7 +150,7 @@ export function citadosForaDoPacote(pasta, arquivos, fora) {
   return achados;
 }
 
-// Arquivos (fora as páginas) cujo nome não aparece em nenhuma página, CSS, script ou manifesto.
+// Arquivos (fora as páginas) cujo nome inteiro não aparece em nenhuma página, CSS, script ou manifesto.
 export function arquivosNaoCitados(pasta, arquivos) {
   const textos = lerTextos(pasta, arquivos);
   const soltos = [];
@@ -145,7 +158,7 @@ export function arquivosNaoCitados(pasta, arquivos) {
     const nome = rel.split('/').pop();
     if (extensao(rel) === '.html' || LIDOS_PELO_SERVIDOR.includes(nome.toLowerCase())) continue;
     if (ehLicencaDeFonte(nome) || nome.toUpperCase().startsWith('LICENSE')) continue;
-    if (!textos.some((t) => t.rel !== rel && t.texto.includes(nome))) soltos.push(rel);
+    if (!textos.some((t) => t.rel !== rel && citaNome(t.texto, nome))) soltos.push(rel);
   }
   return soltos;
 }

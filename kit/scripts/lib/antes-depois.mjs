@@ -226,7 +226,7 @@ export function restaurarAntes(pastaDaApresentacao, antes, manifesto, opcoes = {
   return restaurarDe(pastaDaApresentacao, antes, itens, opcoes);
 }
 
-// Falha numa troca: diz qual item não trocou. A apresentação nunca fica sem o item (ver trocarItem).
+// Falha numa troca: diz qual item não trocou. A apresentação nunca fica sem o item (ver trocarPasta).
 export class ErroDeRestauracao extends Error {
   constructor(item, causa) {
     super(causa && causa.message ? causa.message : String(causa));
@@ -238,19 +238,22 @@ export class ErroDeRestauracao extends Error {
 
 // Devolve a apresentação ao que está em "origem" (o antes, ou a tentativa quando uma troca anterior
 // falhou), item por item. "renomear" é injetável para os testes simularem uma troca que falha.
+// Devolve { restaurados, sobras }: sobras são as cópias velhas que não saíram (ver trocarPasta).
 export function restaurarDe(pastaDaApresentacao, origem, itens, { renomear = fs.renameSync } = {}) {
   const tinha = new Set(itens);
   const restaurados = [];
+  const sobras = [];
   for (const item of ITENS_GUARDADOS) {
-    let feito;
+    let troca;
     try {
-      feito = trocarItem(pastaDaApresentacao, origem, item, tinha.has(item), renomear);
+      troca = trocarItem(pastaDaApresentacao, origem, item, tinha.has(item), renomear);
     } catch (erro) {
       throw new ErroDeRestauracao(item, erro);
     }
-    if (feito) restaurados.push(feito);
+    if (troca.feito) restaurados.push(troca.feito);
+    if (troca.sobra) sobras.push(troca.sobra);
   }
-  return restaurados;
+  return { restaurados, sobras };
 }
 
 const existeSemSeguir = (caminho) => {
@@ -281,42 +284,69 @@ export function recuperarSobras(pastaDaApresentacao, renomear = fs.renameSync) {
   return ITENS_GUARDADOS.filter((item) => devolverSeFora(path.join(pastaDaApresentacao, item), renomear));
 }
 
-// Troca um item sem deixar a apresentação sem ele: o novo é montado ao lado (.trocando), o atual
-// vai para .descartando, o novo entra no lugar e só então o descartado sai. Se a entrada do novo
-// falhar, o atual volta. Sobra de uma troca anterior: o item volta ao lugar primeiro
-// (devolverSeFora); o .trocando de antes é só uma cópia montada e sai; um .descartando que sobra
-// com o item no lugar é a versão vista (já guardada na tentativa, que o "escolher" grava antes de
-// qualquer troca) ou o antes, nunca a única cópia.
+// A comparação anterior que um "antes" parado no meio da troca deixou fora volta ao lugar, para o
+// "antes" seguinte conferir o estado dela e dizer o que apaga. Devolve se voltou.
+export const recuperarComparacao = (ad, renomear = fs.renameSync) => devolverSeFora(ad.pasta, renomear);
+
+// Troca o conteúdo de destino (pasta ou arquivo) pelo de origem sem deixar a apresentação sem ele: o
+// novo é montado ao lado (.trocando), o atual vai para .descartando, o novo entra no lugar e só então
+// o descartado sai. Se a entrada do novo falhar (no Windows, um arquivo aberto em outro programa), o
+// atual volta e o erro sobe. Sobra de uma troca anterior: o item volta ao lugar primeiro
+// (devolverSeFora); o .trocando de antes é só uma cópia montada e sai; um .descartando que sobra com o
+// item no lugar é o que uma troca já concluída tirou (a versão vista já estava em tentativa/, que o
+// "escolher" grava antes de qualquer troca), nunca a única cópia. Sem "mover", o novo é guardado como
+// no antes (vídeo ligado, sem cópia: guardarItem); com "mover", origem é uma pasta montada só para a
+// troca e entra pelo nome. "renomear" é injetável para os testes.
+// Devolve { sobra }: o .descartando que não saiu depois da troca feita (arquivo aberto no Windows), ou
+// null. A troca valeu; quem chama avisa, e a próxima troca apaga a sobra.
+export function trocarPasta(origem, destino, renomear = fs.renameSync, { mover = false } = {}) {
+  const { novo, velho } = sobrasDaTroca(destino);
+  devolverSeFora(destino, renomear);
+  fs.rmSync(novo, { recursive: true, force: true });
+  fs.rmSync(velho, { recursive: true, force: true });
+  if (mover) renomear(origem, novo);
+  else guardarItem(origem, novo, path.basename(destino));
+  const tinha = existeSemSeguir(destino);
+  if (tinha) renomear(destino, velho);
+  try {
+    renomear(novo, destino);
+  } catch (erro) {
+    if (tinha) renomear(velho, destino);
+    fs.rmSync(novo, { recursive: true, force: true });
+    throw erro;
+  }
+  try {
+    fs.rmSync(velho, { recursive: true, force: true });
+    return { sobra: null };
+  } catch {
+    return { sobra: velho };
+  }
+}
+
+// Um item da apresentação volta ao que está em origem (trocarPasta). Item que não existia no antes
+// (uma cena criada na tentativa) sai. Devolve { feito, sobra }: feito é o item, "-item" quando saiu,
+// ou null quando não havia nada a fazer.
 function trocarItem(pasta, origem, item, existia, renomear) {
   const atual = path.join(pasta, item);
+  if (existia) {
+    const { sobra } = trocarPasta(path.join(origem, item), atual, renomear);
+    return { feito: item, sobra };
+  }
   const { novo, velho } = sobrasDaTroca(atual);
   devolverSeFora(atual, renomear);
   fs.rmSync(novo, { recursive: true, force: true });
   fs.rmSync(velho, { recursive: true, force: true });
-  if (!existia) {
-    if (!existeSemSeguir(atual)) return null;
-    fs.rmSync(atual, { recursive: true, force: true });
-    return `-${item}`;
-  }
-  guardarItem(path.join(origem, item), novo, item);
-  const tinhaAtual = existeSemSeguir(atual);
-  if (tinhaAtual) renomear(atual, velho);
-  try {
-    renomear(novo, atual);
-  } catch (erro) {
-    if (tinhaAtual) renomear(velho, atual);
-    fs.rmSync(novo, { recursive: true, force: true });
-    throw erro;
-  }
-  fs.rmSync(velho, { recursive: true, force: true });
-  return item;
+  if (!existeSemSeguir(atual)) return { feito: null, sobra: null };
+  fs.rmSync(atual, { recursive: true, force: true });
+  return { feito: `-${item}`, sobra: null };
 }
 
 // Guarda a versão que a pessoa viu (a tentativa) antes de voltar ao antes, em tentativa/, com o
 // vídeo ligado como no antes. Fica até o próximo "antes" (ou o "depois"); uma tentativa nova
-// substitui a anterior. Montada ao lado e trocada no fim. Se uma troca parou no meio, a versão vista
-// de um item pode estar no .descartando (o item no lugar já é o antes, ou sumiu): é dele que a
-// tentativa copia. Nada da apresentação é apagado aqui. Devolve os itens guardados.
+// substitui a anterior. Montada ao lado e trocada no fim. A versão vista é o item no lugar; só se ele
+// faltar (troca parada no meio que a abertura da apresentação ainda não pôs de volta) é o
+// .descartando. Um .descartando ao lado do item é sobra de uma troca já concluída, nunca a versão
+// vista. Nada da apresentação é apagado aqui. Devolve os itens guardados.
 export function guardarTentativa(pastaDaApresentacao, ad) {
   const montando = `${ad.tentativa}.guardando`;
   fs.rmSync(montando, { recursive: true, force: true });
@@ -324,7 +354,7 @@ export function guardarTentativa(pastaDaApresentacao, ad) {
   for (const item of ITENS_GUARDADOS) {
     const atual = path.join(pastaDaApresentacao, item);
     const { velho } = sobrasDaTroca(atual);
-    const de = existeSemSeguir(velho) ? velho : atual;
+    const de = existeSemSeguir(atual) ? atual : velho;
     if (!existeSemSeguir(de)) continue;
     itens.push(item);
     guardarItem(de, path.join(montando, item), item);

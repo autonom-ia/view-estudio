@@ -11,13 +11,15 @@
 // "restauracao_pendente" gravado, e só então a primeira troca; o estado só é limpo no fim. Com ele,
 // rodar de novo continua de onde parou, sem guardar por cima da tentativa a apresentação pela
 // metade. Troca que falha (no Windows, um vídeo aberto em outro programa) vira RESTAURACAO_FALHOU.
-// Com "depois" nesse estado, a tentativa volta inteira.
+// Com "depois" nesse estado, a tentativa volta inteira. Troca feita com a cópia velha ainda ao lado
+// (no Windows, um arquivo dela aberto em outro programa) vale, com o aviso SOBRA_DA_TROCA.
 // Fechar o antes apaga a cópia guardada e as fotos (lib/antes-depois.mjs, fecharAntes); com
 // "depois", também a tentativa de um "outro" anterior.
 // "pecas.renomear" é injetável para os testes simularem uma troca que falha ou morre no meio.
 // Portado do Site Estúdio (comando "escolher").
 import fs from 'node:fs';
 import { nomeDaApresentacao } from '../lib/args.mjs';
+import { relativoARaiz } from '../lib/caminhos.mjs';
 import { abrirApresentacao } from '../lib/apresentacao.mjs';
 import { escreverJson, lerJson } from '../lib/json.mjs';
 import { aviso, falha, reprovado } from '../lib/saida.mjs';
@@ -62,7 +64,7 @@ export default async function escolher(args, pecas = {}) {
     }
   };
 
-  let restaurados = [];
+  let troca = { restaurados: [], sobras: [] };
   let substituida = false;
   if (escolha !== 'depois') {
     const alterados = pesadosAlterados(ad.antes, manifesto);
@@ -71,10 +73,10 @@ export default async function escolher(args, pecas = {}) {
       substituida = temTentativa(ad);
       tentativa = guardarTentativa(c.pasta, ad);
     }
-    restaurados = trocar(() => restaurarAntes(c.pasta, ad.antes, manifesto, { renomear }));
+    troca = trocar(() => restaurarAntes(c.pasta, ad.antes, manifesto, { renomear }));
   } else if (pendente) {
     // uma volta anterior parou no meio: "depois" é a versão vista inteira, guardada na tentativa
-    restaurados = trocar(() => restaurarDe(c.pasta, ad.tentativa, tentativa, { renomear }));
+    troca = trocar(() => restaurarDe(c.pasta, ad.tentativa, tentativa, { renomear }));
   }
   let tentativaApagada = false;
   if (escolha === 'outro') {
@@ -85,10 +87,15 @@ export default async function escolher(args, pecas = {}) {
     tentativaApagada = fecharAntes(ad, escolha);
   }
   const guardouTentativa = escolha !== 'depois';
+  const avisos = [
+    ...(substituida ? [aviso('TENTATIVA_SUBSTITUIDA', { tentativa: relTentativa })] : []),
+    ...troca.sobras.map((sobra) => aviso('SOBRA_DA_TROCA', { sobra: relativoARaiz(sobra) })),
+  ];
+  const { restaurados } = troca;
   return {
     ok: true,
     codigo: CODIGO[escolha],
-    avisos: substituida ? [aviso('TENTATIVA_SUBSTITUIDA', { tentativa: relTentativa })] : [],
+    avisos,
     arquivos: { mudancas: c.rel('revisao', 'antes-depois', 'mudancas.json'), ...(guardouTentativa ? { tentativa: relTentativa } : {}) },
     dados: {
       escolha,

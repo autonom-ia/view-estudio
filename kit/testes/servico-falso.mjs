@@ -18,7 +18,7 @@ function responder(res, status, corpo) {
   res.writeHead(status, { 'content-type': 'application/json' });
   res.end(JSON.stringify(corpo));
 }
-const erro = (res, status, codigo) => responder(res, status, { ok: false, codigo, mensagem: `frase simples de ${codigo}` });
+const erro = (res, status, codigo, detalhe) => responder(res, status, { ok: false, codigo, mensagem: `frase simples de ${codigo}`, ...(detalhe ? { detalhe } : {}) });
 
 function lerCorpo(req) {
   return new Promise((resolve, reject) => {
@@ -176,7 +176,7 @@ export async function subirServicoFalso({ parteMax = 1000 } = {}) {
         e.abrirCai = false;
         return req.socket.destroy();
       }
-      if (e.erroAoAbrir) return erro(res, e.erroAoAbrir.status, e.erroAoAbrir.codigo);
+      if (e.erroAoAbrir) return erro(res, e.erroAoAbrir.status, e.erroAoAbrir.codigo, e.erroAoAbrir.detalhe);
       const id = crypto.randomBytes(8).toString('hex');
       const total = Math.max(1, Math.ceil(dados.bytes / parteMax));
       e.envios.set(id, { slug: partes[1], sha256: dados.sha256, total, partes: new Map() });

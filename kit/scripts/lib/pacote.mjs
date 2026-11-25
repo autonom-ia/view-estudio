@@ -96,14 +96,28 @@ export function arquivosPrivados(pasta, rel = '') {
   return achados;
 }
 
-// O .gltf cita os arquivos dele como endereço ("roda%20dianteira.bin"): vale também o nome decodificado.
+// O .gltf cita os arquivos dele como endereço ("roda%20dianteira.bin"): vale também o nome decodificado
+// de cada uri (buffers e imagens), um por um, para um "%" solto em outro campo não estragar os outros.
 function comoCita(rel, texto) {
   if (extensao(rel) !== '.gltf') return texto;
+  let modelo;
   try {
-    return `${texto}\n${decodeURIComponent(texto)}`;
+    modelo = JSON.parse(texto);
   } catch {
     return texto;
   }
+  const listas = modelo && typeof modelo === 'object' ? [modelo.buffers, modelo.images] : [];
+  const uris = listas.flatMap((lista) => (Array.isArray(lista) ? lista : []))
+    .map((item) => (item && typeof item.uri === 'string' ? item.uri : ''))
+    .filter((uri) => uri !== '' && !uri.startsWith('data:'));
+  const nomes = uris.map((uri) => {
+    try {
+      return decodeURIComponent(uri);
+    } catch {
+      return uri;
+    }
+  });
+  return [texto, ...nomes].join('\n');
 }
 
 const lerTextos = (pasta, arquivos) => arquivos

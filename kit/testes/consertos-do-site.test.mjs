@@ -504,7 +504,12 @@ test('5. modelo 3D e decodificador (glb, gltf, bin, wasm) passam na conferência
   escrever(path.join(deck, 'assets', '3d', 'cena.gltf'), '{"asset":{"version":"2.0"},"buffers":[{"uri":"peca%20a.bin"}]}');
   fs.renameSync(path.join(deck, 'assets', '3d', 'cena.bin'), path.join(deck, 'assets', '3d', 'peca a.bin'));
   assert.deepEqual(montarPacote(deck).naoCitados, []);
-  // endereço malformado no .gltf ("%E0%A4%A") não derruba o pacote: vale o texto como está
-  escrever(path.join(deck, 'assets', '3d', 'cena.gltf'), '{"buffers":[{"uri":"peca a.bin"}],"x":"%E0%A4%A"}');
+  // um "%" solto em outro campo não estraga a citação do .bin (cada uri é decodificada sozinha)
+  escrever(path.join(deck, 'assets', '3d', 'cena.gltf'), '{"asset":{"version":"2.0"},"meshes":[{"name":"100%"}],"buffers":[{"uri":"peca%20a.bin"}]}');
+  assert.deepEqual(montarPacote(deck).naoCitados, []);
+  // uri malformada ("%E0%A4%A") e .gltf que não é texto de modelo não derrubam o pacote
+  escrever(path.join(deck, 'assets', '3d', 'cena.gltf'), '{"buffers":[{"uri":"peca a.bin"},{"uri":"%E0%A4%A"}]}');
+  assert.deepEqual(montarPacote(deck).naoCitados, []);
+  escrever(path.join(deck, 'assets', '3d', 'cena.gltf'), 'não é modelo, cita peca a.bin');
   assert.deepEqual(montarPacote(deck).naoCitados, []);
 });

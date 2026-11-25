@@ -148,7 +148,8 @@ export async function chamar(cfg, metodo, caminho, { chave, json, bytes, cabecal
   return { status: resposta.status, corpo: corpo && typeof corpo === 'object' && !Array.isArray(corpo) ? corpo : null };
 }
 
-// Erro do serviço traduzido para o estúdio. A frase do serviço vai em dados.detalhe (passa pelo sanear).
+// Erro do serviço traduzido para o estúdio. A frase do serviço vai em dados.detalhe (passa pelo sanear) e,
+// quando o serviço diz qual arquivo recusou (campo detalhe da resposta), o nome vai em dados.arquivo.
 export function erroDoServico(resposta) {
   const corpo = resposta.corpo || {};
   const codigoServico = typeof corpo.codigo === 'string' ? corpo.codigo : '';
@@ -157,7 +158,8 @@ export function erroDoServico(resposta) {
   if (!codigo && resposta.status === 401) codigo = 'PUBLICAR_CHAVE_RECUSADA';
   if (!codigo && resposta.status === 422 && codigoServico.startsWith('PACOTE_')) codigo = 'PUBLICAR_PACOTE_RECUSADO';
   if (!codigo) codigo = 'PUBLICAR_RECUSADO';
-  return new KitErro(codigo, { status: resposta.status, codigo_do_servico: codigoServico, detalhe: frase.slice(0, 300) });
+  const arquivo = typeof corpo.detalhe === 'string' && corpo.detalhe !== '' ? { arquivo: corpo.detalhe.slice(0, 300) } : {};
+  return new KitErro(codigo, { status: resposta.status, codigo_do_servico: codigoServico, detalhe: frase.slice(0, 300), ...arquivo });
 }
 
 // Resposta esperada (status na lista e corpo com ok:true) ou erro traduzido.

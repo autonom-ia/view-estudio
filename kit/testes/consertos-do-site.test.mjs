@@ -612,3 +612,14 @@ test('5c. .gltf acima do teto do painel (16 MB) reprova aqui, sem ler o arquivo;
   fs.truncateSync(gltf, TETO_DO_GLTF);
   assert.doesNotThrow(() => montarPacote(deck));
 });
+
+test('5d. nome de arquivo que o serviço devolve passa pelo sanear (sequência longa vira <REDACTED>)', async (t) => {
+  const ctx = await preparar(t);
+  darChave(ctx);
+  const longo = `assets/${'a1B2'.repeat(10)}.bin`;
+  ctx.servico.estado.erroAoAbrir = { status: 422, codigo: 'PACOTE_BIN_SOLTO', detalhe: longo };
+  const r = await ctx.publicar();
+  assert.equal(r.json.codigo, 'PUBLICAR_BIN_SOLTO', r.saida);
+  assert.equal(r.json.dados.arquivo, 'assets/<REDACTED>.bin');
+  assert.ok(!r.saida.includes('a1B2'.repeat(10)), 'a sequência longa não sai em lugar nenhum');
+});

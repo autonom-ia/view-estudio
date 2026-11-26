@@ -190,7 +190,7 @@ test('tipo que o painel não aceita (vídeo .mov) reprova antes de enviar; o pac
   nadaChegouAoServico(ctx);
   const p = await rodar(['pacote', NOME], ctx.env);
   assert.deepEqual([p.codigo, p.json.codigo], [0, 'PACOTE_PRONTO'], p.saida);
-  for (const bom of ['a.mp4', 'b.WEBM', 'c/d.woff2', 'e.svg', 'f.json', 'g.pdf']) assert.equal(tipoAceito(bom), true, bom);
+  for (const bom of ['a.mp4', 'b.WEBM', 'c/d.woff2', 'e.svg', 'f.json', 'g.pdf', 'h.glb', 'i.GLTF', 'i.bin', 'j/draco.wasm']) assert.equal(tipoAceito(bom), true, bom);
   for (const ruim of ['a.mov', 'b.m4v', 'CNAME', '_headers', 'c.psd', 'd']) assert.equal(tipoAceito(ruim), false, ruim);
 });
 

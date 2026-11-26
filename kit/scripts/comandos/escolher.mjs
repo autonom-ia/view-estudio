@@ -11,13 +11,17 @@
 // "restauracao_pendente" gravado, e só então a primeira troca; o estado só é limpo no fim. Com ele,
 // rodar de novo continua de onde parou, sem guardar por cima da tentativa a apresentação pela
 // metade. Troca que falha (no Windows, um vídeo aberto em outro programa) vira RESTAURACAO_FALHOU.
-// Com "depois" nesse estado, a tentativa volta inteira.
-// Fechar o antes apaga a cópia guardada e as fotos (lib/antes-depois.mjs, fecharAntes); com
-// "depois", também a tentativa de um "outro" anterior.
+// Com "depois" nesse estado, a tentativa volta inteira. Troca feita com a cópia velha ainda ao lado
+// (no Windows, um arquivo dela aberto em outro programa) vale, com o aviso SOBRA_DA_TROCA.
+// Fechar o antes grava a escolha e apaga a cópia guardada e as fotos (lib/antes-depois.mjs,
+// fecharAntes); com "depois", também a tentativa de um "outro" anterior. O que não sai vira
+// SOBRA_DA_TROCA. Guardar a versão vista que falha (antes de qualquer troca) vira RESTAURACAO_FALHOU
+// com dados.item "tentativa".
 // "pecas.renomear" é injetável para os testes simularem uma troca que falha ou morre no meio.
 // Portado do Site Estúdio (comando "escolher").
 import fs from 'node:fs';
 import { nomeDaApresentacao } from '../lib/args.mjs';
+import { relativoARaiz } from '../lib/caminhos.mjs';
 import { abrirApresentacao } from '../lib/apresentacao.mjs';
 import { escreverJson, lerJson } from '../lib/json.mjs';
 import { aviso, falha, reprovado } from '../lib/saida.mjs';
@@ -32,6 +36,9 @@ import {
   temTentativa,
   ESCOLHAS,
 } from '../lib/antes-depois.mjs';
+
+// Erro do sistema de arquivos (EPERM, EBUSY, EACCES...): vira código; outro erro é defeito e sobe.
+const doDisco = (erro) => typeof erro?.code === 'string' && typeof erro.syscall === 'string';
 
 const CODIGO = Object.freeze({ depois: 'FICOU_O_DEPOIS', antes: 'VOLTOU_COMO_ESTAVA', outro: 'PRONTO_PARA_OUTRO_CAMINHO' });
 
@@ -62,38 +69,49 @@ export default async function escolher(args, pecas = {}) {
     }
   };
 
-  let restaurados = [];
+  let troca = { restaurados: [], sobras: [] };
   let substituida = false;
   if (escolha !== 'depois') {
     const alterados = pesadosAlterados(ad.antes, manifesto);
     if (alterados.length) falha('ANTES_VIDEO_MUDOU', { nome, arquivos: alterados });
     if (!pendente) {
       substituida = temTentativa(ad);
-      tentativa = guardarTentativa(c.pasta, ad);
+      try {
+        tentativa = guardarTentativa(c.pasta, ad);
+      } catch (erro) {
+        // nada voltou ainda: a apresentação continua como a pessoa viu, e rodar de novo guarda e volta
+        if (!doDisco(erro)) throw erro;
+        falha('RESTAURACAO_FALHOU', { nome, escolha, item: 'tentativa', erro: erro.code, tentativa: relTentativa });
+      }
     }
-    restaurados = trocar(() => restaurarAntes(c.pasta, ad.antes, manifesto, { renomear }));
+    troca = trocar(() => restaurarAntes(c.pasta, ad.antes, manifesto, { renomear }));
   } else if (pendente) {
     // uma volta anterior parou no meio: "depois" é a versão vista inteira, guardada na tentativa
-    restaurados = trocar(() => restaurarDe(c.pasta, ad.tentativa, tentativa, { renomear }));
+    troca = trocar(() => restaurarDe(c.pasta, ad.tentativa, tentativa, { renomear }));
   }
-  let tentativaApagada = false;
+  let fechamento = { tentativaApagada: false, sobras: [] };
   if (escolha === 'outro') {
     const { pedido } = lerJson(ad.mudancas, { pedido: '' });
     escreverJson(ad.mudancas, { pedido: typeof pedido === 'string' ? pedido : '', mudancas: [] });
     escreverJson(ad.estado, { aberto: true });
   } else {
-    tentativaApagada = fecharAntes(ad, escolha);
+    fechamento = fecharAntes(ad, escolha);
   }
   const guardouTentativa = escolha !== 'depois';
+  const avisos = [
+    ...(substituida ? [aviso('TENTATIVA_SUBSTITUIDA', { tentativa: relTentativa })] : []),
+    ...[...troca.sobras, ...fechamento.sobras].map((sobra) => aviso('SOBRA_DA_TROCA', { sobra: relativoARaiz(sobra) })),
+  ];
+  const { restaurados } = troca;
   return {
     ok: true,
     codigo: CODIGO[escolha],
-    avisos: substituida ? [aviso('TENTATIVA_SUBSTITUIDA', { tentativa: relTentativa })] : [],
+    avisos,
     arquivos: { mudancas: c.rel('revisao', 'antes-depois', 'mudancas.json'), ...(guardouTentativa ? { tentativa: relTentativa } : {}) },
     dados: {
       escolha,
       restaurados,
-      ...(guardouTentativa ? { tentativa, tentativa_substituida: substituida } : { tentativa_apagada: tentativaApagada }),
+      ...(guardouTentativa ? { tentativa, tentativa_substituida: substituida } : { tentativa_apagada: fechamento.tentativaApagada }),
     },
   };
 }

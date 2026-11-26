@@ -149,7 +149,7 @@ test('antes-depois: restaurar volta cada item e tira o que a tentativa criou', (
   escrever(path.join(pasta, 'brief.md'), '# Brief mudado');
   assert.equal(igualAoAntes(pasta, antes, m), false);
   const feitos = restaurarAntes(pasta, antes, m);
-  assert.deepEqual(feitos, ['deck', 'roteiro', '-cenas', 'brief.md']);
+  assert.deepEqual(feitos, { restaurados: ['deck', 'roteiro', '-cenas', 'brief.md'], sobras: [] });
   assert.equal(fs.readFileSync(path.join(pasta, 'deck', 'slides', 's01-capa.html'), 'utf8'), '<h1>Capa</h1>');
   assert.equal(fs.existsSync(path.join(pasta, 'deck', 'slides', 's02-novo.html')), false);
   assert.equal(fs.existsSync(path.join(pasta, 'cenas')), false);
@@ -175,7 +175,7 @@ test('antes-depois: troca que falha no meio não deixa a apresentação sem o it
   assert.equal(fs.readFileSync(path.join(roteiro, 'S01.json'), 'utf8'), '{"tela":1,"beats":[{"fala":"Fala nova."}]}', 'o roteiro volta ao que estava, inteiro');
   assert.deepEqual(fs.readdirSync(pasta).filter((n) => n.endsWith('.trocando') || n.endsWith('.descartando')), []);
   // de novo, sem falha: termina
-  assert.deepEqual(restaurarAntes(pasta, antes, m), ['deck', 'roteiro', 'brief.md']);
+  assert.deepEqual(restaurarAntes(pasta, antes, m), { restaurados: ['deck', 'roteiro', 'brief.md'], sobras: [] });
   assert.equal(igualAoAntes(pasta, antes, m), true);
 });
 
@@ -204,15 +204,20 @@ test('antes-depois: a tentativa é guardada inteira, com o vídeo ligado, e uma 
   assert.equal(fs.existsSync(path.join(ad.tentativa, 'deck', 'slides', 's01-capa.html')), true);
 });
 
-test('antes-depois: com uma troca parada no meio, a tentativa copia a versão vista do .descartando', () => {
+test('antes-depois: a tentativa guarda o item no lugar, nunca a sobra velha ao lado; só sem o item usa o .descartando', () => {
   const pasta = apresentacaoDeBrinquedo('tentativa-sobra');
   const ad = caminhosDoAntesDepois({ revisao: path.join(pasta, 'revisao') });
   guardarAntes(pasta, ad.antes);
-  // o deck de antes já entrou no lugar; a versão vista ficou no .descartando
-  escrever(path.join(pasta, 'deck.descartando', 'slides', 's01-capa.html'), '<h1>Vista</h1>');
+  // sobra de uma troca já concluída: o .descartando é uma versão velha; a vista é a que está no lugar
+  escrever(path.join(pasta, 'deck', 'slides', 's01-capa.html'), '<h1>Vista</h1>');
+  escrever(path.join(pasta, 'deck.descartando', 'slides', 's01-capa.html'), '<h1>Velha</h1>');
   guardarTentativa(pasta, ad);
   assert.equal(fs.readFileSync(path.join(ad.tentativa, 'deck', 'slides', 's01-capa.html'), 'utf8'), '<h1>Vista</h1>');
   assert.equal(fs.existsSync(path.join(pasta, 'deck.descartando')), true, 'a tentativa não apaga nada da apresentação');
+  // troca parada entre os dois nomes, ainda não posta de volta: o item sumiu e a versão vista está ao lado
+  fs.rmSync(path.join(pasta, 'deck'), { recursive: true });
+  guardarTentativa(pasta, ad);
+  assert.equal(fs.readFileSync(path.join(ad.tentativa, 'deck', 'slides', 's01-capa.html'), 'utf8'), '<h1>Velha</h1>');
 });
 
 test('antes-depois: "cena" troca pelo nome e o antes fica com o vídeo antigo inteiro', async () => {

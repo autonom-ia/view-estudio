@@ -115,6 +115,9 @@ test('códigos de erro do serviço viram frase simples do estúdio', async (t) =
     [429, 'LIMITE_DO_DIA', 'PUBLICAR_LIMITE_DO_DIA'],
     [503, 'PUBLICACAO_DESLIGADA', 'PUBLICAR_DESLIGADA'],
     [422, 'PACOTE_ATALHO', 'PUBLICAR_PACOTE_RECUSADO'],
+    [422, 'PACOTE_3D_INVALIDO', 'PUBLICAR_3D_INVALIDO'],
+    [422, 'PACOTE_3D_GRANDE', 'PUBLICAR_3D_GRANDE'],
+    [422, 'PACOTE_BIN_SOLTO', 'PUBLICAR_BIN_SOLTO'],
     [418, 'NOVO_CODIGO', 'PUBLICAR_RECUSADO'],
   ];
   for (const [status, codigoServico, codigo] of casos) {
@@ -126,6 +129,20 @@ test('códigos de erro do serviço viram frase simples do estúdio', async (t) =
     assert.ok(!r.json.resumo.includes(codigoServico));
   }
   assert.equal(ctx.servico.estado.publicados.length, 0);
+});
+
+test('recusa do pacote pelo serviço diz qual arquivo (dados.arquivo)', async (t) => {
+  const ctx = await preparar(t);
+  darChave(ctx);
+  for (const [codigoServico, codigo] of [['PACOTE_3D_INVALIDO', 'PUBLICAR_3D_INVALIDO'], ['PACOTE_BIN_SOLTO', 'PUBLICAR_BIN_SOLTO'], ['PACOTE_ATALHO', 'PUBLICAR_PACOTE_RECUSADO']]) {
+    ctx.servico.estado.erroAoAbrir = { status: 422, codigo: codigoServico, detalhe: 'assets/3d/peca.bin' };
+    const r = await ctx.publicar();
+    assert.equal(r.json.codigo, codigo, codigoServico);
+    assert.equal(r.json.dados.arquivo, 'assets/3d/peca.bin', codigoServico);
+    assert.ok(MENSAGENS[codigo].acao.includes('dados.arquivo'), codigo);
+  }
+  ctx.servico.estado.erroAoAbrir = { status: 422, codigo: 'PACOTE_ATALHO' };
+  assert.equal((await ctx.publicar()).json.dados.arquivo, undefined, 'sem detalhe, sem dados.arquivo');
 });
 
 test('apresentação no ar sem cadeado ainda: PUBLICADO_CERTIFICADO_PENDENTE; sem serviço: PUBLICAR_SEM_CONEXAO', async (t) => {

@@ -59,10 +59,12 @@ export async function situacaoDoEndereco(cfg, chave, nome) {
   const c = exigir(await semFalhaDeRede(() => chamar(cfg, 'GET', '/api/estudio/sites', { chave })), 200);
   if (!Array.isArray(c.sites)) throw new KitErro('PUBLICAR_RESPOSTA_ESTRANHA', { etapa: 'listar sites' });
   const site = c.sites.find((s) => s && s.slug === nome);
-  if (!site) return { teveVersao: false, versao: null };
+  if (!site) return { teveVersao: false, versao: null, versoes: [], tamanhos: {} };
   const versao = Number.isInteger(site.versao) ? site.versao : null;
-  const guardadas = Array.isArray(site.versoes) ? site.versoes.length : 0;
-  return { teveVersao: versao !== null || guardadas > 0, versao };
+  const lista = Array.isArray(site.versoes) ? site.versoes.filter((v) => v && Number.isInteger(v.versao)) : [];
+  // tamanhos: os bytes do pacote de cada versão, quando o painel sabe (null quando não).
+  const tamanhos = Object.fromEntries(lista.map((v) => [v.versao, Number.isInteger(v.bytes) ? v.bytes : null]));
+  return { teveVersao: versao !== null || lista.length > 0, versao, versoes: lista.map((v) => v.versao), tamanhos };
 }
 
 const versaoNova = (site, antes) => site.versao !== null && site.versao !== antes;
@@ -137,8 +139,10 @@ async function confirmarOuGuardar(cfg, chave, nome, versaoAntes, pacote, ferr) {
   }
 }
 
-// Publica o pacote montado (lib/pacote.mjs). Devolve { slug, versao, endereco, partes }.
-export async function enviarPacote(cfg, chave, nome, pacote, ferr = FERR) {
+// Publica o pacote montado (lib/pacote.mjs). Devolve { slug, versao, endereco, partes }. aoAbrir é
+// chamado quando o painel aceita abrir o envio: daí em diante a apresentação pode chegar ao ar mesmo
+// com erro (o concluir publica e a resposta vem estranha, por exemplo).
+export async function enviarPacote(cfg, chave, nome, pacote, ferr = FERR, { aoAbrir } = {}) {
   const antes = await semFalhaDeRede(() => lerSite(cfg, chave, nome));
   // Só pula o envio se a versão nova que apareceu é deste mesmo conteúdo (pacote.impressao: nomes e
   // bytes, sem as datas que mudam o zip): a apresentação pode ter mudado entre o envio sem resposta e
@@ -156,6 +160,7 @@ export async function enviarPacote(cfg, chave, nome, pacote, ferr = FERR) {
       json: { bytes, sha256: pacote.sha256, arquivos: pacote.arquivos },
     }));
   const envio = conferirAbertura(exigir(aberto, 201, 200), bytes);
+  if (aoAbrir) aoAbrir();
   for (let n = 0; n < envio.partes; n += 1) {
     await mandarParte(cfg, chave, envio, n, pacote.zip.subarray(n * envio.max, Math.min(bytes, (n + 1) * envio.max)));
   }

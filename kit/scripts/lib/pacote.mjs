@@ -17,6 +17,7 @@
 //   terminado em .old, .backup, .bak, .orig, .tmp, .swp ou ~, e pasta backup, backups, old, _old ou tmp);
 // - PACOTE_CITA_ARQUIVO_FORA: uma página, estilo ou script do pacote cita um arquivo que fica fora
 //   dele (rascunho, teleprompter, anotação): no ar, a tela quebraria.
+// - PUBLICAR_3D_GRANDE: um .gltf passa do teto do painel (TETO_DO_GLTF), que o recusaria.
 // Portado do Site Estúdio (lib/pacote.mjs), adaptado ao deck.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -32,7 +33,8 @@ export const TELEPROMPTER = 'teleprompter.html';
 const SEM_COMPRIMIR = Object.freeze(['.mp4', '.webm', '.mov', '.m4v', '.mp3', '.m4a', '.wav', '.ogg', '.woff2', '.jpg', '.jpeg', '.png', '.webp', '.avif']);
 // Arquivos que os serviços de hospedagem leem pelo nome, sem nenhuma página citar.
 const LIDOS_PELO_SERVIDOR = Object.freeze(['robots.txt', 'favicon.ico', 'cname', '_headers', '_redirects', '404.html']);
-const TEXTOS_QUE_CITAM = Object.freeze(['.html', '.css', '.js', '.mjs', '.json', '.webmanifest', '.xml', '.svg']);
+// Textos que citam outros arquivos. O .gltf (modelo 3D em texto) cita os .bin e as texturas dele.
+const TEXTOS_QUE_CITAM = Object.freeze(['.html', '.css', '.js', '.mjs', '.json', '.webmanifest', '.xml', '.svg', '.gltf']);
 
 const extensao = (rel) => {
   const nome = rel.split('/').pop().toLowerCase();
@@ -95,9 +97,62 @@ export function arquivosPrivados(pasta, rel = '') {
   return achados;
 }
 
+// O .gltf cita os arquivos dele como endereço ("roda%20dianteira.bin"): vale também o nome decodificado.
+// Cada texto do JSON é decodificado sozinho (buffers, imagens e extensões), para um "%" solto num campo
+// não estragar os outros. O BOM do começo não conta; JSON quebrado tenta o texto inteiro.
+const BOM = '\uFEFF';
+const decodificado = (texto) => {
+  try {
+    return decodeURIComponent(texto);
+  } catch {
+    return texto;
+  }
+};
+// Os textos do JSON, em qualquer fundura. Pilha explícita, sem recursão: um modelo aninhado muito
+// fundo (dez mil colchetes) não estoura a pilha do Node no meio do publicar.
+function textosDoJson(raiz) {
+  const textos = [];
+  const pilha = [raiz];
+  while (pilha.length) {
+    const valor = pilha.pop();
+    if (typeof valor === 'string') textos.push(valor);
+    else if (valor && typeof valor === 'object') {
+      // de trás para a frente, para sair na ordem do arquivo; um por um (lista enorme não vira argumento)
+      const filhos = Object.values(valor);
+      for (let i = filhos.length - 1; i >= 0; i -= 1) pilha.push(filhos[i]);
+    }
+  }
+  return textos;
+}
+function comoCita(rel, texto) {
+  if (extensao(rel) !== '.gltf') return texto;
+  const semBom = texto.startsWith(BOM) ? texto.slice(BOM.length) : texto;
+  let modelo;
+  try {
+    modelo = JSON.parse(semBom);
+  } catch {
+    return `${texto}\n${decodificado(semBom)}`;
+  }
+  const nomes = textosDoJson(modelo).filter((t) => t.includes('%') && !t.startsWith('data:')).map(decodificado);
+  return [texto, ...nomes].join('\n');
+}
+
+// O mesmo teto do painel para o .gltf (view_autonomia, framework/sites/painel/publicacao/pacote.mjs,
+// GLTF_MAX_BYTES): acima dele o painel recusa com PACOTE_3D_GRANDE. Conferido pelo tamanho no disco,
+// antes de ler: um .gltf gigante nunca é lido nem interpretado aqui, e a pessoa sabe sem enviar nada.
+export const TETO_DO_GLTF = 16 * 1024 * 1024;
+
+function lerTextoQueCita(pasta, rel) {
+  const abs = path.join(pasta, ...rel.split('/'));
+  if (extensao(rel) === '.gltf' && fs.statSync(abs).size > TETO_DO_GLTF) {
+    reprovado('PUBLICAR_3D_GRANDE', { arquivo: `deck/${rel}` });
+  }
+  return comoCita(rel, fs.readFileSync(abs, 'utf8'));
+}
+
 const lerTextos = (pasta, arquivos) => arquivos
   .filter((rel) => TEXTOS_QUE_CITAM.includes(extensao(rel)))
-  .map((rel) => ({ rel, texto: fs.readFileSync(path.join(pasta, ...rel.split('/')), 'utf8') }));
+  .map((rel) => ({ rel, texto: lerTextoQueCita(pasta, rel) }));
 
 // Letra que continua um nome de arquivo ou pasta (o resto, como aspas, parêntese, espaço, "?" e "#",
 // termina o nome).
@@ -122,6 +177,18 @@ export function citaCaminho(texto, caminho) {
   return false;
 }
 
+// O texto cita este nome de arquivo inteiro, e não só um pedaço de outro ("data.png" não cita
+// "a.png"; "a.png.bak" também não)? Antes e depois do nome só vale o que termina um nome, inclusive a
+// "/" da pasta.
+export function citaNome(texto, nome) {
+  let i = texto.indexOf(nome);
+  while (i !== -1) {
+    if (!continuaNome(texto[i - 1]) && !continuaNome(texto[i + nome.length])) return true;
+    i = texto.indexOf(nome, i + 1);
+  }
+  return false;
+}
+
 // Arquivos que ficam fora do pacote e que uma página, estilo ou script do pacote cita, pelo caminho a
 // partir da raiz de deck/ ou a partir da pasta de quem cita ("../_lab/foto.png"). [{ arquivo, citado_em }]
 export function citadosForaDoPacote(pasta, arquivos, fora) {
@@ -137,7 +204,7 @@ export function citadosForaDoPacote(pasta, arquivos, fora) {
   return achados;
 }
 
-// Arquivos (fora as páginas) cujo nome não aparece em nenhuma página, CSS, script ou manifesto.
+// Arquivos (fora as páginas) cujo nome inteiro não aparece em nenhuma página, CSS, script ou manifesto.
 export function arquivosNaoCitados(pasta, arquivos) {
   const textos = lerTextos(pasta, arquivos);
   const soltos = [];
@@ -145,7 +212,7 @@ export function arquivosNaoCitados(pasta, arquivos) {
     const nome = rel.split('/').pop();
     if (extensao(rel) === '.html' || LIDOS_PELO_SERVIDOR.includes(nome.toLowerCase())) continue;
     if (ehLicencaDeFonte(nome) || nome.toUpperCase().startsWith('LICENSE')) continue;
-    if (!textos.some((t) => t.rel !== rel && t.texto.includes(nome))) soltos.push(rel);
+    if (!textos.some((t) => t.rel !== rel && citaNome(t.texto, nome))) soltos.push(rel);
   }
   return soltos;
 }

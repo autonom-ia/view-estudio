@@ -18,7 +18,7 @@ function responder(res, status, corpo) {
   res.writeHead(status, { 'content-type': 'application/json' });
   res.end(JSON.stringify(corpo));
 }
-const erro = (res, status, codigo) => responder(res, status, { ok: false, codigo, mensagem: `frase simples de ${codigo}` });
+const erro = (res, status, codigo, detalhe) => responder(res, status, { ok: false, codigo, mensagem: `frase simples de ${codigo}`, ...(detalhe ? { detalhe } : {}) });
 
 function lerCorpo(req) {
   return new Promise((resolve, reject) => {
@@ -47,7 +47,10 @@ export async function subirServicoFalso({ parteMax = 1000 } = {}) {
     erroAoAbrir: null,
     erroAoConcluir: null,
     erroAoVoltar: null,
+    voltarCai: false, // volta a versão e derruba a conexão antes de responder
+    abrirCai: false, // derruba a conexão ao abrir o envio, sem abrir
     enderecoDoSite: null,
+    slugNaResposta: null, // slug que o concluir devolve, quando difere do enviado
     expiraDelta: 600000, // expira_em = agora + expiraDelta; negativo simula relógio local adiantado
     aprovarNaConsulta: 0, // aprova os pendentes quando a contagem de consultas chegar a este número
     concluirCai: null, // 'socket' publica e derruba; '504' publica e responde como proxy; 'sem_publicar' derruba e deixa pendente
@@ -131,7 +134,7 @@ export async function subirServicoFalso({ parteMax = 1000 } = {}) {
       return res.end('<html>Gateway Timeout</html>');
     }
     if (e.erroAoConcluir) return erro(res, e.erroAoConcluir.status, e.erroAoConcluir.codigo);
-    return responder(res, 200, { ok: true, slug: envio.slug, versao, endereco: enderecoDe(envio.slug) });
+    return responder(res, 200, { ok: true, slug: e.slugNaResposta || envio.slug, versao, endereco: enderecoDe(envio.slug) });
   }
 
   // GET /api/estudio/sites: versão no ar = a última publicada de cada site.
@@ -161,11 +164,19 @@ export async function subirServicoFalso({ parteMax = 1000 } = {}) {
       if (dados.versao === 99) return erro(res, 404, 'VERSAO_INEXISTENTE');
       const versao = dados.versao ?? 1;
       if (e.publicados.some((p) => p.slug === partes[1] && p.versao === versao)) e.noAr.set(partes[1], versao);
+      if (e.voltarCai) {
+        e.voltarCai = false;
+        return req.socket.destroy();
+      }
       return responder(res, 200, { ok: true, versao });
     }
     if (partes[0] === 'sites' && partes[2] === 'envios') {
       e.aberturas += 1;
-      if (e.erroAoAbrir) return erro(res, e.erroAoAbrir.status, e.erroAoAbrir.codigo);
+      if (e.abrirCai) {
+        e.abrirCai = false;
+        return req.socket.destroy();
+      }
+      if (e.erroAoAbrir) return erro(res, e.erroAoAbrir.status, e.erroAoAbrir.codigo, e.erroAoAbrir.detalhe);
       const id = crypto.randomBytes(8).toString('hex');
       const total = Math.max(1, Math.ceil(dados.bytes / parteMax));
       e.envios.set(id, { slug: partes[1], sha256: dados.sha256, total, partes: new Map() });

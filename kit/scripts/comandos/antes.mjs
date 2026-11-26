@@ -4,16 +4,26 @@
 // molde para o assistente preencher com 2 ou 3 mudanças concretas.
 // Enquanto a pessoa não escolhe (./estudio escolher), o antes fica em aberto e não é trocado: rodar
 // "antes" de novo reprova com ANTES_EM_ABERTO, para a tentativa recusada nunca virar o "antes".
-// --de-novo troca mesmo assim (só quando a pessoa pediu para partir de como a apresentação está agora).
+// --de-novo troca mesmo assim (só quando a pessoa pediu para partir de como a apresentação está agora),
+// mas nunca com uma volta ao antes parada no meio (estado.restauracao_pendente): aí a apresentação está
+// meio no antes e tentativa/ guarda a única cópia inteira da versão vista.
 // O que sai da comparação anterior (antes, versão vista, fotos, pedido) vai listado em dados.apagados.
+// Nada é apagado antes de o novo estar inteiro: a comparação nova é montada ao lado
+// (revisao/antes-depois.guardando) e entra no lugar da anterior de uma vez (lib/antes-depois.mjs,
+// trocarPasta). O estado novo vai dentro dela e só vale com a troca feita; o estado.json da anterior
+// não é tocado antes. Se a troca falha (no Windows, um arquivo aberto em outro programa), reprova com
+// ANTES_NAO_TROCADO, a apresentação não muda e a comparação anterior fica exatamente como era: se
+// estava em aberto, o "escolher" ainda responde a ela. Rodar "antes" de novo termina. Troca feita com
+// a cópia velha ainda ao lado (não saiu agora) vale, com o aviso SOBRA_DA_TROCA.
 // Portado do Site Estúdio (comando "antes").
 import fs from 'node:fs';
+import path from 'node:path';
 import { nomeDaApresentacao } from '../lib/args.mjs';
 import { abrirApresentacao } from '../lib/apresentacao.mjs';
-import { listarArquivos } from '../lib/caminhos.mjs';
+import { listarArquivos, relativoARaiz } from '../lib/caminhos.mjs';
 import { escreverJson, lerJson } from '../lib/json.mjs';
 import { aviso, reprovado } from '../lib/saida.mjs';
-import { caminhosDoAntesDepois, guardarAntes, lerMudancas, temAntes } from '../lib/antes-depois.mjs';
+import { caminhosDoAntesDepois, guardarAntes, lerMudancas, temAntes, trocarPasta } from '../lib/antes-depois.mjs';
 
 // O que da comparação anterior vai sair (o antes, a versão vista, as fotos e o pedido), para o
 // assistente saber o que foi apagado. null quando não havia nada.
@@ -44,22 +54,55 @@ export function avisosDosAtalhos({ atalhos = [], quebrados = [] }) {
   return avisos;
 }
 
+// A comparação nova (antes/, manifesto.json, mudancas.json e estado.json), montada ao lado e trocada
+// inteira. Se falhar, a montagem pela metade sai (não ocupa o disco até o próximo "antes"). Devolve
+// { manifesto, sobras }.
+function trocarComparacao(c, ad) {
+  const montando = `${ad.pasta}.guardando`;
+  const em = (arquivo) => path.join(montando, path.relative(ad.pasta, arquivo));
+  fs.rmSync(montando, { recursive: true, force: true });
+  try {
+    const manifesto = guardarAntes(c.pasta, em(ad.antes));
+    escreverJson(em(ad.manifesto), manifesto);
+    escreverJson(em(ad.mudancas), { pedido: '', mudancas: [] });
+    escreverJson(em(ad.estado), { aberto: true });
+    const { sobras } = trocarPasta(montando, ad.pasta, fs.renameSync, { mover: true });
+    return { manifesto, sobras };
+  } catch (erro) {
+    try {
+      fs.rmSync(montando, { recursive: true, force: true });
+    } catch {
+      // A causa é o erro de cima, que sobe; a montagem que ficou sai no próximo "antes".
+    }
+    throw erro;
+  }
+}
+
 export default async function antes(args) {
   const nome = nomeDaApresentacao(args);
   const c = abrirApresentacao(nome);
   const ad = caminhosDoAntesDepois(c);
   const estado = lerJson(ad.estado, { aberto: false });
-  if (temAntes(ad) && estado.aberto === true && args.opcoes['de-novo'] !== true) reprovado('ANTES_EM_ABERTO', { nome });
+  const pendente = estado.restauracao_pendente === true;
+  if (temAntes(ad) && estado.aberto === true && (pendente || args.opcoes['de-novo'] !== true)) {
+    reprovado('ANTES_EM_ABERTO', { nome, restauracao_pendente: pendente });
+  }
   const apagados = oQueSai(ad);
-  fs.rmSync(ad.pasta, { recursive: true, force: true });
-  const manifesto = guardarAntes(c.pasta, ad.antes);
-  escreverJson(ad.manifesto, manifesto);
-  escreverJson(ad.mudancas, { pedido: '', mudancas: [] });
-  escreverJson(ad.estado, { aberto: true });
+  let troca;
+  try {
+    troca = trocarComparacao(c, ad);
+  } catch (erro) {
+    // Só erro do sistema de arquivos (EPERM, EBUSY, EACCES...) vira reprovação, e só o código dele sai
+    // (a mensagem traz caminhos da pessoa). Outro erro é defeito do estúdio e sobe como é.
+    if (typeof erro?.code !== 'string' || typeof erro.syscall !== 'string') throw erro;
+    reprovado('ANTES_NAO_TROCADO', { nome, erro: erro.code });
+  }
+  const { manifesto, sobras } = troca;
+  const avisos = [...avisosDosAtalhos(manifesto), ...sobras.map((sobra) => aviso('SOBRA_DA_TROCA', { sobra: relativoARaiz(sobra) }))];
   return {
     ok: true,
     codigo: 'ANTES_GUARDADO',
-    avisos: avisosDosAtalhos(manifesto),
+    avisos,
     arquivos: { antes: c.rel('revisao', 'antes-depois', 'antes'), mudancas: c.rel('revisao', 'antes-depois', 'mudancas.json') },
     dados: {
       itens: manifesto.itens,

@@ -6,7 +6,8 @@
 // - apresentacoes/<nome>/no-ar.json: o nome do endereço e o link, para a pessoa e para a próxima vez
 //   (vale como lembrete, não como prova: ele vai junto quando a pasta é copiada);
 // - .ferramentas/publicar/donos.json: a prova. Indexada pelo caminho real da pasta da apresentação e
-//   pelo endereço, guarda a versão que esta pasta pôs no ar (ou "pendente", com envio em curso). Fica
+//   pelo endereço, guarda a versão que esta pasta pôs no ar (ou "pendente", com envio em curso, as
+//   versões que o endereço já tinha quando o envio começou e o tamanho do pacote). Fica
 //   fora das pastas da pessoa e a atualização do estúdio não mexe nela (atualizacao.mjs preserva
 //   .ferramentas/); desinstalar apaga, e aí a primeira publicação pede --por-cima uma vez.
 //
@@ -19,6 +20,10 @@
 // Migração de quem publicou antes deste registro: sem nenhum registro do endereço neste computador, o
 // no-ar.json que bate com a versão no ar vale uma vez e vira registro.
 // --por-cima pula a conferência. Endereço só reservado (nenhuma versão guardada) não conta.
+// --voltar registra o pedido antes de mandar (voltar: { de, para, versoes }), para uma resposta perdida
+// não fazer a próxima publicação pedir --por-cima. Risco aceito: se, enquanto a resposta daqui se
+// perdeu, outro computador voltar o endereço para a MESMA versão pedida, as duas coisas são
+// indistinguíveis daqui, e a versão vale como desta pasta.
 import fs from 'node:fs';
 import path from 'node:path';
 import { FERR, relativoARaiz } from './caminhos.mjs';
@@ -31,9 +36,11 @@ const arquivoDonos = (ferr = FERR) => path.join(pastaPublicar(ferr), 'donos.json
 export const arquivoNoAr = (c) => path.join(c.pasta, 'no-ar.json');
 
 // Caminho real (sem link e sem "..") da pasta da apresentação: a mesma pasta dá sempre a mesma chave.
+// O .native devolve a caixa que está no disco (no Windows, "Apresentacoes" e "apresentacoes" são a
+// mesma pasta).
 const chaveDaPasta = (c) => {
   try {
-    return fs.realpathSync(c.pasta);
+    return fs.realpathSync.native(c.pasta);
   } catch {
     return path.resolve(c.pasta);
   }
@@ -79,7 +86,36 @@ export function anotarDono(c, endereco, registro, ferr = FERR) {
   gravarPrivado(arquivoDonos(ferr), novo);
 }
 
-const bate = (registro, situacao) => registro.pendente === true || situacao.versao === null || registro.versao === situacao.versao;
+// Um --voltar registrado antes de pedir ({ de, para, versoes }: a versão no ar, a pedida ou null para
+// "a anterior", e as versões que existiam): se a resposta se perdeu, vale a versão pedida, desde que já
+// existisse (volta não cria versão). "A anterior" é a maior guardada abaixo da que estava no ar, como o
+// painel decide (publicacao/servico.mjs: a seguinte à do ar na lista do disco, da mais nova para a mais
+// velha).
+function voltouParaOPedido(volta, situacao) {
+  if (!volta || typeof volta !== 'object' || !Array.isArray(volta.versoes)) return false;
+  if (!volta.versoes.includes(situacao.versao)) return false;
+  if (Number.isInteger(volta.para)) return situacao.versao === volta.para;
+  if (!Number.isInteger(volta.de)) return false;
+  const anteriores = volta.versoes.filter((v) => v < volta.de);
+  return anteriores.length > 0 && situacao.versao === Math.max(...anteriores);
+}
+
+// O que está no ar é o que esta pasta pôs? Com envio pendente (o processo pode ter caído no meio),
+// vale a versão que ela tinha ou a ÚNICA versão nova desde que o envio começou, se tiver o tamanho do
+// pacote deste envio (envio_bytes): uma versão nova de outro tamanho é de outro lugar, e duas ou mais
+// novas querem dizer que alguém mais publicou ali. Sem a lista de antes do envio, só vale a versão
+// que ela tinha.
+function bate(registro, situacao) {
+  if (situacao.versao === null) return true;
+  if (voltouParaOPedido(registro.voltar, situacao)) return true;
+  const antes = registro.pendente === true && Array.isArray(registro.versoes_antes) ? registro.versoes_antes : null;
+  if (!antes) return registro.versao === situacao.versao;
+  const novas = situacao.versoes.filter((v) => !antes.includes(v));
+  if (!novas.length) return registro.versao === situacao.versao;
+  if (novas.length !== 1 || novas[0] !== situacao.versao) return false;
+  const tamanho = situacao.tamanhos[situacao.versao];
+  return Number.isInteger(registro.envio_bytes) && tamanho === registro.envio_bytes;
+}
 
 // Outras pastas deste computador com registro para este endereço, primeiro a que pôs no ar o que está
 // lá agora (é dela que esta é cópia, ou de onde esta foi movida).
@@ -91,14 +127,15 @@ function outrasPastas(c, endereco, situacao, ferr) {
   return [...outras].sort((a, b) => primeiro(a) - primeiro(b)).map(([pasta]) => pasta);
 }
 
+// Devolve a situação do endereço ({ teveVersao, versao, versoes, tamanhos }), que o envio guarda no
+// registro pendente. --por-cima pula a conferência, mas a situação é lida do mesmo jeito.
 export async function conferirDono(cfg, chave, c, endereco, porCima, ferr = FERR) {
-  if (porCima) return;
   const situacao = await situacaoDoEndereco(cfg, chave, endereco);
-  if (!situacao.teveVersao) return;
+  if (porCima || !situacao.teveVersao) return situacao;
   const dono = lerDono(c, endereco, ferr);
   const emUso = (versaoDesta) => reprovado('PUBLICAR_ENDERECO_JA_EM_USO', { nome: endereco, versao_no_ar: situacao.versao, versao_desta: versaoDesta });
   if (dono) {
-    if (bate(dono, situacao)) return;
+    if (bate(dono, situacao)) return situacao;
     emUso(Number.isInteger(dono.versao) ? dono.versao : null);
   }
   const outras = outrasPastas(c, endereco, situacao, ferr);
@@ -113,7 +150,7 @@ export async function conferirDono(cfg, chave, c, endereco, porCima, ferr = FERR
   const anotado = lerNoAr(c);
   if (anotado.nome === endereco && bate(anotado, situacao)) {
     anotarDono(c, endereco, { versao: Number.isInteger(anotado.versao) ? anotado.versao : situacao.versao, migrado: true }, ferr);
-    return;
+    return situacao;
   }
   emUso(null);
 }

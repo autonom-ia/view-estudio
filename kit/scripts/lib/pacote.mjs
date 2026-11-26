@@ -17,6 +17,7 @@
 //   terminado em .old, .backup, .bak, .orig, .tmp, .swp ou ~, e pasta backup, backups, old, _old ou tmp);
 // - PACOTE_CITA_ARQUIVO_FORA: uma página, estilo ou script do pacote cita um arquivo que fica fora
 //   dele (rascunho, teleprompter, anotação): no ar, a tela quebraria.
+// - PUBLICAR_3D_GRANDE: um .gltf passa do teto do painel (TETO_DO_GLTF), que o recusaria.
 // Portado do Site Estúdio (lib/pacote.mjs), adaptado ao deck.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -107,11 +108,22 @@ const decodificado = (texto) => {
     return texto;
   }
 };
-const textosDoJson = (valor) => {
-  if (typeof valor === 'string') return [valor];
-  if (valor && typeof valor === 'object') return Object.values(valor).flatMap(textosDoJson);
-  return [];
-};
+// Os textos do JSON, em qualquer fundura. Pilha explícita, sem recursão: um modelo aninhado muito
+// fundo (dez mil colchetes) não estoura a pilha do Node no meio do publicar.
+function textosDoJson(raiz) {
+  const textos = [];
+  const pilha = [raiz];
+  while (pilha.length) {
+    const valor = pilha.pop();
+    if (typeof valor === 'string') textos.push(valor);
+    else if (valor && typeof valor === 'object') {
+      // de trás para a frente, para sair na ordem do arquivo; um por um (lista enorme não vira argumento)
+      const filhos = Object.values(valor);
+      for (let i = filhos.length - 1; i >= 0; i -= 1) pilha.push(filhos[i]);
+    }
+  }
+  return textos;
+}
 function comoCita(rel, texto) {
   if (extensao(rel) !== '.gltf') return texto;
   const semBom = texto.startsWith(BOM) ? texto.slice(BOM.length) : texto;
@@ -125,9 +137,22 @@ function comoCita(rel, texto) {
   return [texto, ...nomes].join('\n');
 }
 
+// O mesmo teto do painel para o .gltf (view_autonomia, framework/sites/painel/publicacao/pacote.mjs,
+// GLTF_MAX_BYTES): acima dele o painel recusa com PACOTE_3D_GRANDE. Conferido pelo tamanho no disco,
+// antes de ler: um .gltf gigante nunca é lido nem interpretado aqui, e a pessoa sabe sem enviar nada.
+export const TETO_DO_GLTF = 16 * 1024 * 1024;
+
+function lerTextoQueCita(pasta, rel) {
+  const abs = path.join(pasta, ...rel.split('/'));
+  if (extensao(rel) === '.gltf' && fs.statSync(abs).size > TETO_DO_GLTF) {
+    reprovado('PUBLICAR_3D_GRANDE', { arquivo: `deck/${rel}` });
+  }
+  return comoCita(rel, fs.readFileSync(abs, 'utf8'));
+}
+
 const lerTextos = (pasta, arquivos) => arquivos
   .filter((rel) => TEXTOS_QUE_CITAM.includes(extensao(rel)))
-  .map((rel) => ({ rel, texto: comoCita(rel, fs.readFileSync(path.join(pasta, ...rel.split('/')), 'utf8')) }));
+  .map((rel) => ({ rel, texto: lerTextoQueCita(pasta, rel) }));
 
 // Letra que continua um nome de arquivo ou pasta (o resto, como aspas, parêntese, espaço, "?" e "#",
 // termina o nome).

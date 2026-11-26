@@ -572,3 +572,43 @@ test('5. modelo 3D e decodificador (glb, gltf, bin, wasm) passam na conferência
   }
   assert.ok(MENSAGENS.PUBLICAR_3D_GRANDE.acao.includes('nenhum outro .gltf'));
 });
+
+// --- Revisão do PR #9, segunda rodada ---
+
+// Um deck mínimo com um .gltf em assets/3d, citado pela tela.
+function deckCom3d(t) {
+  const deck = fs.mkdtempSync(path.join(os.tmpdir(), 'estudio-3d-'));
+  t.after(() => fs.rmSync(deck, { recursive: true, force: true }));
+  escrever(path.join(deck, 'index.html'), '<title>3D</title><script>carregar("assets/3d/cena.gltf")</script>');
+  return { deck, gltf: path.join(deck, 'assets', '3d', 'cena.gltf') };
+}
+
+test('5b. .gltf com o JSON aninhado muito fundo não derruba o pacote, e o nome lá no fundo ainda conta', (t) => {
+  const { deck, gltf } = deckCom3d(t);
+  const fundura = 100000;
+  escrever(gltf, `${'['.repeat(fundura)}"peca%20a.bin"${']'.repeat(fundura)}`);
+  escrever(path.join(deck, 'assets', '3d', 'peca a.bin'), 'x');
+  let pacote;
+  assert.doesNotThrow(() => {
+    pacote = montarPacote(deck);
+  });
+  assert.deepEqual(pacote.naoCitados, [], 'o nome decodificado no fundo do JSON cita o .bin');
+});
+
+// O teto do painel (view_autonomia, framework/sites/painel/publicacao/pacote.mjs, GLTF_MAX_BYTES).
+const TETO_DO_GLTF = 16 * 1024 * 1024;
+
+test('5c. .gltf acima do teto do painel (16 MB) reprova aqui, sem ler o arquivo; no teto, passa', (t) => {
+  const { deck, gltf } = deckCom3d(t);
+  escrever(gltf, '');
+  fs.truncateSync(gltf, TETO_DO_GLTF + 1);
+  let erro;
+  try {
+    montarPacote(deck);
+  } catch (e) {
+    erro = e;
+  }
+  assert.deepEqual([erro?.codigo, erro?.sair, erro?.dados?.arquivo], ['PUBLICAR_3D_GRANDE', 2, 'deck/assets/3d/cena.gltf'], String(erro));
+  fs.truncateSync(gltf, TETO_DO_GLTF);
+  assert.doesNotThrow(() => montarPacote(deck));
+});

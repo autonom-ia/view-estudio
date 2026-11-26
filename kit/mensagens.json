@@ -321,7 +321,7 @@
   },
   "ANTES_NAO_TROCADO": {
     "texto": "Não consegui guardar a versão de antes agora. A apresentação não mudou.",
-    "acao": "dados.erro é o código do sistema, só para você: não o repita à pessoa (nada de EPERM ou EBUSY na conversa). No Windows, quase sempre é um arquivo da comparação anterior aberto em outro programa, como a página do antes e depois no navegador, uma foto num editor ou um vídeo num player. A comparação anterior foi fechada e não serve mais para o escolher. Peça para fechar o que estiver usando esses arquivos e rode ./estudio antes <nome> de novo antes de mudar qualquer coisa na apresentação. Não apague nada com final .guardando, .trocando ou .descartando."
+    "acao": "dados.erro é o código do sistema, só para você: não o repita à pessoa (nada de EPERM ou EBUSY na conversa). No Windows, quase sempre é um arquivo da comparação anterior aberto em outro programa, como a página do antes e depois no navegador, uma foto num editor ou um vídeo num player. A comparação anterior continua como estava: se a pessoa ainda não tinha escolhido, ela ainda pode responder ao \"Qual fica?\" dela com ./estudio escolher. Peça para fechar o que estiver usando esses arquivos e rode de novo o mesmo ./estudio antes <nome> (com --de-novo, se foi com ele) antes de mudar qualquer coisa na apresentação. Não apague nada com final .guardando, .trocando ou .descartando."
   },
   "ANTES_NAO_GUARDADO": {
     "texto": "Esqueci de guardar como a apresentação estava antes, então desta vez não dá para mostrar o antes e o depois. Daqui em diante, guardo antes de mudar.",

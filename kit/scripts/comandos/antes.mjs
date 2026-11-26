@@ -10,10 +10,11 @@
 // O que sai da comparação anterior (antes, versão vista, fotos, pedido) vai listado em dados.apagados.
 // Nada é apagado antes de o novo estar inteiro: a comparação nova é montada ao lado
 // (revisao/antes-depois.guardando) e entra no lugar da anterior de uma vez (lib/antes-depois.mjs,
-// trocarPasta). A anterior é fechada antes da troca: se a troca falha (no Windows, um arquivo aberto em
-// outro programa), reprova com ANTES_NAO_TROCADO, a apresentação não muda e o "escolher" não usa uma
-// comparação que a pessoa pediu para deixar. Rodar "antes" de novo termina. Troca feita com a cópia
-// velha ainda ao lado (não saiu agora) vale, com o aviso SOBRA_DA_TROCA.
+// trocarPasta). O estado novo vai dentro dela e só vale com a troca feita; o estado.json da anterior
+// não é tocado antes. Se a troca falha (no Windows, um arquivo aberto em outro programa), reprova com
+// ANTES_NAO_TROCADO, a apresentação não muda e a comparação anterior fica exatamente como era: se
+// estava em aberto, o "escolher" ainda responde a ela. Rodar "antes" de novo termina. Troca feita com
+// a cópia velha ainda ao lado (não saiu agora) vale, com o aviso SOBRA_DA_TROCA.
 // Portado do Site Estúdio (comando "antes").
 import fs from 'node:fs';
 import path from 'node:path';
@@ -87,7 +88,6 @@ export default async function antes(args) {
     reprovado('ANTES_EM_ABERTO', { nome, restauracao_pendente: pendente });
   }
   const apagados = oQueSai(ad);
-  if (fs.existsSync(ad.estado)) escreverJson(ad.estado, { aberto: false, escolha: typeof estado.escolha === 'string' ? estado.escolha : '' });
   let troca;
   try {
     troca = trocarComparacao(c, ad);

@@ -446,20 +446,26 @@ test('3c. comparação que ficou fora numa troca parada no meio volta ao lugar a
   assert.ok(denovo.json.dados.apagados.antes > 0, 'diz o que da comparação anterior saiu');
 });
 
-test('3d. "antes" que não consegue trocar reprova com código, a apresentação não muda e a comparação anterior fica fechada', { skip: SEM_CHMOD }, (t) => {
-  const { env, pasta, slide, marcar } = bolo(t);
+test('3d. "antes --de-novo" que não consegue trocar reprova com código, e a comparação anterior continua respondendo', { skip: SEM_CHMOD }, (t) => {
+  const { env, pasta, slide, marcar, ad } = bolo(t);
   const revisao = path.join(pasta, 'revisao');
   t.after(() => fs.existsSync(revisao) && fs.chmodSync(revisao, 0o700));
   assert.equal(estudio(env, 'antes', 'bolo').json.codigo, 'ANTES_GUARDADO');
   marcar('mudou');
+  const estadoAntes = ler(path.join(ad, 'estado.json'));
   fs.chmodSync(revisao, 0o500);
   const r = estudio(env, 'antes', 'bolo', '--de-novo');
   fs.chmodSync(revisao, 0o700);
   assert.deepEqual([r.codigo, r.json.codigo], [2, 'ANTES_NAO_TROCADO'], JSON.stringify(r.json) + r.erro);
   assert.equal(r.json.dados.erro, 'EACCES');
   assert.ok(ler(slide).endsWith('<!-- mudou -->'), 'a apresentação não mudou');
-  assert.equal(estudio(env, 'escolher', 'bolo', 'antes').json.codigo, 'ANTES_JA_RESOLVIDO', 'a comparação anterior não é usada');
-  assert.equal(estudio(env, 'antes', 'bolo').json.codigo, 'ANTES_GUARDADO', 'rodar de novo termina');
+  assert.equal(ler(path.join(ad, 'estado.json')), estadoAntes, 'o estado da comparação anterior fica exatamente como era');
+  assert.ok(fs.existsSync(path.join(ad, 'antes', 'deck')), 'o antes da comparação anterior continua guardado');
+  assert.ok(!MENSAGENS.ANTES_NAO_TROCADO.acao.includes('foi fechada'), 'a mensagem não diz que a comparação foi fechada');
+  const volta = estudio(env, 'escolher', 'bolo', 'antes');
+  assert.equal(volta.json.codigo, 'VOLTOU_COMO_ESTAVA', 'a pergunta da comparação anterior ainda tem resposta: ' + JSON.stringify(volta.json));
+  assert.ok(ler(slide).endsWith('<!-- original -->'));
+  assert.equal(estudio(env, 'antes', 'bolo').json.codigo, 'ANTES_GUARDADO', 'depois de escolher, o antes novo é guardado');
 });
 
 test('2e. escolher que não consegue guardar a versão vista: RESTAURACAO_FALHOU com item "tentativa", nada volta, e a segunda vez termina', { skip: SEM_CHMOD }, (t) => {
